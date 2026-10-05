@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI ticket monitoring</title>
+    <link rel="stylesheet" href="app.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="page-header">
+        <div class="title-group">
+          <span class="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="2.5" y="3" width="19" height="18" rx="3"/><path d="M6.5 16v-4m4 4V8m4 8v-5m4 5V6"/></svg>
+          </span>
+          <div>
+            <p class="eyebrow">SUPPORT INTELLIGENCE</p>
+            <h1>AI ticket monitoring</h1>
+            <p class="page-subtitle">Explore monitored tickets and sessions directly from Zendesk.</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="sync-caption"><span class="sync-dot" aria-hidden="true"></span><span id="sync-text">Not loaded yet</span></div>
+          <button class="button button-secondary" id="refresh-button" type="button">Refresh page</button>
+        </div>
+      </header>
+
+      <div class="notice" id="notice" role="status" hidden></div>
+
+      <form class="filters-panel" id="search-form" aria-label="Search monitoring data">
+        <div class="filter-heading">
+          <div><h2>Explore results</h2><p>Search Zendesk records by report date (maximum one year). Counts describe the displayed page.</p></div>
+          <button class="text-button" id="clear-filters" type="button">Clear filters</button>
+        </div>
+        <div class="filter-grid">
+          <label class="field field-search"><span>Search record text</span><input id="search" type="search" placeholder="Ticket ID or keywords" autocomplete="off"></label>
+          <button class="button button-primary search-button" id="search-button" type="submit">Search</button>
+          <label class="field"><span>From report date</span><input id="from-date" type="date" required></label>
+          <label class="field"><span>To report date</span><input id="to-date" type="date" required></label>
+          <label class="field"><span>Satisfaction</span><select id="score-filter"><option value="">All scores</option><option value="satisfied">Satisfied</option><option value="neutral">Neutral</option><option value="unsatisfied">Unsatisfied</option><option value="escalated">Escalated</option><option value="insufficient_data">Insufficient data</option></select></label>
+        </div>
+      </form>
+
+      <main>
+        <div class="section-caption"><span id="range-label">Choose a report date range</span><span>Figures apply only to this page; ticket outcomes use the latest session on this page.</span></div>
+        <section class="metric-grid" aria-label="Monitoring overview">
+          <article class="metric-card"><span class="metric-label">AI tickets on page</span><strong id="total-tickets">—</strong><span class="metric-note">Distinct tickets shown</span></article>
+          <article class="metric-card"><span class="metric-label">Satisfied tickets on page</span><strong id="satisfied-tickets">—</strong><span class="metric-note">Latest shown session scored satisfied</span></article>
+          <article class="metric-card"><span class="metric-label">Monitored sessions on page</span><strong id="total-sessions">—</strong><span class="metric-note">Completed evaluations shown</span></article>
+          <article class="metric-card metric-card-accent"><span class="metric-label">Estimated satisfaction on page</span><strong id="satisfaction-percent">—</strong><span class="metric-note">Satisfied ÷ scored sessions shown</span></article>
+        </section>
+
+        <section class="insights-grid" aria-label="Monitoring breakdowns">
+          <article class="insight-card"><div class="card-heading"><div><p class="eyebrow">TICKETS ON PAGE</p><h2>Satisfaction by ticket</h2></div><span class="card-total" id="ticket-breakdown-total">— tickets</span></div><div id="ticket-score-breakdown" class="breakdown"></div></article>
+          <article class="insight-card"><div class="card-heading"><div><p class="eyebrow">SESSIONS ON PAGE</p><h2>Satisfaction by session</h2></div><span class="card-total" id="session-breakdown-total">— sessions</span></div><div id="session-score-breakdown" class="breakdown"></div></article>
+        </section>
+
+        <section class="records-panel" aria-labelledby="records-heading">
+          <div class="records-heading"><div><p class="eyebrow">SESSION DIRECTORY</p><h2 id="records-heading">Tickets and sessions</h2><p id="records-summary">Select dates and click Search to see monitored sessions.</p></div><span class="read-only-badge">Read-only</span></div>
+          <div class="table-scroll"><table><thead><tr><th scope="col">Ticket</th><th scope="col">Session</th><th scope="col">Satisfaction</th><th scope="col">Evaluated</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody id="records-body"></tbody></table></div>
+          <div class="empty-state" id="empty-state" hidden><div class="empty-symbol" aria-hidden="true">⌕</div><h3>No sessions found</h3><p id="empty-message">Try changing the filters or refresh the data.</p></div>
+          <div class="pagination" id="pagination" hidden><span id="page-summary"></span><div><button class="button button-secondary" id="previous-page" type="button">Previous</button><button class="button button-secondary" id="next-page" type="button">Next</button></div></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="drawer-backdrop" id="detail-backdrop" hidden>
+      <section class="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+        <header class="detail-header"><div><p class="eyebrow">MONITORING RECORD</p><h2 id="detail-title">Session details</h2></div><button class="icon-button" id="close-detail" type="button" aria-label="Close session details">×</button></header>
+        <div id="detail-body" class="detail-body"></div>
+      </section>
+    </div>
+
+    <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
