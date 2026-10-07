@@ -110,7 +110,10 @@ function finish(state, config) {
     }
 
     if (products.length) {
-      const catalog = renderProductEvidence(products, { compact: config.compactContext !== false });
+      const catalog = renderProductEvidence(products, {
+        compact: config.compactContext !== false,
+        plan,
+      });
       productEvidenceText = catalog.text;
       productEnvelope = `STRUCTURED DATABASE CANDIDATES (${products.length} shown; more matching records: ${state.productsTruncated ? "yes" : "no"}). Applied database filters: ${JSON.stringify(state.structuredAppliedFilters || {})}. Requested requirements: ${JSON.stringify(plan.filters)}. Candidate retrieval may be broadened; verify EVERY requested requirement from evidence. A catalog record does not prove live inventory, direct sales, or unstated capabilities.`;
       sections.push(`${productEnvelope}\n${catalog.text}`);
@@ -119,6 +122,7 @@ function finish(state, config) {
         products: products.length,
         contextBeforeChars: catalog.beforeChars,
         contextSavedChars: catalog.savedChars,
+        contextFieldsSavedChars: catalog.fieldsSavedChars,
         sharedValues: catalog.sharedValues,
         enabled: config.compactContext !== false,
       });

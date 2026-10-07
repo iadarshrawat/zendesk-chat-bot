@@ -32,13 +32,38 @@ const IDENTITY_FIELDS = new Set([
   "manufacturerBrand",
 ]);
 
+// General discovery needs identities and practical selection facts. Detailed
+// or constrained requests keep the full evidence so qualifiers are not lost.
+const DISCOVERY_FIELDS = new Set([
+  ...IDENTITY_FIELDS,
+  "category",
+  "productUse",
+  "useCases",
+  "features",
+  "price",
+]);
+const DISCOVERY_FILTERS = new Set([
+  "productName", "manufacturerBrand", "category", "productUse",
+]);
+
+function useDiscoveryFields(plan) {
+  return plan
+    && ["catalog", "product_search"].includes(plan.intent)
+    && ["catalog", "selection"].includes(plan.supportGoal)
+    && !plan.requiresProductIdentity
+    && !(plan.requestedConstraints?.length)
+    && !Object.entries(plan.filters || {}).some(([field, value]) => (
+      hasEvidenceValue(value) && !DISCOVERY_FILTERS.has(field)
+    ));
+}
+
 const SELECTION_GUIDANCE = "Give 3–5 supported options at most, fewer if appropriate; one short practical reason per option. Do not assume suitability, price, noise level, stock, or any unstated requirement. Respect the requested number and comparisons; ask one useful question if needed. State that this is a shortlist, not all matching products.";
 const COMPLETE_ANSWER_GUIDANCE = "Answer the requested scope concisely. Preserve requested comparisons, complete-list requests, exact specifications, prerequisites, exceptions and applicable manual steps. Never shorten by omitting a necessary condition or instruction.";
 
 function hasEvidenceValue(value) {
   return value != null
     && value !== ""
-    && (!Array.isArray(value) || value.length > 0);
+    && (typeof value !== "object" || Object.keys(value).length > 0);
 }
 
 function renderProducts(products) {
@@ -111,23 +136,36 @@ function compactProducts(products, sharedValueLookup, usedReferences) {
   ));
 }
 
-export function productEvidence(product) {
+export function productEvidence(product, { plan } = {}) {
+  let fields = PRODUCT_FIELDS;
+  if (useDiscoveryFields(plan)) {
+    fields = PRODUCT_FIELDS.filter((field) => DISCOVERY_FIELDS.has(field));
+    // A catalog may describe its use only in prose. Keep one complete prose
+    // field as a fallback rather than truncating a sentence or its conditions.
+    if (!hasEvidenceValue(product.features)) {
+      const fallback = hasEvidenceValue(product.description) ? "description" : "ragSummary";
+      fields = [...fields, fallback];
+    }
+  }
   return Object.fromEntries(
-    PRODUCT_FIELDS
+    fields
       .filter((field) => hasEvidenceValue(product[field]))
       .map((field) => [field, product[field]]),
   );
 }
 
-export function renderProductEvidence(products, { compact = true } = {}) {
-  const originalProducts = products.map(productEvidence);
+export function renderProductEvidence(products, { compact = true, plan } = {}) {
+  const beforeChars = renderProducts(products.map((product) => productEvidence(product))).length;
+  const originalProducts = products.map((product) => productEvidence(product, { plan }));
   const fullText = renderProducts(originalProducts);
+  const fieldsSavedChars = beforeChars - fullText.length;
 
   if (!compact) {
     return {
       text: fullText,
-      beforeChars: fullText.length,
-      savedChars: 0,
+      beforeChars,
+      savedChars: fieldsSavedChars,
+      fieldsSavedChars,
       sharedValues: 0,
     };
   }
@@ -158,16 +196,18 @@ export function renderProductEvidence(products, { compact = true } = {}) {
   if (compactedText.length >= fullText.length) {
     return {
       text: fullText,
-      beforeChars: fullText.length,
-      savedChars: 0,
+      beforeChars,
+      savedChars: fieldsSavedChars,
+      fieldsSavedChars,
       sharedValues: 0,
     };
   }
 
   return {
     text: compactedText,
-    beforeChars: fullText.length,
-    savedChars: fullText.length - compactedText.length,
+    beforeChars,
+    savedChars: beforeChars - compactedText.length,
+    fieldsSavedChars,
     sharedValues: usedReferences.size,
   };
 }

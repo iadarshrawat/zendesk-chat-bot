@@ -2,7 +2,7 @@
   "app": {
     "name": "AI Ticket Monitoring",
     "short_description": "Review AI ticket satisfaction and session details.",
-    "long_description": "A read-only dashboard for completed AI support monitoring sessions. It shows ticket-level satisfaction, session-level score breakdowns, searchable records, and monitoring details saved by the support platform in Zendesk custom objects. Estimated satisfaction is not Zendesk's official CSAT.",
-    "installation_instructions": "Install as a private Zendesk Support app. The app reads the ticket_csat_scores custom object using the signed-in agent's Zendesk permissions; no additional API key or database access is required."
+    "long_description": "A read-only dashboard for completed AI support monitoring sessions. It shows ticket-level satisfaction, session-level score breakdowns, searchable records, and monitoring details saved by the support platform in SQL Server. Estimated satisfaction is not Zendesk's official CSAT.",
+    "installation_instructions": "This temporary build includes its monitoring backend hostname and report API key in the frontend. No connection settings are required."
   }
 }

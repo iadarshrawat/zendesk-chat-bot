@@ -23,7 +23,8 @@ The archive already used **Cosmos DB + Voyage + Claude**, not the earlier Pineco
 ```text
 server.js                        Express API and background processing entry point
 src/runtime/background.js        Inbox wakeup, polling recovery and monitoring loops
-migrations/001_core.sql          SQL Server migration for exactly two application tables
+migrations/001_core.sql          SQL Server state/session metadata migration
+migrations/002_monitor_evaluations.sql Full SQL monitoring evaluation schema
 src/app.js                       HTTP routes, request guards, health checks
 src/config/                     Brand IDs and external-service configuration
 src/features/auth/              Website identity, Zendesk JWT and report access
@@ -39,7 +40,7 @@ docs/                            Scenario diagrams and operations guide
 ## Run locally
 
 1. Use Node 20+ and Microsoft SQL Server with a dedicated database login. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT` (normally `1433`), `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_SCHEMA` (default `dbo`). Never commit `.env` or the private knowledge archives to a public repository.
-2. Run `npm ci` once. Have the client confirm the target database and schema, review `migrations/001_core.sql`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"` with the exact configured `DB_NAME.DB_SCHEMA` and permission to create the two application tables. The command refuses to connect without that match. It can create only `bot_conversation_state` and `bot_monitor_sessions`; it will not modify other tables or create a database/schema. Afterwards, `npm start` verifies these tables but never creates or changes them. The normal app login needs access only to its two tables and system-catalog metadata, not DDL permission.
+2. Run `npm ci` once. Have the client confirm the target database and schema, review `migrations/001_core.sql` and `migrations/002_monitor_evaluations.sql`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"` with the exact configured `DB_NAME.DB_SCHEMA` and permission to create the three application tables. The command refuses to connect without that match. It can create only `bot_conversation_state`, `bot_monitor_sessions`, and `bot_monitor_evaluations`; it will not modify other tables or create a database/schema. Afterwards, `npm start` verifies these tables but never creates or changes them. The normal app login needs access only to its three tables and system-catalog metadata, not DDL permission.
 3. Validate the supplied knowledge packages without API calls:
 
    ```bash
@@ -48,12 +49,12 @@ docs/                            Scenario diagrams and operations guide
    ```
 
 4. Review package ownership, then ingest each brand separately with the same commands without `--validate-only`. This publishes brand snapshots in Cosmos. The Cosmos vector dimension must match the Voyage embedding output dimension. The supplied default is 1024.
-5. Run `npm start` in one terminal. It verifies the two SQL Server tables, then starts the API, in-memory inbox processor and monitor together. Configure Zendesk's Conversations webhook for `conversation:create` and `conversation:message`, send it to `POST /sunshine/webhook`, and set the webhook shared secret to `SUNSHINE_WEBHOOK_SECRET`.
-6. Connect the website's logged-in user session to `POST /sunshine/auth` as described below. Set a private `REPORT_API_KEY` for server-side report consumers.
+5. Run `npm start` in one terminal. It verifies the three SQL Server tables, then starts the API, in-memory inbox processor and monitor together. Configure Zendesk's Conversations webhook for `conversation:create` and `conversation:message`, send it to `POST /sunshine/webhook`, and set the webhook shared secret to `SUNSHINE_WEBHOOK_SECRET`.
+6. Connect the website's logged-in user session to `POST /sunshine/auth` as described below. Set `REPORT_API_KEY` for report consumers. The temporary navbar build hardcodes this key and the ngrok hostname in `navbar/assets/monitoringConfig.js`; it reads SQL through the API. See [navbar setup](navbar/README.md).
 
-`GET /health/live` checks the HTTP process; `GET /health/ready` checks SQL Server connectivity with `SELECT 1`. Startup verifies brand mappings, the two SQL Server tables, Cosmos and required bot credentials before starting both loops.
+`GET /health/live` checks the HTTP process; `GET /health/ready` checks SQL Server connectivity with `SELECT 1`. Startup verifies brand mappings, the three SQL Server tables, Cosmos and required bot credentials before starting both loops.
 
-The only relational application tables are `bot_conversation_state` and `bot_monitor_sessions`. Forms and the webhook inbox are held in process memory. A restart loses pending inbox events, deduplication history, and forms; multiple app instances do not share them. For this design, run one app instance unless you accept independent queues. If table setup fails, confirm `DB_NAME`/`DB_SCHEMA` and the migration login's permission to create only those two tables. An incompatible existing table causes a safe failure; it is not altered automatically.
+The only relational application tables are `bot_conversation_state`, `bot_monitor_sessions`, and `bot_monitor_evaluations`. Forms and the webhook inbox are held in process memory. A restart loses pending inbox events, deduplication history, and forms; multiple app instances do not share them. For this design, run one app instance unless you accept independent queues. If table setup fails, confirm `DB_NAME`/`DB_SCHEMA` and the migration login's permission to create only those three tables. An incompatible existing table causes a safe failure; it is not altered automatically.
 
 If the widget receives no reply, keep `npm start` running, send a fresh test message, then run `npm run diagnose` in another terminal on the same host. It calls the report-key-protected `/sunshine/inbox` route on the local process and prints only aggregate queue counts, not customer text or API keys. An empty queue may mean Zendesk has not delivered a supported event: check the public HTTPS webhook URL ending in `/sunshine/webhook`, its `conversation:message` subscription, App ID, and webhook shared secret. `pending` or `processing` counts mean the in-memory worker has work; inspect the `npm start` logs. A `delivery_uncertain` outcome means retrying the send automatically might duplicate a customer-visible reply. This package retains the working `https://api.smooch.io/v2` Sunshine API endpoint from the attached project.
 
@@ -77,7 +78,7 @@ These tests use local Zendesk, Claude, and database fixtures plus a synthetic cl
 | --- | --- | --- | --- |
 | `POST /sunshine/webhook` | Sunshine Conversations | `X-API-Key` shared secret; expected `app.id` | Durable event insert, then `200`; malformed `400`, untrusted `401`, persistence failure `503` |
 | `POST /sunshine/auth` | Logged-in website | `Authorization: Bearer <website-session-JWT>` | Short-lived Zendesk messaging JWT; body identity ignored |
-| `GET /sunshine/report?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Session summary and evaluated records |
+| `GET /sunshine/monitoring/sessions?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Paginated SQL session rows; date, text, score and cursor filters |
 | `GET /health/live` / `/health/ready` | Hosting health probe | None | Liveness / SQL Server connectivity |
 | `GET /sunshine/inbox` | Local diagnostic | `Authorization: Bearer <REPORT_API_KEY>` | In-memory inbox counts, no payloads |
 

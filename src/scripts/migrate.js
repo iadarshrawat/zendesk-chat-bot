@@ -20,6 +20,9 @@ try {
   await pool.connect();
   await initializeCoreSchema(pool, process.env.DB_SCHEMA);
   console.log("SQL Server core-table migration complete");
+} catch (error) {
+  console.error("SQL Server migration failed", safeErrorMetadata(error));
+  process.exitCode = 1;
 } finally {
   await pool.close();
 }

@@ -9,27 +9,20 @@ import {
 
 function record(ticketId, sessionNumber, score, overrides = {}) {
   return {
-    id: `${ticketId}-${sessionNumber}`,
-    external_id: `ai-monitor:v2:${ticketId}:message-${sessionNumber}`,
+    record_id: `ai-monitor:v2:${ticketId}:message-${sessionNumber}`,
+    session_id: `ai-monitor:v2:${ticketId}:message-${sessionNumber}`,
     updated_at: `2026-10-0${sessionNumber}T12:00:00Z`,
-    custom_object_fields: {
-      ticket_id: String(ticketId),
-      ticket_subject: `Ticket ${ticketId}`,
-      session_number: String(sessionNumber),
-      report_date: `2026-10-0${sessionNumber}`,
-      session_started_at: `2026-10-0${sessionNumber}T09:00:00Z`,
-      evaluated_at: `2026-10-0${sessionNumber}T12:00:00Z`,
-      csat_score: score,
-      monitoring_status: "evaluated",
-      follow_up_required: "true",
-      ...overrides,
-    },
+    ticket_id: String(ticketId), ticket_subject: `Ticket ${ticketId}`,
+    session_number: sessionNumber, report_date: `2026-10-0${sessionNumber}`,
+    session_started_at: `2026-10-0${sessionNumber}T09:00:00Z`,
+    evaluated_at: `2026-10-0${sessionNumber}T12:00:00Z`,
+    score, monitoring_status: "evaluated", follow_up_required: true, ...overrides,
   };
 }
 
 test("shows only completed v2 monitoring records", () => {
   assert.equal(sessionFromRecord(record(5687, 1, "satisfied")).ticketId, "5687");
-  assert.equal(sessionFromRecord({ ...record(5687, 1, "satisfied"), external_id: "old-id" }), null);
+  assert.equal(sessionFromRecord({ ...record(5687, 1, "satisfied"), session_id: "old-id" }), null);
   assert.equal(sessionFromRecord(record(5687, 1, "satisfied", { monitoring_status: "pending" })), null);
   assert.equal(sessionFromRecord(record("abc", 1, "satisfied")), null);
 });

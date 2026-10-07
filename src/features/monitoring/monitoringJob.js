@@ -1,7 +1,7 @@
 import { CLAUDE_CONFIG, createClaudeClient } from "../../config/claude.js";
 import { createZendeskClient } from "../../config/zendesk.js";
 import { getPool } from "../../config/sql.js";
-import { completedSessionIds, recordCompletedSession } from "./monitoringRepository.js";
+import { completedSessionIds, saveMonitoringSession } from "./monitoringRepository.js";
 import {
   detectMonitoringSessions,
   isEscalatedMonitoringSession,
@@ -9,39 +9,12 @@ import {
   normalizeConversationEvents,
 } from "./monitoringSessionService.js";
 
-const OBJECT_KEY = "ticket_csat_scores";
 const SESSION_GAP_MS = 2 * 60 * 60 * 1000;
 const LOOKBACK_MS = 5 * 60 * 60 * 1000;
 const MAX_ZENDESK_ATTEMPTS = 4;
 const DEFAULT_RATE_LIMIT_DELAY_SECONDS = 60;
-const COMPLETED_MONITORING_STATUSES = ["evaluated", "escalated"];
 const SATISFACTION_SCORES = ["satisfied", "neutral", "unsatisfied"];
 const CONFIDENCE_LEVELS = ["high", "medium", "low"];
-
-const CUSTOM_OBJECT_FIELD_TITLES = {
-  ticket_id: "Ticket ID",
-  ticket_subject: "Ticket Subject",
-  ticket_created_at: "Ticket Created At",
-  report_date: "Report Date",
-  csat_score: "Satisfaction Score",
-  reason: "Scoring Reason",
-  session_number: "Session Number",
-  session_started_at: "Session Started At",
-  session_last_message_at: "Session Last Message At",
-  evaluation_due_at: "Evaluation Due At",
-  evaluated_at: "Evaluated At",
-  monitoring_status: "Monitoring Status",
-  confidence: "Confidence",
-  human_required: "Human Required",
-  follow_up_required: "Follow Up Required",
-  key_issue: "Key Issue",
-  ticket_requester_id: "Ticket Requester ID",
-  session_first_message_id: "Session First Message ID",
-  session_last_customer_at: "Session Last Customer At",
-  session_message_count: "Session Message Count",
-};
-
-let schemaReady = false;
 
 function toIsoString(time) {
   return new Date(time).toISOString();
@@ -72,59 +45,6 @@ async function zendeskCall(operation) {
       await delay(retryDelaySeconds * 1000);
     }
   }
-}
-
-async function ensureCSATCustomObject(client) {
-  if (schemaReady) {
-    return;
-  }
-
-  try {
-    await zendeskCall(() => client.get(`/custom_objects/${OBJECT_KEY}`));
-  } catch (error) {
-    if (error.response?.status !== 404) {
-      throw error;
-    }
-
-    await zendeskCall(() => client.post("/custom_objects", {
-      custom_object: {
-        key: OBJECT_KEY,
-        title: "Ticket CSAT Scores",
-        title_pluralized: "Ticket CSAT Scores",
-        raw_title: "Ticket CSAT Scores",
-        raw_title_pluralized: "Ticket CSAT Scores",
-        description: "Independent AI chat session monitoring results",
-        raw_description: "Independent AI chat session monitoring results",
-      },
-    }));
-  }
-
-  const response = await zendeskCall(() =>
-    client.get(`/custom_objects/${OBJECT_KEY}/fields`, {
-      params: { "page[size]": 100 },
-    }));
-  const existingFields = new Set(
-    (response.data.custom_object_fields || []).map(field => field.key),
-  );
-
-  for (const [key, title] of Object.entries(CUSTOM_OBJECT_FIELD_TITLES)) {
-    if (existingFields.has(key)) {
-      continue;
-    }
-
-    try {
-      await zendeskCall(() => client.post(`/custom_objects/${OBJECT_KEY}/fields`, {
-        custom_object_field: { key, type: "text", title },
-      }));
-    } catch (error) {
-      // A second worker may have created the same field after our initial read.
-      if (error.response?.status !== 422) {
-        throw error;
-      }
-    }
-  }
-
-  schemaReady = true;
 }
 
 async function fetchUpdatedTickets(client, now) {
@@ -195,43 +115,6 @@ async function fetchConversationEvents(client, ticketId) {
   } while (true);
 
   return events;
-}
-
-async function existingSessionsForTicket(client, ticketId) {
-  const recordsByExternalId = new Map();
-  let cursor = null;
-
-  do {
-    const params = { "page[size]": 100, sort: "created_at" };
-    if (cursor) {
-      params["page[after]"] = cursor;
-    }
-
-    const response = await zendeskCall(() => client.post(
-      `/custom_objects/${OBJECT_KEY}/records/search`,
-      { filter: { "custom_object_fields.ticket_id": { $eq: String(ticketId) } } },
-      { params },
-    ));
-
-    for (const record of response.data.custom_object_records || []) {
-      if (record.external_id?.startsWith(`ai-monitor:v2:${ticketId}:`)) {
-        recordsByExternalId.set(record.external_id, record);
-      }
-    }
-
-    if (!response.data.meta?.has_more) {
-      break;
-    }
-
-    const nextCursor = response.data.meta.after_cursor;
-    if (!nextCursor || nextCursor === cursor) {
-      throw new Error(`Custom object search cursor stalled for ticket ${ticketId}`);
-    }
-
-    cursor = nextCursor;
-  } while (true);
-
-  return recordsByExternalId;
 }
 
 const EVALUATION_PROMPT = `You review ONE monitored customer and AI bot session. This is an independent
@@ -359,52 +242,31 @@ async function evaluateSession(ticket, session, messages, evaluate) {
   return noBotEvaluation();
 }
 
-function baseSessionFields(ticket, session) {
+export function sessionEvaluationRecord(ticket, session, evaluation, now) {
+  const evaluatedAt = toIsoString(now);
   return {
+    session_id: monitoringSessionId(ticket.id, session),
     ticket_id: String(ticket.id),
     ticket_requester_id: String(ticket.requester_id || ""),
-    ticket_subject: truncate(ticket.subject),
-    ticket_created_at: truncate(ticket.created_at),
-    session_number: String(session.number),
+    ticket_subject: truncate(ticket.subject, 1024),
+    ticket_created_at: ticket.created_at || null,
+    session_number: session.number,
     session_started_at: toIsoString(session.startedAt),
-    session_last_message_at: toIsoString(session.lastMessageAt),
-    session_last_customer_at: toIsoString(session.lastCustomerAt),
-    session_first_message_id: truncate(session.firstMessageId),
-    session_message_count: String(session.messages.length),
+    last_message_at: toIsoString(session.lastMessageAt),
+    last_customer_at: toIsoString(session.lastCustomerAt),
+    first_message_id: String(session.firstMessageId),
+    message_count: session.messages.length,
     evaluation_due_at: toIsoString(session.lastCustomerAt + SESSION_GAP_MS),
-  };
-}
-
-async function saveSession(client, ticket, session, evaluation, now) {
-  const externalId = monitoringSessionId(ticket.id, session);
-  const evaluatedAt = toIsoString(now);
-  const fields = {
-    ...baseSessionFields(ticket, session),
     report_date: evaluatedAt.slice(0, 10),
     csat_score: evaluation.customer_satisfaction,
-    reason: truncate(evaluation.reason),
+    reason: truncate(evaluation.reason, 4000),
     evaluated_at: evaluatedAt,
     monitoring_status: evaluation.customer_satisfaction === "escalated" ? "escalated" : "evaluated",
     confidence: evaluation.confidence,
-    human_required: String(evaluation.human_required),
-    follow_up_required: String(evaluation.follow_up_required),
-    key_issue: truncate(evaluation.key_issue),
-  };
-
-  const response = await zendeskCall(() => client.patch(
-    `/custom_objects/${OBJECT_KEY}/records`,
-    {
-      custom_object_record: {
-        name: `Ticket #${ticket.id} | session ${session.number}`,
-        custom_object_fields: fields,
-      },
-    },
-    { params: { external_id: externalId } },
-  ));
-
-  return response.data.custom_object_record || {
-    external_id: externalId,
-    custom_object_fields: fields,
+    human_required: evaluation.human_required,
+    follow_up_required: evaluation.follow_up_required,
+    key_issue: evaluation.key_issue == null ? null : truncate(evaluation.key_issue, 1024),
+    updated_at: evaluatedAt,
   };
 }
 
@@ -449,35 +311,19 @@ async function processTicket(client, db, ticket, now, evaluate) {
     return [];
   }
 
-  const existingRecords = await existingSessionsForTicket(client, ticket.id);
   const results = [];
   for (const session of dueSessions) {
     const sessionId = monitoringSessionId(ticket.id, session);
-    const storedRecord = existingRecords.get(sessionId);
 
     if (completedIds.has(sessionId)) {
       continue;
     }
 
-    const storedStatus = storedRecord?.custom_object_fields?.monitoring_status;
-    if (COMPLETED_MONITORING_STATUSES.includes(storedStatus)) {
-      const storedEvaluationTime =
-        Date.parse(storedRecord.custom_object_fields.evaluated_at) || now;
-      await recordCompletedSession(
-        db,
-        ticket.id,
-        session,
-        sessionId,
-        storedEvaluationTime,
-      );
-      continue;
-    }
-
     const evaluation = await evaluateSession(ticket, session, messages, evaluate);
 
-    const record = await saveSession(client, ticket, session, evaluation, now);
-    await recordCompletedSession(db, ticket.id, session, sessionId, now);
-    existingRecords.set(sessionId, record);
+    const saved = await saveMonitoringSession(db, sessionEvaluationRecord(ticket, session, evaluation, now));
+    if (!saved) continue;
+    completedIds.add(sessionId);
 
     results.push({
       ticket_id: ticket.id,
@@ -613,7 +459,6 @@ export async function runReport({
     const client = suppliedClient || await createZendeskClient();
     const db = suppliedDb || getPool();
 
-    await ensureCSATCustomObject(client);
     const tickets = await fetchUpdatedTickets(client, now);
     const errors = [];
     const results = [];

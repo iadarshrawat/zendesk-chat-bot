@@ -16,7 +16,7 @@
           <div>
             <p class="eyebrow">SUPPORT INTELLIGENCE</p>
             <h1>AI ticket monitoring</h1>
-            <p class="page-subtitle">Explore monitored tickets and sessions directly from Zendesk.</p>
+            <p class="page-subtitle">Explore monitored tickets and sessions from your monitoring database.</p>
           </div>
         </div>
         <div class="header-actions">
@@ -27,17 +27,34 @@
 
       <div class="notice" id="notice" role="status" hidden></div>
 
-      <form class="filters-panel" id="search-form" aria-label="Search monitoring data">
+      <form class="filters-panel" id="search-form" aria-labelledby="explore-heading" aria-describedby="explore-description">
         <div class="filter-heading">
-          <div><h2>Explore results</h2><p>Search Zendesk records by report date (maximum one year). Counts describe the displayed page.</p></div>
-          <button class="text-button" id="clear-filters" type="button">Clear filters</button>
+          <div class="filter-title">
+            <span class="filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg></span>
+            <div><h2 id="explore-heading">Explore results</h2><p id="explore-description">Search monitored sessions by text, report date, and satisfaction.</p></div>
+          </div>
+          <span class="filter-limit"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 11h16"/></svg>Up to 1 year</span>
         </div>
         <div class="filter-grid">
-          <label class="field field-search"><span>Search record text</span><input id="search" type="search" placeholder="Ticket ID or keywords" autocomplete="off"></label>
-          <button class="button button-primary search-button" id="search-button" type="submit">Search</button>
-          <label class="field"><span>From report date</span><input id="from-date" type="date" required></label>
-          <label class="field"><span>To report date</span><input id="to-date" type="date" required></label>
-          <label class="field"><span>Satisfaction</span><select id="score-filter"><option value="">All scores</option><option value="satisfied">Satisfied</option><option value="neutral">Neutral</option><option value="unsatisfied">Unsatisfied</option><option value="escalated">Escalated</option><option value="insufficient_data">Insufficient data</option></select></label>
+          <label class="field field-search">
+            <span>Search record text</span>
+            <div class="field-control"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input id="search" type="search" placeholder="Ticket ID or keywords" autocomplete="off"></div>
+          </label>
+          <fieldset class="date-range">
+            <legend class="sr-only">Report date range</legend>
+            <div class="date-fields">
+              <label class="field"><span>From report date</span><input id="from-date" type="date" required></label>
+              <label class="field"><span>To report date</span><input id="to-date" type="date" required></label>
+            </div>
+          </fieldset>
+          <label class="field field-score"><span>Satisfaction</span><select id="score-filter"><option value="">All scores</option><option value="satisfied">Satisfied</option><option value="neutral">Neutral</option><option value="unsatisfied">Unsatisfied</option><option value="escalated">Escalated</option><option value="insufficient_data">Insufficient data</option></select></label>
+        </div>
+        <div class="filter-actions">
+          <p class="filter-note">Search applies all filters. Counts reflect this page.</p>
+          <div class="filter-action-buttons">
+            <button class="button button-secondary" id="clear-filters" type="button">Clear filters</button>
+            <button class="button button-primary search-button" id="search-button" type="submit"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>Search</button>
+          </div>
         </div>
       </form>
 

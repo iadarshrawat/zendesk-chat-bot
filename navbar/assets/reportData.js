@@ -18,11 +18,11 @@ function newestFirst(a, b) {
     || b.sessionNumber - a.sessionNumber;
 }
 
-/** Keep only completed v2 AI monitoring records, not unrelated custom-object data. */
+/** Normalize completed session rows returned by the SQL report API. */
 export function sessionFromRecord(record) {
-  if (!text(record?.external_id).startsWith("ai-monitor:v2:")) return null;
+  if (!text((record?.session_id || record?.external_id)).startsWith("ai-monitor:v2:")) return null;
 
-  const fields = record.custom_object_fields || {};
+  const fields = record;
   const ticketId = text(fields.ticket_id);
   const sessionNumber = Number(fields.session_number);
   if (!/^\d+$/.test(ticketId)
@@ -33,13 +33,13 @@ export function sessionFromRecord(record) {
   }
 
   return {
-    recordId: text(record.id),
-    recordName: text(record.name),
-    externalId: text(record.external_id),
+    recordId: text(record.record_id || record.session_id),
+    recordName: text(record.record_name),
+    externalId: text(record.session_id || record.external_id),
     updatedAt: text(record.updated_at),
     ticketId,
     ticketSubject: text(fields.ticket_subject),
-    ticketCreatedAt: text(fields.ticket_created_at || record.created_at),
+    ticketCreatedAt: text(fields.ticket_created_at),
     ticketRequesterId: text(fields.ticket_requester_id),
     reportDate: text(fields.report_date),
     sessionNumber,
@@ -50,21 +50,21 @@ export function sessionFromRecord(record) {
     sessionMessageCount: text(fields.session_message_count),
     evaluationDueAt: text(fields.evaluation_due_at),
     evaluatedAt: text(fields.evaluated_at),
-    score: text(fields.csat_score),
+    score: text(fields.score),
     reason: text(fields.reason),
     status: text(fields.monitoring_status),
     keyIssue: text(fields.key_issue),
   };
 }
 
-/** An older writer could leave duplicate custom-object records for a session. */
+/** Defensive page normalization; SQL primary keys enforce session uniqueness. */
 export function completedSessions(records) {
   const byTicketSession = new Map();
   for (const record of records) {
     const session = sessionFromRecord(record);
     if (!session) continue;
 
-    const key = `${session.ticketId}:${session.sessionNumber}`;
+    const key = session.externalId;
     const previous = byTicketSession.get(key);
     if (!previous || session.updatedAt > previous.updatedAt) {
       byTicketSession.set(key, session);

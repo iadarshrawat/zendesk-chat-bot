@@ -40,6 +40,9 @@ test("identity, reports and webhooks reject untrusted requests", async () => {
     const reportResponse = await fetch(`${baseUrl}/sunshine/report`);
     assert.ok([401, 503].includes(reportResponse.status));
 
+    const monitoringResponse = await fetch(`${baseUrl}/sunshine/monitoring/sessions`);
+    assert.ok([401, 503].includes(monitoringResponse.status));
+
     const inboxResponse = await fetch(`${baseUrl}/sunshine/inbox`);
     assert.ok([401, 503].includes(inboxResponse.status));
 

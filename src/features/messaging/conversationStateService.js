@@ -103,7 +103,11 @@ export async function loadConversationState(conversationId, { db = getPool(), no
 }
 
 export async function saveConversationState(conversationId, state, options = {}) {
-  const { db = getPool(), ...queryOptions } = options;
+  const {
+    db = getPool(),
+    timeoutMs = RAG_CONFIG.conversation.stateSaveTimeoutMs ?? 1500,
+    ...queryOptions
+  } = options;
   await measureStage(
     "mssql.state_save",
     () => executeBoundedSql(
@@ -130,10 +134,11 @@ export async function saveConversationState(conversationId, state, options = {})
       },
       {
         ...queryOptions,
+        timeoutMs,
         parameterTypes: { state_json: STATE_JSON_TYPE },
         stage: "mssql.state_save",
       },
     ),
-    { conversationId },
+    { conversationId, timeoutMs },
   );
 }

@@ -46,13 +46,41 @@ function monitorSessionsDefinition() {
   };
 }
 
-function column(name, type, { maxLength = 0, scale = 0 } = {}) {
+function monitorEvaluationsDefinition() {
+  const columns = [
+    column("session_id", "nvarchar", { maxLength: 510 }), column("session_number", "int"),
+    column("ticket_subject", "nvarchar", { maxLength: 2048 }),
+    column("ticket_created_at", "datetime2", { scale: 3, nullable: true }),
+    column("ticket_requester_id", "nvarchar", { maxLength: 256, nullable: true }),
+    column("first_message_id", "nvarchar", { maxLength: 256 }),
+    column("last_message_at", "datetime2", { scale: 3 }), column("message_count", "int"),
+    column("evaluation_due_at", "datetime2", { scale: 3 }), column("report_date", "date"),
+    column("csat_score", "varchar", { maxLength: 32 }), column("reason", "nvarchar", { maxLength: 8000 }),
+    column("monitoring_status", "varchar", { maxLength: 16 }),
+    column("confidence", "varchar", { maxLength: 8, nullable: true }),
+    column("human_required", "bit", { nullable: true }), column("follow_up_required", "bit", { nullable: true }),
+    column("key_issue", "nvarchar", { maxLength: 2048, nullable: true }),
+    column("updated_at", "datetime2", { scale: 3 }),
+  ];
+  return { columns,
+    indexes: [index("PK_bot_monitor_evaluations", "session_id", { primaryKey: true }),
+      ...["report_date", "updated_at", "session_id"].map((name, i) => ({ ...index("idx_bot_monitor_report", name), key_ordinal: i + 1 }))],
+    checks: ["score", "status", "confidence", "counts"].map(name => ({
+      constraint_name: `CK_bot_monitor_evaluations_${name}`, is_disabled: false, is_not_trusted: false,
+    })),
+    foreignKeys: [{ constraint_name: "FK_bot_monitor_evaluations_session", column_name: "session_id",
+      referenced_table: "bot_monitor_sessions", referenced_column: "session_id",
+      is_disabled: false, is_not_trusted: false }],
+  };
+}
+
+function column(name, type, { maxLength = 0, scale = 0, nullable = false } = {}) {
   return {
     column_name: name,
     data_type: type,
     max_length: maxLength,
     scale,
-    is_nullable: false,
+    is_nullable: nullable,
     is_identity: false,
     is_computed: false,
   };
@@ -95,6 +123,9 @@ function createDatabase({ schemaExists = true, tables = new Map(), queryError } 
           }
 
           const definition = tables.get(parameters.tableName);
+          if (sql.includes("FROM sys.foreign_keys")) {
+            return { recordset: (definition?.foreignKeys || []).map(row => ({ ...row, referenced_schema: parameters.schemaName })) };
+          }
           if (sql.includes("FROM sys.tables AS tables") && !sql.includes("sys.columns")) {
             return { recordset: definition ? [{ object_id: 1 }] : [] };
           }
@@ -112,8 +143,9 @@ function createDatabase({ schemaExists = true, tables = new Map(), queryError } 
         },
         async batch(sql) {
           batches.push(sql);
-          tables.set("bot_conversation_state", conversationStateDefinition());
-          tables.set("bot_monitor_sessions", monitorSessionsDefinition());
+          if (!tables.has("bot_conversation_state")) tables.set("bot_conversation_state", conversationStateDefinition());
+          if (!tables.has("bot_monitor_sessions")) tables.set("bot_monitor_sessions", monitorSessionsDefinition());
+          if (!tables.has("bot_monitor_evaluations")) tables.set("bot_monitor_evaluations", monitorEvaluationsDefinition());
           return { rowsAffected: [] };
         },
       };
@@ -121,7 +153,7 @@ function createDatabase({ schemaExists = true, tables = new Map(), queryError } 
   };
 }
 
-test("explicit migration creates only the two approved SQL Server tables", async () => {
+test("explicit migration creates only the three approved SQL Server tables", async () => {
   const db = createDatabase();
 
   assert.equal(await initializeCoreSchema(db, "support"), true);
@@ -134,6 +166,7 @@ test("explicit migration creates only the two approved SQL Server tables", async
   assert.deepEqual(createdTables, [
     "bot_conversation_state",
     "bot_monitor_sessions",
+    "bot_monitor_evaluations",
   ]);
   assert.doesNotMatch(migration, /\bbot_(?:inbox|forms)\b/i);
   assert.doesNotMatch(migration, /\b(?:DROP|ALTER)\b/i);
@@ -148,6 +181,7 @@ test("explicit migration creates only the two approved SQL Server tables", async
   assert.ok(inspectedTables.every((name) => [
     "bot_conversation_state",
     "bot_monitor_sessions",
+    "bot_monitor_evaluations",
   ].includes(name)));
 });
 
@@ -175,6 +209,29 @@ test("normal startup verification does not create missing tables", async () => {
     (error) => error.code === "SQLSERVER_MISSING_TABLE",
   );
   assert.equal(db.batches.length, 0);
+});
+
+test("upgrading the two-table schema adds evaluation storage without changing existing tables", async () => {
+  const state = conversationStateDefinition();
+  const sessions = monitorSessionsDefinition();
+  const tables = new Map([["bot_conversation_state", state], ["bot_monitor_sessions", sessions]]);
+  const db = createDatabase({ tables });
+  assert.equal(await initializeCoreSchema(db, "support"), true);
+  assert.equal(tables.get("bot_conversation_state"), state);
+  assert.equal(tables.get("bot_monitor_sessions"), sessions);
+  assert.ok(tables.has("bot_monitor_evaluations"));
+  assert.match(db.batches[0], /FOREIGN KEY \(\[session_id\]\)/);
+  assert.doesNotMatch(db.batches[0], /\b(?:ALTER|DROP|DELETE)\b/i);
+});
+
+test("startup refuses an evaluation table with an untrusted foreign key", async () => {
+  const evaluations = monitorEvaluationsDefinition();
+  evaluations.foreignKeys[0].is_not_trusted = true;
+  const db = createDatabase({ tables: new Map([
+    ["bot_conversation_state", conversationStateDefinition()], ["bot_monitor_sessions", monitorSessionsDefinition()],
+    ["bot_monitor_evaluations", evaluations],
+  ]) });
+  await assert.rejects(verifyCoreSchema(db, "support"), { code: "SQLSERVER_INCOMPATIBLE_SCHEMA" });
 });
 
 test("migration requires the configured schema to exist", async () => {

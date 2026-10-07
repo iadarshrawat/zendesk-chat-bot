@@ -1,20 +1,40 @@
 # AI Ticket Monitoring navbar app
 
-This is a private Zendesk Support `nav_bar` app. It reads completed `ai-monitor:v2:` records from the `ticket_csat_scores` custom object with the signed-in agent's Zendesk permissions. It does not connect to SQL Server, call the report API, create records, or modify tickets.
+This Zendesk Support navbar app reads completed monitoring sessions from the backend SQL report API. The monitor stores session metadata and evaluations only in SQL Server. Zendesk supplies ticket conversations and ticket navigation; the dashboard no longer uses a custom object.
 
-The dashboard shows completed session records returned by the current Zendesk API page. Counts and satisfaction breakdowns apply **only to the displayed page**, not the entire date range; each ticket's latest session *on that page* determines its ticket score. Filters cover report date, Zendesk's word/prefix text search, and score. Open a row to see the saved ticket/session fields; the ticket link opens the Zendesk ticket. Historical resolution fields remain in Zendesk but are not shown; new monitoring evaluations no longer write them.
+## Temporary hardcoded connection
 
-## Install in Zendesk
+The current frontend connection is defined in `assets/monitoringConfig.js`:
 
-1. Replace the placeholder `author.email` and `author.url` in `manifest.json` with the client's approved app contact details. If you change the manifest, rebuild the ZIP; the included ZIP will not update automatically.
-2. Confirm the account has the `ticket_csat_scores` custom object populated by the monitoring worker. Agents viewing the app need permission to list that object's records.
-3. From the repository root, run `node --test navbar/tests/*.test.js`. If Zendesk CLI is authenticated, also run `zcli apps:validate navbar` and `zcli apps:package navbar`. Otherwise, create a ZIP from the `navbar` directory with `manifest.json`, `translations/en.json`, and the files in `assets/` at the ZIP root. The prepared package is `navbar/dist/ai-ticket-monitoring.zip`.
-4. After the client approves installation, open Zendesk Admin Center → **Apps and integrations** → **Apps** → **Zendesk Support apps** → **Upload private app**. Upload the ZIP, finish the install prompts, and open **AI Ticket Monitoring** from the left navigation bar. Installing the ZIP changes the Zendesk account for its agents, so use the intended test account first.
+- Backend hostname: `ungestural-bertha-celestial.ngrok-free.dev`
+- Report key: the existing backend `REPORT_API_KEY`, copied from `.env`
+- Page size: 20
 
-The app uses the Zendesk Apps Framework SDK and the signed-in agent's session to call the Zendesk custom-object API. No SQL credentials, `REPORT_API_KEY`, or additional installation secret belongs in this folder. Zendesk's nav bar location is declared in `manifest.json`.
+No Zendesk installation settings are required. The report key is visible in browser source, network requests, and the ZIP in this temporary build. Keep this build private. For a production release, restore Zendesk secure settings and rotate the report key.
 
-Select a start and end report date no more than one calendar year apart, then click **Search** (or press Enter). The default is the last 30 UTC dates. Changing filters alone does not fetch data. **Refresh page** re-fetches the current result page; **Next** and **Previous** request their pages from Zendesk again. The app keeps only the displayed page and a few pagination cursors in browser memory; it does not cache the full monitoring history. It uses Zendesk's filtered-search API in read-only mode, with daily equality filters grouped by month because `report_date` is stored as text and cannot use date-range comparison. A wide, sparse range may therefore require several API requests to reach the first matching page. Search text uses Zendesk word/prefix matching rather than the old local substring matching.
+Changing `.env` does not update the hardcoded frontend key. If the backend key changes, update `apiKey` in `assets/monitoringConfig.js`. If the ngrok hostname changes, update `hostname` there and `domainWhitelist` in `manifest.json`, then restart the local preview or rebuild the ZIP.
 
-The API can still return older duplicate records for one session across different pages; within each page they are deduplicated. Exact full-range ticket counts and deduplication across every page would require scanning all matching records or a separate reporting service. No SQL tables or Zendesk records are created or changed by this app.
+## Run the local preview
 
-The PNG logos are already included. To regenerate them with `node navbar/tools/generateLogos.js`, install `@napi-rs/canvas` first if it is not available in your local dependencies.
+1. Keep the backend and ngrok tunnel running. The backend must have the SQL migrations applied and the matching `REPORT_API_KEY` loaded.
+2. From the repository root, run `zcli apps:server navbar`. Restart an already running ZCLI server so it loads the updated manifest without the old installation parameters.
+3. Open `https://d3v-itbytes.zendesk.com/agent/apps/ai-ticket-monitoring?zcli_apps=true`, reload the page, select dates, and click Search.
+
+Requests use [Zendesk's proxy](https://developer.zendesk.com/documentation/apps/app-developer-guide/making-api-requests-from-a-zendesk-app/#making-a-request-to-a-third-party-api) with `cors: false` and a literal Authorization header. They no longer depend on secure-setting substitution, which ZCLI does not support. The ngrok warning bypass header keeps requests from receiving the free-tunnel browser warning page.
+
+## Upgrade and install
+
+1. Configure the backend SQL connection and `REPORT_API_KEY`. Review migrations 001 and 002, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"` against the exact configured `DB_NAME.DB_SCHEMA`.
+2. Deploy/restart the updated backend. Preserve any pending inbox work before restarting. Import existing completed two-hour monitoring history with `npm run monitor:import -- --confirm-target "YourDatabase.dbo"`. The import reads the former custom object without modifying it and is safe to rerun. Stop older workers that still write custom objects, then run the import again if needed.
+3. Upload `navbar/dist/ai-ticket-monitoring.zip` as an updated private app. This build has its hostname and report key included, so it does not prompt for connection settings.
+4. Restrict the installed app to the intended Zendesk agent roles. Open it from the Support navigation bar, select report dates, and click Search.
+
+## API and dashboard behavior
+
+The app requests `GET https://<hostname>/sunshine/monitoring/sessions` with inclusive UTC report dates, optional text/satisfaction filters, and a page size of 20. Search is a literal case comparison according to the SQL database collation across ticket ID, subject, scoring reason and key issue. The backend caps date ranges at one calendar year and pages at 100 rows. Cursor pagination keeps only the displayed page and page positions in browser memory. Refresh, Next and Previous fetch from the API again. Counts and satisfaction percentages describe the displayed page; ticket outcomes use the latest session on that page.
+
+The SQL tables preserve session IDs, ticket metadata, evaluation dates, satisfaction, reason, confidence, flags, key issue and session timing/counts. Older unrelated or five-hour v1 records are not mixed into this two-hour dashboard. Missing optional historical values remain unknown.
+
+## Checks and packaging
+
+Run `node --test navbar/tests/*.test.js`. Remote validation and packaging use `zcli apps:validate navbar` and `zcli apps:package navbar`. Replace the placeholder author contact information in the manifest with the approved contact details before publishing. The ZIP must contain `manifest.json`, `translations/en.json` and `assets/` at its root. This temporary ZIP includes the hardcoded report key.

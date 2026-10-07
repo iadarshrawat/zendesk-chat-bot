@@ -14,7 +14,8 @@
     "diagnose": "node src/scripts/diagnoseInbox.js",
     "ingest": "node src/scripts/ingestKnowledge.js",
     "monitor:preview": "node src/scripts/previewMonitoringTicket.js",
-    "monitor:test": "node --test src/features/monitoring/monitoringSessionService.test.js src/features/monitoring/monitoringWorker.test.js src/features/monitoring/monitoringPreview.test.js src/features/monitoring/reportController.test.js",
+    "monitor:import": "node src/scripts/importMonitoringHistory.js",
+    "monitor:test": "node --test src/features/monitoring/*.test.js",
     "test": "node --test",
     "check": "node --check server.js && node --check src/runtime/background.js && node --check src/config/sql.js && node --check src/config/schema.js && node --check src/features/monitoring/monitoringJob.js && node --check src/features/monitoring/monitoringRepository.js && node --check src/features/monitoring/monitoringWorker.js && node --check src/features/messaging/inboxRepository.js && node --check src/features/messaging/conversationStateService.js && node --check src/scripts/checkSqlServerConnection.js && node --check src/scripts/previewMonitoringTicket.js"
   },

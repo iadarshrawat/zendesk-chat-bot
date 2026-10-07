@@ -27,7 +27,7 @@ function recordingPool(result = { recordset: [] }) {
           this.sql = sql;
           return result;
         },
-        cancel() {},
+        cancel() { this.cancelled = true; },
       };
       requests.push(request);
       return request;
@@ -50,6 +50,40 @@ test("state loads from a named-parameter MSSQL read with a valid retention cutof
   assert.ok(db.requests[0].inputs.cutoff instanceof Date);
   assert.ok(Number.isFinite(db.requests[0].inputs.cutoff.getTime()));
   assert.ok(db.requests[0].inputs.cutoff.getTime() < now);
+});
+
+test("state writes lasting more than 500 ms finish within the configured default allowance", async () => {
+  const db = recordingPool();
+  const request = db.request;
+  db.request = () => {
+    const recording = request();
+    recording.query = async () => {
+      await new Promise(resolve => setTimeout(resolve, 650));
+      return { recordset: [] };
+    };
+    return recording;
+  };
+
+  await saveConversationState("conversation-1", { activeRequest: "Need a fan" }, { db });
+  assert.equal(db.requests.length, 1);
+  assert.notEqual(db.requests[0].cancelled, true);
+});
+
+test("a state write still cancels at its deadline and is never replayed", async () => {
+  const db = recordingPool();
+  const request = db.request;
+  db.request = () => {
+    const recording = request();
+    recording.query = () => new Promise(() => {});
+    return recording;
+  };
+
+  await assert.rejects(
+    saveConversationState("conversation-1", {}, { db, timeoutMs: 15, retryRead: true }),
+    { code: "BOT_RESPONSE_TIMEOUT", timeoutStage: "mssql.state_save" },
+  );
+  assert.equal(db.requests.length, 1);
+  assert.equal(db.requests[0].cancelled, true);
 });
 
 test("state save uses one parameterized, transactional SQL Server upsert", async () => {

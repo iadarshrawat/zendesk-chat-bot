@@ -80,6 +80,7 @@ export function createApp() {
     generateZendeskJWT,
   );
   app.get("/sunshine/report", requireReportKey, generateReport);
+  app.get("/sunshine/monitoring/sessions", requireReportKey, generateReport);
   app.get("/sunshine/inbox", requireReportKey, (_req, res) => {
     res.json(getInboxSnapshot());
   });

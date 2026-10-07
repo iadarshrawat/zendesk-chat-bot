@@ -1,5 +1,5 @@
 import { summarizeSessions } from "./reportData.js";
-import { fetchMonitoringPage, maxRangeDate, validateDateRange } from "./zendeskRecords.js";
+import { fetchMonitoringPage, maxRangeDate, validateDateRange } from "./monitoringApi.js";
 
 const SCORE_ORDER = ["satisfied", "neutral", "unsatisfied", "escalated", "insufficient_data"];
 const DETAIL_GROUPS = [
@@ -29,7 +29,7 @@ const DETAIL_GROUPS = [
   ["Record identity", [
     ["Record name", "recordName"],
     ["External ID", "externalId"],
-    ["Zendesk record ID", "recordId"],
+    ["Session ID", "recordId"],
     ["Record updated at", "updatedAt"],
   ]],
 ];
@@ -48,7 +48,7 @@ const state = {
   client: null,
   sessions: [], // Only the currently displayed API page.
   filters: null,
-  pageStarts: [{ group: 0, cursor: null }],
+  pageStarts: [{ cursor: null }],
   nextPosition: null,
   loaded: false,
   loading: false,
@@ -254,19 +254,19 @@ function render() {
   renderMetrics(summary, state.filters);
   renderRows(state.sessions);
   elements["records-summary"].textContent = state.loaded
-    ? `${state.sessions.length} completed sessions on this page · results are fetched from Zendesk when you search or change pages`
+    ? `${state.sessions.length} completed sessions on this page · results are fetched from the monitoring API when you search or change pages`
     : "Select dates and click Search to see monitored sessions.";
   elements["empty-message"].textContent = state.loaded
     ? "No completed AI sessions match this search. Try different dates or keywords."
-    : "The dashboard has not searched Zendesk yet.";
+    : "The dashboard has not searched monitoring data yet.";
 }
 
 function requestErrorMessage(error) {
   const status = Number(error?.status || error?.responseJSON?.status);
-  if (status === 403) return "Your Zendesk role cannot read the monitoring custom object. Ask an admin to review its access permissions.";
-  if (status === 404) return "The ticket_csat_scores custom object was not found in this Zendesk account.";
-  if (status === 422) return "Zendesk rejected this search. Try a shorter date range or simpler search text.";
-  return "Could not load monitoring records from Zendesk. Check your connection and try again.";
+  if (status === 401 || status === 403) return "Report access was denied. Check that the frontend API key matches the backend REPORT_API_KEY.";
+  if (status === 404) return "The monitoring API endpoint was not found. Check the frontend backend hostname.";
+  if (status === 400) return "The monitoring API rejected this search. Check the dates and search text.";
+  return error?.message || "Could not load monitoring data. Check the API configuration and try again.";
 }
 
 async function loadData({ newSearch = false, page = state.page } = {}) {
@@ -284,11 +284,11 @@ async function loadData({ newSearch = false, page = state.page } = {}) {
   elements["previous-page"].disabled = true;
   elements["next-page"].disabled = true;
   elements["refresh-button"].textContent = "Loading…";
-  elements["sync-text"].textContent = "Searching Zendesk…";
+  elements["sync-text"].textContent = "Searching monitoring data…";
   clearNotice();
 
   try {
-    const pageStarts = newSearch ? [{ group: 0, cursor: null }] : state.pageStarts;
+    const pageStarts = newSearch ? [{ cursor: null }] : state.pageStarts;
     const position = pageStarts[page - 1];
     const result = await fetchMonitoringPage(state.client, filters, position);
     state.sessions = result.sessions;

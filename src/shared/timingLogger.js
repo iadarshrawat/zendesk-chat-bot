@@ -21,7 +21,7 @@ const NUMBER_FIELDS = new Set([
   "inputTokens", "outputTokens", "thinkingTokens", "cacheReadTokens",
   "cacheCreationTokens", "totalInputTokens", "sinceWebhookMs", "ragElapsedMs",
   "allowedLabelCount", "rejectedLabelCount", "normalizedLabelCount",
-  "answerCalls", "citationRepairCalls", "contextBeforeChars", "contextSavedChars", "sharedValues",
+  "answerCalls", "citationRepairCalls", "contextBeforeChars", "contextSavedChars", "contextFieldsSavedChars", "sharedValues",
   "durationMs", "cacheableEvidenceChars", "responseTargetMs", "responseHardTimeoutMs",
   "remainingMs", "targetRemainingMs", "queueDelayMs", "processingMs",
 ]);
@@ -34,7 +34,7 @@ const SAFE_LABEL = /^(?:(?:PRODUCT|SOURCE) [1-9]\d{0,8}|CATALOG SUMMARY|UNRECOGN
 const SAFE_ERROR_CODE = /^[A-Z0-9_]{1,64}$/;
 const SAFE_ERROR_NAME = /^[A-Za-z]{1,64}$/;
 const SAFE_TIMEOUT_STAGE = new RegExp(
-  "^(response\\.hard_deadline|operation|mssql\\.(operation|state_load|state_save)"
+  "^(response\\.hard_deadline|operation|mssql\\.(operation|state_load|state_save|monitor_save|monitor_report)"
     + "|claude\\.(planner|classifier|answer|citation_repair))$",
 );
 const SAFE_CANCELLATION_REASONS = new Set([

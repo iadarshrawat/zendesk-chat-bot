@@ -13,7 +13,7 @@ flowchart TD
     Worker --> Gateway[Sunshine message gateway]
     Gateway --> Zendesk
     Web --> Monitor[Five-minute monitor]
-    Monitor --> Tickets[Zendesk tickets and custom objects]
+    Monitor --> Tickets[Zendesk ticket conversations]
 ```
 
 The API acknowledges events after they enter the current process's bounded memory queue. It then wakes the inbox loop in the same `npm start` process. Queued events and recent duplicate IDs are lost on restart; another app instance has a separate queue. The monitoring loop runs independently. A unique event key deduplicates redeliveries while that key remains in memory.
@@ -130,12 +130,12 @@ flowchart TD
     E -- Yes --> F{Human handled it?}
     F -- Yes --> G[Mark escalated]
     F -- No --> H[Score with chat through target session]
-    G --> I[Upsert Zendesk custom-object result]
+    G --> I[Save full SQL evaluation]
     H --> I
-    I --> J[(SQL Server completed-session ID)]
+    I --> J[(SQL Server session metadata in same transaction)]
 ```
 
-A customer return before two hours extends the current session. A return after two hours creates another session, even in the same ticket. The evaluator sees the full earlier conversation through the target session, never future outcomes. A unique custom-object external ID and the SQL Server ledger prevent repeated LLM scoring. Silence alone is not considered satisfaction. Only tickets updated in the previous five hours enter a poll.
+A customer return before two hours extends the current session. A return after two hours creates another session, even in the same ticket. The evaluator sees the full earlier conversation through the target session, never future outcomes. A unique SQL session ID and an atomic evaluation/completion transaction prevent repeated LLM scoring. Silence alone is not considered satisfaction. Only tickets updated in the previous five hours enter a poll.
 
 ## 9. Report and failure recovery
 
@@ -143,8 +143,8 @@ A customer return before two hours extends the current session. A return after t
 flowchart TD
     A[Private dashboard] --> B{Report bearer key valid?}
     B -- No --> C[401 or 503]
-    B -- Yes --> D[Read evaluated custom object records]
-    D --> E[Deduplicate ticket-session records]
+    B -- Yes --> D[Read paginated SQL evaluations]
+    D --> E[Apply SQL date, text and score filters]
     E --> F[Return satisfaction breakdown]
 ```
 

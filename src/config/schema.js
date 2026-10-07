@@ -1,6 +1,9 @@
 import { readFile } from "node:fs/promises";
 
-const schemaFile = new URL("../../migrations/001_core.sql", import.meta.url);
+const schemaFiles = [
+  new URL("../../migrations/001_core.sql", import.meta.url),
+  new URL("../../migrations/002_monitor_evaluations.sql", import.meta.url),
+];
 const DEFAULT_SCHEMA = "dbo";
 const SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]{0,127}$/;
 
@@ -33,7 +36,37 @@ const coreTables = Object.freeze({
   },
 });
 
-const coreTableNames = Object.freeze(Object.keys(coreTables));
+const monitoringEvaluations = {
+  columns: {
+    session_id: { type: "nvarchar", maxLength: 510, nullable: false },
+    session_number: { type: "int", nullable: false },
+    ticket_subject: { type: "nvarchar", maxLength: 2048, nullable: false },
+    ticket_created_at: { type: "datetime2", scale: 3, nullable: true },
+    ticket_requester_id: { type: "nvarchar", maxLength: 256, nullable: true },
+    first_message_id: { type: "nvarchar", maxLength: 256, nullable: false },
+    last_message_at: { type: "datetime2", scale: 3, nullable: false },
+    message_count: { type: "int", nullable: false },
+    evaluation_due_at: { type: "datetime2", scale: 3, nullable: false },
+    report_date: { type: "date", nullable: false },
+    csat_score: { type: "varchar", maxLength: 32, nullable: false },
+    reason: { type: "nvarchar", maxLength: 8000, nullable: false },
+    monitoring_status: { type: "varchar", maxLength: 16, nullable: false },
+    confidence: { type: "varchar", maxLength: 8, nullable: true },
+    human_required: { type: "bit", nullable: true },
+    follow_up_required: { type: "bit", nullable: true },
+    key_issue: { type: "nvarchar", maxLength: 2048, nullable: true },
+    updated_at: { type: "datetime2", scale: 3, nullable: false },
+  },
+  primaryKey: ["session_id"],
+  indexes: { idx_bot_monitor_report: ["report_date", "updated_at", "session_id"] },
+  requiredChecks: [
+    "CK_bot_monitor_evaluations_score", "CK_bot_monitor_evaluations_status",
+    "CK_bot_monitor_evaluations_confidence", "CK_bot_monitor_evaluations_counts",
+  ],
+  foreignKey: { name: "FK_bot_monitor_evaluations_session", column: "session_id", table: "bot_monitor_sessions" },
+};
+const tableDefinitions = Object.freeze({ ...coreTables, bot_monitor_evaluations: monitoringEvaluations });
+const coreTableNames = Object.freeze(Object.keys(tableDefinitions));
 
 function schemaError(code, message) {
   const error = new Error(message);
@@ -56,11 +89,11 @@ export function databaseSchema(schemaName = process.env.DB_SCHEMA) {
 }
 
 /**
- * Build a qualified name for one of the two application-owned SQL tables.
+ * Build a qualified name for an application-owned SQL table.
  * Keeping this allow-list here prevents callers from accidentally touching other tables.
  */
 export function sqlTable(tableName, schemaName = process.env.DB_SCHEMA) {
-  if (!Object.hasOwn(coreTables, tableName)) {
+  if (!Object.hasOwn(tableDefinitions, tableName)) {
     throw schemaError(
       "SQLSERVER_TABLE_NOT_ALLOWED",
       `Table is outside the application schema boundary: ${tableName}`,
@@ -291,15 +324,39 @@ async function verifyTableDefinition(db, schemaName, tableName, expected) {
     ?? describeIndexMismatch(tableName, indexes, expected)
     ?? describeCheckMismatch(tableName, checks, expected.jsonColumn);
 
-  if (mismatch) {
+  const missingCheck = expected.requiredChecks?.find(name => !checks.some(check => (
+    check.constraint_name === name
+    && !booleanValue(check.is_disabled) && !booleanValue(check.is_not_trusted)
+  )));
+
+  if (mismatch || missingCheck) {
     throw schemaError(
       "SQLSERVER_INCOMPATIBLE_SCHEMA",
-      `Existing table [${schemaName}].[${tableName}] is incompatible: ${mismatch}`,
+      `Existing table [${schemaName}].[${tableName}] is incompatible: ${mismatch || `missing trusted check ${missingCheck}`}`,
     );
+  }
+  if (expected.foreignKey) {
+    const result = await query(db, `SELECT keys.name AS constraint_name, keys.is_disabled, keys.is_not_trusted,
+        COL_NAME(keys.parent_object_id, mapping.parent_column_id) AS column_name,
+        OBJECT_SCHEMA_NAME(keys.referenced_object_id) AS referenced_schema,
+        OBJECT_NAME(keys.referenced_object_id) AS referenced_table,
+        COL_NAME(keys.referenced_object_id, mapping.referenced_column_id) AS referenced_column
+      FROM sys.foreign_keys AS keys
+      INNER JOIN sys.foreign_key_columns AS mapping ON mapping.constraint_object_id = keys.object_id
+      INNER JOIN sys.tables AS tables ON tables.object_id = keys.parent_object_id
+      INNER JOIN sys.schemas AS schemas ON schemas.schema_id = tables.schema_id
+      WHERE schemas.name = @schemaName AND tables.name = @tableName`, { schemaName, tableName });
+    const rows = result.recordset.filter(row => row.constraint_name === expected.foreignKey.name);
+    const row = rows[0];
+    if (rows.length !== 1 || booleanValue(row.is_disabled) || booleanValue(row.is_not_trusted)
+      || row.column_name !== expected.foreignKey.column || row.referenced_schema !== schemaName
+      || row.referenced_table !== expected.foreignKey.table || row.referenced_column !== "session_id") {
+      throw schemaError("SQLSERVER_INCOMPATIBLE_SCHEMA", `${tableName} requires a trusted session foreign key`);
+    }
   }
 }
 
-/** Verify that the two application tables exist and match the expected contract. */
+/** Verify that the application tables exist and match the expected contract. */
 export async function verifyCoreSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
 
@@ -318,7 +375,7 @@ export async function verifyCoreSchema(db, requestedSchema) {
       continue;
     }
 
-    await verifyTableDefinition(db, schemaName, tableName, coreTables[tableName]);
+    await verifyTableDefinition(db, schemaName, tableName, tableDefinitions[tableName]);
   }
 
   if (missingTables.length > 0) {
@@ -365,7 +422,7 @@ function renderMigration(template, schemaName) {
   ) {
     throw schemaError(
       "SQLSERVER_UNSAFE_MIGRATION",
-      "Core migration must create only bot_conversation_state and bot_monitor_sessions",
+      "Migration must create only the approved conversation-state and monitoring tables",
     );
   }
   if (/\b(?:DROP|ALTER|INSERT|UPDATE|DELETE|MERGE|TRUNCATE|SELECT|EXEC(?:UTE)?|GRANT|DENY|REVOKE)\b/i.test(sql)) {
@@ -381,7 +438,7 @@ function renderMigration(template, schemaName) {
 /** Create only missing core tables; existing tables are never changed. */
 export async function applyCoreSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
-  const template = await readFile(schemaFile, "utf8");
+  const template = (await Promise.all(schemaFiles.map(file => readFile(file, "utf8")))).join("\n");
   const sql = renderMigration(template, schemaName);
 
   await db.request().batch(sql);

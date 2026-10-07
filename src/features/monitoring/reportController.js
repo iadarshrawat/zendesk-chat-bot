@@ -1,219 +1,119 @@
-import { createZendeskClient } from "../../config/zendesk.js";
+import { createHash } from "node:crypto";
+import { getPool } from "../../config/sql.js";
+import { safeErrorMetadata } from "../../shared/timingLogger.js";
+import { MONITORING_SCORES, validReportDate } from "./monitoringData.js";
+import { monitoringPage } from "./monitoringRepository.js";
 
-const OBJECT_KEY = "ticket_csat_scores";
-const PAGE_SIZE = 100;
-const SCORES = ["satisfied", "neutral", "unsatisfied", "escalated"];
-const SCORED_RESULTS = ["satisfied", "neutral", "unsatisfied"];
-const COMPLETED_MONITORING_STATUSES = ["evaluated", "escalated"];
-
-function isValidDate(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false;
-  }
-
-  const date = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+function iso(value) {
+  return value instanceof Date ? value.toISOString() : value || null;
 }
 
-function parseBooleanField(value) {
-  if (value === null || value === undefined || value === "") {
-    return null;
+export function sessionFromRow(row) {
+  const result = { ...row, record_id: row.session_id, external_id: row.session_id };
+  result.record_name = `Ticket #${row.ticket_id} | session ${row.session_number}`;
+  for (const field of ["ticket_created_at", "session_started_at", "session_last_customer_at",
+    "session_last_message_at", "evaluation_due_at", "evaluated_at", "updated_at"]) {
+    result[field] = iso(row[field]);
   }
-
-  return value === true || value === 1 || value === "1" || value === "true";
-}
-
-export function sessionFromRecord(record) {
-  // Earlier five-hour sessions used v1 IDs; do not mix their session numbers
-  // with the new two-hour monitoring records in this report.
-  if (!record.external_id?.startsWith("ai-monitor:v2:")) {
-    return null;
-  }
-
-  const fields = record.custom_object_fields || {};
-  const ticketId = String(fields.ticket_id ?? "").trim();
-  const sessionNumber = Number(fields.session_number);
-
-  // The custom object may also contain operational records. Only report
-  // evaluated ticket sessions, which have both parts of their identity.
-  const hasValidIdentity =
-    /^\d+$/.test(ticketId) &&
-    Number.isSafeInteger(sessionNumber) &&
-    sessionNumber >= 1;
-  const isCompleted = COMPLETED_MONITORING_STATUSES.includes(fields.monitoring_status);
-
-  if (!hasValidIdentity || !isCompleted) {
-    return null;
-  }
-
-  return {
-    record_id: record.id || null,
-    ticket_id: ticketId,
-    ticket_subject: fields.ticket_subject || null,
-    score: fields.csat_score || null,
-    reason: fields.reason || null,
-    created_at: fields.ticket_created_at || record.created_at || null,
-    report_date: fields.report_date || null,
-    session_number: sessionNumber,
-    session_started_at: fields.session_started_at || null,
-    session_last_message_at: fields.session_last_message_at || null,
-    evaluation_due_at: fields.evaluation_due_at || null,
-    evaluated_at: fields.evaluated_at || null,
-    monitoring_status: fields.monitoring_status || null,
-    confidence: fields.confidence || null,
-    human_required: parseBooleanField(fields.human_required),
-    follow_up_required: parseBooleanField(fields.follow_up_required),
-    key_issue: fields.key_issue || null,
-    updated_at: record.updated_at || null,
-  };
-}
-
-async function fetchSessionRecords(client, reportDate) {
-  const records = [];
-  let afterCursor;
-  const seenCursors = new Set();
-  const searchPath = `/custom_objects/${OBJECT_KEY}/records/search`;
-  const listPath = `/custom_objects/${OBJECT_KEY}/records`;
-  const filter = { "custom_object_fields.report_date": { "$eq": reportDate } };
-
-  while (true) {
-    const params = {
-      "page[size]": PAGE_SIZE,
-      sort: reportDate ? "-created_at" : "-updated_at",
-    };
-    if (afterCursor) {
-      params["page[after]"] = afterCursor;
-    }
-
-    // Zendesk text fields support equality but not range comparison. For a
-    // single day, search server-side. For a range, page through the object and
-    // filter the actual report_date below rather than record created_at.
-    const response = reportDate
-      ? await client.post(searchPath, { filter }, { params })
-      : await client.get(listPath, { params });
-    const data = response.data || {};
-    records.push(...(data.custom_object_records || data.results || []));
-
-    if (!data.meta?.has_more) {
-      break;
-    }
-
-    const nextCursor = data.meta.after_cursor;
-    if (!nextCursor || seenCursors.has(nextCursor)) {
-      throw new Error("Zendesk custom object pagination did not advance");
-    }
-    seenCursors.add(nextCursor);
-    afterCursor = nextCursor;
-  }
-
-  return records;
-}
-
-function latestSessionsInDateRange(records, from, to) {
-  const sessionsByKey = new Map();
-
-  for (const record of records) {
-    const session = sessionFromRecord(record);
-    const isInDateRange =
-      session &&
-      isValidDate(session.report_date) &&
-      session.report_date >= from &&
-      session.report_date <= to;
-
-    if (!isInDateRange) {
-      continue;
-    }
-
-    const sessionKey = `${session.ticket_id}:${session.session_number}`;
-    const previous = sessionsByKey.get(sessionKey);
-
-    // An older writer created duplicate records on repeated runs. Count a
-    // ticket session only once, preferring its latest saved evaluation.
-    if (!previous || (session.updated_at || "") > (previous.updated_at || "")) {
-      sessionsByKey.set(sessionKey, session);
-    }
-  }
-
-  return [...sessionsByKey.values()].sort((a, b) =>
-    (b.evaluated_at || b.report_date).localeCompare(a.evaluated_at || a.report_date));
+  result.created_at = result.ticket_created_at;
+  result.report_date = iso(row.report_date)?.slice(0, 10) || null;
+  return result;
 }
 
 export function summarizeSessions(sessions) {
-  const scoreBreakdown = Object.fromEntries(SCORES.map(score => [score, 0]));
-  let skipped = 0;
-
-  for (const session of sessions) {
-    if (Object.hasOwn(scoreBreakdown, session.score)) {
-      scoreBreakdown[session.score]++;
-    } else {
-      skipped++;
-    }
-
-  }
-
-  const scoredSessions =
-    scoreBreakdown.satisfied +
-    scoreBreakdown.neutral +
-    scoreBreakdown.unsatisfied;
-  const scoredTickets = new Set(
-    sessions
-      .filter(session => SCORED_RESULTS.includes(session.score))
-      .map(session => session.ticket_id),
-  ).size;
-  const distinctTickets = new Set(sessions.map(session => session.ticket_id)).size;
-  const csatPercent = scoredSessions
-    ? Math.round((scoreBreakdown.satisfied / scoredSessions) * 100)
-    : null;
-
+  const breakdown = Object.fromEntries(MONITORING_SCORES.map(score => [score, 0]));
+  for (const session of sessions) if (Object.hasOwn(breakdown, session.score)) breakdown[session.score] += 1;
+  const scored = breakdown.satisfied + breakdown.neutral + breakdown.unsatisfied;
+  const tickets = new Set(sessions.map(session => session.ticket_id)).size;
   return {
-    total_tickets: distinctTickets,
-    scored_tickets: scoredTickets,
-    scored_sessions: scoredSessions,
-    skipped_insufficient: skipped,
-    csat_percent: csatPercent,
-    score_breakdown: scoreBreakdown,
-    total_sessions: sessions.length,
-    distinct_tickets: distinctTickets,
+    total_tickets: tickets, distinct_tickets: tickets, total_sessions: sessions.length,
+    scored_tickets: new Set(sessions.filter(session => ["satisfied", "neutral", "unsatisfied"].includes(session.score))
+      .map(session => session.ticket_id)).size,
+    scored_sessions: scored, skipped_insufficient: breakdown.insufficient_data,
+    csat_percent: scored ? Math.round(breakdown.satisfied / scored * 100) : null,
+    score_breakdown: breakdown,
+    scope: "page",
   };
 }
 
-/** GET /sunshine/report?from=YYYY-MM-DD&to=YYYY-MM-DD */
-export async function generateReport(req, res) {
-  const today = new Date().toISOString().slice(0, 10);
-  const from = req.query.from || today;
-  const to = req.query.to || today;
-
-  if (!isValidDate(from) || !isValidDate(to)) {
-    return res.status(400).json({
-      success: false,
-      error: "Invalid date format. Use YYYY-MM-DD for 'from' and 'to' params.",
-    });
-  }
-  if (from > to) {
-    return res.status(400).json({
-      success: false,
-      error: "'from' date cannot be after 'to' date.",
-    });
-  }
-
-  try {
-    const client = await createZendeskClient();
-    const records = await fetchSessionRecords(client, from === to ? from : null);
-    const tickets = latestSessionsInDateRange(records, from, to);
-
-    return res.status(200).json({
-      success: true,
-      generated_at: new Date().toISOString(),
-      date_range: { from, to },
-      summary: summarizeSessions(tickets),
-      tickets: tickets.map(({ updated_at, ...session }) => session),
-    });
-  } catch (error) {
-    console.error("generateReport error:", error);
-    return res.status(502).json({
-      success: false,
-      generated_at: new Date().toISOString(),
-      error: error.message,
-    });
-  }
+function rangeLimit(from) {
+  const date = new Date(`${from}T00:00:00Z`);
+  const year = date.getUTCFullYear() + 1;
+  const month = date.getUTCMonth();
+  return new Date(Date.UTC(year, month, Math.min(date.getUTCDate(), new Date(Date.UTC(year, month + 1, 0)).getUTCDate())))
+    .toISOString().slice(0, 10);
 }
+
+function filterHash(filters) {
+  return createHash("sha256").update(JSON.stringify(filters)).digest("hex").slice(0, 32);
+}
+
+export function reportFilters(query, today = new Date().toISOString().slice(0, 10)) {
+  const filters = { from: query.from ?? today, to: query.to ?? today,
+    score: query.score ?? "", search: query.search ?? "", limit: query.limit ?? "20" };
+  if (!validReportDate(filters.from) || !validReportDate(filters.to)
+    || filters.from > filters.to || filters.to > rangeLimit(filters.from)) {
+    throw new TypeError("Select valid report dates in order, no more than one year apart.");
+  }
+  if (typeof filters.score !== "string" || (filters.score && !MONITORING_SCORES.includes(filters.score))) {
+    throw new TypeError("Invalid satisfaction score.");
+  }
+  if (typeof filters.search !== "string" || filters.search.length > 200) {
+    throw new TypeError("Search text must be no more than 200 characters.");
+  }
+  filters.search = filters.search.trim();
+  if (typeof filters.limit !== "string" || !/^\d+$/.test(filters.limit)
+    || Number(filters.limit) < 1 || Number(filters.limit) > 100) {
+    throw new TypeError("Page limit must be between 1 and 100.");
+  }
+  filters.limit = Number(filters.limit);
+  const fingerprint = filterHash(filters);
+  let after = null;
+  if (query.cursor != null) {
+    if (typeof query.cursor !== "string" || query.cursor.length > 1500 || !/^[A-Za-z0-9_-]+$/.test(query.cursor)) {
+      throw new TypeError("Invalid page cursor.");
+    }
+    try {
+      after = JSON.parse(Buffer.from(query.cursor, "base64url").toString("utf8"));
+      if (after.version !== 1 || after.filters !== fingerprint || !validReportDate(after.report_date)
+        || after.report_date < filters.from || after.report_date > filters.to
+        || typeof after.session_id !== "string" || after.session_id.length > 255
+        || !/^ai-monitor:v2:\d+:.+$/.test(after.session_id)
+        || typeof after.updated_at !== "string" || !Number.isFinite(Date.parse(after.updated_at))) {
+        throw new Error("Invalid cursor");
+      }
+    } catch {
+      throw new TypeError("Page cursor is invalid or belongs to a different search.");
+    }
+  }
+  return { ...filters, after, fingerprint };
+}
+
+/** GET /sunshine/report: authenticated SQL-only, server-filtered, cursor-paginated. */
+export function createReportController({ db = getPool, readPage = monitoringPage } = {}) {
+  return async function generateReport(req, res) {
+    let filters;
+    try { filters = reportFilters(req.query); }
+    catch (error) { return res.status(400).json({ success: false, error: error.message }); }
+    try {
+      const page = await readPage(typeof db === "function" ? db() : db, filters);
+      const sessions = page.rows.map(sessionFromRow);
+      const last = sessions.at(-1);
+      const cursor = page.hasMore && last ? Buffer.from(JSON.stringify({
+        version: 1, filters: filters.fingerprint,
+        report_date: last.report_date, updated_at: last.updated_at, session_id: last.session_id,
+      })).toString("base64url") : null;
+      res.set("Cache-Control", "no-store");
+      return res.status(200).json({
+        success: true, generated_at: new Date().toISOString(), date_range: { from: filters.from, to: filters.to },
+        summary: summarizeSessions(sessions), sessions, tickets: sessions,
+        pagination: { limit: filters.limit, has_more: page.hasMore, next_cursor: cursor },
+      });
+    } catch (error) {
+      console.error("SQL monitoring report unavailable", safeErrorMetadata(error));
+      return res.status(503).json({ success: false, error: "Monitoring data is temporarily unavailable." });
+    }
+  };
+}
+
+export const generateReport = createReportController();

@@ -1,0 +1,5 @@
+dist/**
+tests/**
+tools/**
+README.md
+zcli.apps.config.json

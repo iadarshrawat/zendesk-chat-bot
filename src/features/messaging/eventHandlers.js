@@ -15,7 +15,7 @@ import {
 import { updateConversationState } from "./conversationContext.js";
 import { isAgentActive } from "./conversationOwnership.js";
 import { escalateToAgent } from "./escalationService.js";
-import { logStage, measureStage, measureSyncStage } from "../../shared/timingLogger.js";
+import { logStage, measureStage, measureSyncStage, safeErrorMetadata } from "../../shared/timingLogger.js";
 import {
   createResponseBudget,
   runWithResponseBudget,
@@ -187,170 +187,194 @@ export function isEscalationCancellation(messageBody) {
     || messageBody === customerMessages.confirmationButtons[1];
 }
 
-/** Process one customer turn after the in-memory inbox has claimed it. */
-export async function processCustomerMessage(
-  event,
-  conversationId,
-  _conversationFormData,
-  activeSwitchboardIntegration,
-  queueContext = {},
-) {
-  if (isAgentActive(activeSwitchboardIntegration)) {
-    logStage("turn.skipped", { reason: "agent_active" });
-    return;
-  }
-
-  const message = event.payload.message;
-  const messageBody = message.content?.text || message.content?.markdownText;
-  const userId = message.author?.userId || null;
-  let result;
-  let state;
-  let timeoutStage;
-  let generationFailed = false;
-
-  const budget = queueContext.responseBudget || createResponseBudget({
-    receivedAt: event._receivedAt || Date.now(),
-    timeoutMs: RAG_CONFIG.conversation.responseHardTimeoutMs
-      ?? RAG_CONFIG.conversation.responseTargetMs ?? 45_000,
-    targetMs: RAG_CONFIG.conversation.responseTargetMs ?? 15_000,
-    reserveMs: RAG_CONFIG.conversation.deliveryReserveMs ?? 2_500,
-  });
-  const deliveryTimeout = (timeoutMs) => Math.min(
-    timeoutMs,
-    budget.deliveryRemaining() || timeoutMs,
-  );
-
-  logStage("turn.customer_input", {
-    inputChars: typeof messageBody === "string" ? messageBody.length : 0,
-  });
-  logStage("turn.response_policy", {
-    responseTargetMs: budget.responseTargetMs,
-    responseHardTimeoutMs: budget.responseHardTimeoutMs,
-    remainingMs: budget.remaining(),
-  });
-
-  try {
-    await runWithResponseBudget(
-      budget,
-      () => runWithDeadline(async () => {
-        budget.check();
-
-        // Brand resolution must fail closed so one tenant never searches another tenant's data.
-        const brand = measureSyncStage(
-          "brand.resolve",
-          () => getBrandFromWidgetId(event.payload.conversation.brandId),
-        );
-        const typingStarted = sendTypingIndicator(conversationId, "start", userId, {
-          signal: budget.signal,
-          timeoutMs: Math.min(
-            budget.remaining(),
-            RAG_CONFIG.conversation.typingTimeoutMs ?? 1_250,
-          ),
-        }).catch(ignoreBestEffortFailure);
-
-        // These reads are independent, so run them while the typing request is in flight.
-        const [history, previousState] = await measureStage(
-          "turn.history_and_state",
-          () => Promise.all([
-            getConversationHistory(conversationId, { beforeMessageId: message.id }),
-            loadConversationState(conversationId),
-            typingStarted,
-          ]),
-        );
-
-        budget.check();
-        logStage("turn.history_loaded", { historyChars: history.length });
-        state = previousState;
-        result = await measureStage(
-          "rag.total",
-          () => generateReplyWithClaude(brand, history, messageBody, {
-            conversationState: state,
-            traceId: message.id,
-            detailed: true,
-          }),
-        );
-        budget.check();
-      }, { signal: budget.signal, timeoutMs: budget.remaining() }),
-    );
-  } catch (error) {
-    generationFailed = true;
-    const fallback = generationFallback(error);
-    timeoutStage = fallback.timeoutStage;
-
-    logStage("turn.generation_fallback", {
-      reason: fallback.reason,
-      timeoutStage: error.timeoutStage,
-      remainingMs: budget.remaining(),
-    });
-    console.error("Customer turn generation failed:", {
-      messageId: message.id,
-      error: error.message,
-      timeoutStage: error.timeoutStage,
-    });
-    result = fallback.result;
-  } finally {
-    budget.cancel(generationFailed ? "generation_failed" : "generation_completed");
-    await sendTypingIndicator(conversationId, "stop", userId, {
-      timeoutMs: deliveryTimeout(RAG_CONFIG.conversation.typingStopTimeoutMs ?? 750),
-    }).catch(ignoreBestEffortFailure);
-  }
-
-  // Do not blindly retry an ambiguous POST failure: it may already be delivered.
-  try {
-    const displayReply = measureSyncStage(
-      "turn.reply_format",
-      () => formatCustomerReply(result.reply),
-    );
-    await sendSunshineMessage(conversationId, { text: displayReply }, {
-      timeoutMs: deliveryTimeout(RAG_CONFIG.conversation.sendTimeoutMs ?? 1500),
-    });
-    logStage("turn.answer_sent", { outcome: result.status, replyChars: displayReply.length });
-
-    const summary = {
-      outcome: result.status,
-      replyChars: displayReply.length,
-      durationMs: Date.now() - budget.receivedAt,
-      targetExceeded: budget.targetExceeded(),
-      processingMs: Date.now() - (event._receivedAt || budget.receivedAt),
-      queueDelayMs: event._queueDelayMs,
-      responseTargetMs: budget.responseTargetMs,
-      responseHardTimeoutMs: budget.responseHardTimeoutMs,
-      timeoutStage,
-      ragElapsedMs: result.diagnostics?.elapsedMs,
-      answerCalls: result.diagnostics?.answerCalls,
-      citationRepairCalls: result.diagnostics?.citationRepairCalls,
-    };
-    logStage("turn.summary", summary);
-
-    // One compact record survives detailed-trace disabling and console limits.
-    // It contains no customer question, answer, manual, credentials or vectors.
-    try {
-      console.log("BOT TURN SUMMARY", JSON.stringify({ messageId: message.id, ...summary }));
-    } catch {
-      // A failed log writer must not break an already delivered turn.
+/** Injectable services let delivery ordering be verified without live providers. */
+export function createCustomerMessageProcessor({
+  resolveBrand = getBrandFromWidgetId,
+  readHistory = getConversationHistory,
+  sendTyping = sendTypingIndicator,
+  generateReply = generateReplyWithClaude,
+  loadState = loadConversationState,
+  saveState = saveConversationState,
+  sendReply = sendSunshineMessage,
+} = {}) {
+  return async function processCustomerMessage(
+    event,
+    conversationId,
+    _conversationFormData,
+    activeSwitchboardIntegration,
+    queueContext = {},
+  ) {
+    if (isAgentActive(activeSwitchboardIntegration)) {
+      logStage("turn.skipped", { reason: "agent_active" });
+      return;
     }
 
-    if (state && result.plan) {
+    const message = event.payload.message;
+    const messageBody = message.content?.text || message.content?.markdownText;
+    const userId = message.author?.userId || null;
+    let result;
+    let state;
+    let timeoutStage;
+    let generationFailed = false;
+    let typingStarted = Promise.resolve();
+    let stateSave = Promise.resolve();
+
+    const budget = queueContext.responseBudget || createResponseBudget({
+      receivedAt: event._receivedAt || Date.now(),
+      timeoutMs: RAG_CONFIG.conversation.responseHardTimeoutMs
+        ?? RAG_CONFIG.conversation.responseTargetMs ?? 45_000,
+      targetMs: RAG_CONFIG.conversation.responseTargetMs ?? 15_000,
+      reserveMs: RAG_CONFIG.conversation.deliveryReserveMs ?? 4_000,
+    });
+    const deliveryTimeout = (timeoutMs) => Math.min(
+      timeoutMs,
+      budget.deliveryRemaining(),
+    );
+
+    logStage("turn.customer_input", {
+      inputChars: typeof messageBody === "string" ? messageBody.length : 0,
+    });
+    logStage("turn.response_policy", {
+      responseTargetMs: budget.responseTargetMs,
+      responseHardTimeoutMs: budget.responseHardTimeoutMs,
+      remainingMs: budget.remaining(),
+    });
+
+    try {
+      await runWithResponseBudget(
+        budget,
+        () => runWithDeadline(async () => {
+          budget.check();
+
+          // Brand resolution must fail closed so one tenant never searches another tenant's data.
+          const brand = measureSyncStage(
+            "brand.resolve",
+            () => resolveBrand(event.payload.conversation.brandId),
+          );
+          typingStarted = sendTyping(conversationId, "start", userId, {
+            signal: budget.signal,
+            timeoutMs: Math.min(
+              budget.remaining(),
+              RAG_CONFIG.conversation.typingTimeoutMs ?? 1_250,
+            ),
+          }).catch(ignoreBestEffortFailure);
+
+          // These reads are independent, so run them while the typing request is in flight.
+          const [history, previousState] = await measureStage(
+            "turn.history_and_state",
+            () => Promise.all([
+              readHistory(conversationId, { beforeMessageId: message.id }),
+              loadState(conversationId),
+            ]),
+          );
+
+          budget.check();
+          logStage("turn.history_loaded", { historyChars: history.length });
+          state = previousState;
+          result = await measureStage(
+            "rag.total",
+            () => generateReply(brand, history, messageBody, {
+              conversationState: state,
+              traceId: message.id,
+              detailed: true,
+            }),
+          );
+          budget.check();
+        }, { signal: budget.signal, timeoutMs: budget.remaining() }),
+      );
+    } catch (error) {
+      generationFailed = true;
+      const fallback = generationFallback(error);
+      timeoutStage = fallback.timeoutStage;
+
+      logStage("turn.generation_fallback", {
+        reason: fallback.reason,
+        timeoutStage: error.timeoutStage,
+        remainingMs: budget.remaining(),
+      });
+      console.error("Customer turn generation failed:", {
+        messageId: message.id,
+        error: error.message,
+        timeoutStage: error.timeoutStage,
+      });
+      result = fallback.result;
+    } finally {
+      budget.cancel(generationFailed ? "generation_failed" : "generation_completed");
+    }
+
+    // Do not blindly retry an ambiguous POST failure: it may already be delivered.
+    try {
+      const displayReply = measureSyncStage(
+        "turn.reply_format",
+        () => formatCustomerReply(result.reply),
+      );
+      await sendReply(conversationId, { text: displayReply }, {
+        timeoutMs: deliveryTimeout(RAG_CONFIG.conversation.sendTimeoutMs ?? 3000),
+      });
+      logStage("turn.answer_sent", { outcome: result.status, replyChars: displayReply.length });
+
+      const summary = {
+        outcome: result.status,
+        replyChars: displayReply.length,
+        durationMs: Date.now() - budget.receivedAt,
+        targetExceeded: budget.targetExceeded(),
+        processingMs: Date.now() - (event._receivedAt || budget.receivedAt),
+        queueDelayMs: event._queueDelayMs,
+        responseTargetMs: budget.responseTargetMs,
+        responseHardTimeoutMs: budget.responseHardTimeoutMs,
+        timeoutStage,
+        ragElapsedMs: result.diagnostics?.elapsedMs,
+        answerCalls: result.diagnostics?.answerCalls,
+        citationRepairCalls: result.diagnostics?.citationRepairCalls,
+      };
+      logStage("turn.summary", summary);
+
+      // One compact record survives detailed-trace disabling and console limits.
+      // It contains no customer question, answer, manual, credentials or vectors.
       try {
-        await saveConversationState(
+        console.log("BOT TURN SUMMARY", JSON.stringify({ messageId: message.id, ...summary }));
+      } catch {
+        // A failed log writer must not break an already delivered turn.
+      }
+
+      if (state && result.plan) {
+        stateSave = saveState(
           conversationId,
           updateConversationState(state, messageBody, result.plan, result, message.id),
           {
-            timeoutMs: RAG_CONFIG.conversation.stateSaveTimeoutMs ?? 500,
+            timeoutMs: deliveryTimeout(RAG_CONFIG.conversation.stateSaveTimeoutMs ?? 1500),
           },
-        );
-      } catch {
-        logStage("turn.state_save_failed", { reason: "state_persistence_unavailable" });
+        ).catch((error) => {
+          logStage("turn.state_save_failed", {
+            reason: "state_persistence_unavailable",
+            ...safeErrorMetadata(error),
+          });
+        });
+      }
+    } catch (error) {
+      logStage("turn.delivery_failed", {
+        reason: isResponseTimeout(error)
+          ? "delivery_timeout_or_ambiguous"
+          : "message_post_failed",
+      });
+      throw error;
+    } finally {
+      try {
+        // Generation cancellation settles a pending typing-start. Stop cannot
+        // overtake start, and cleanup runs even when delivery was uncertain.
+        await typingStarted;
+        await Promise.all([
+          sendTyping(conversationId, "stop", userId, {
+            timeoutMs: deliveryTimeout(RAG_CONFIG.conversation.typingStopTimeoutMs ?? 1500),
+          }).catch(ignoreBestEffortFailure),
+          stateSave,
+        ]);
+      } finally {
+        budget.dispose();
       }
     }
-  } catch (error) {
-    logStage("turn.delivery_failed", {
-      reason: isResponseTimeout(error)
-        ? "delivery_timeout_or_ambiguous"
-        : "message_post_failed",
-    });
-    throw error;
-  } finally {
-    budget.dispose();
-  }
+  };
 }
+
+/** Process one customer turn after the in-memory inbox has claimed it. */
+export const processCustomerMessage = createCustomerMessageProcessor();
