@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="app.css">
   </head>
   <body>
-    <div class="app-shell">
+    <div class="app-shell" id="dashboard-report">
       <header class="page-header">
         <div class="title-group">
           <span class="brand-icon" aria-hidden="true">
@@ -21,10 +21,12 @@
         </div>
         <div class="header-actions">
           <div class="sync-caption"><span class="sync-dot" aria-hidden="true"></span><span id="sync-text">Not loaded yet</span></div>
+          <button class="button button-secondary export-button" id="pdf-button" type="button" title="Download the displayed overview and satisfaction charts as PDF" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span id="pdf-button-label">Download PDF</span></button>
           <button class="button button-secondary" id="refresh-button" type="button">Refresh page</button>
         </div>
       </header>
 
+      <p class="pdf-status" id="pdf-status" role="status" hidden></p>
       <div class="notice" id="notice" role="status" hidden></div>
 
       <form class="filters-panel" id="search-form" aria-labelledby="explore-heading" aria-describedby="explore-description">
@@ -73,7 +75,13 @@
         </section>
 
         <section class="records-panel" aria-labelledby="records-heading">
-          <div class="records-heading"><div><p class="eyebrow">SESSION DIRECTORY</p><h2 id="records-heading">Tickets and sessions</h2><p id="records-summary">Select dates and click Search to see monitored sessions.</p></div><span class="read-only-badge">Read-only</span></div>
+          <div class="records-heading">
+            <div><p class="eyebrow">SESSION DIRECTORY</p><h2 id="records-heading">Tickets and sessions</h2><p id="records-summary">Select dates and click Search to see monitored sessions.</p><p class="export-status" id="export-status" role="status" hidden></p></div>
+            <div class="records-tools">
+              <span class="read-only-badge">Read-only</span>
+              <button class="button button-secondary export-button" id="export-button" type="button" title="Export all results matching your latest search" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span id="export-button-label">Export Excel</span></button>
+            </div>
+          </div>
           <div class="table-scroll"><table><thead><tr><th scope="col">Ticket</th><th scope="col">Session</th><th scope="col">Satisfaction</th><th scope="col">Evaluated</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody id="records-body"></tbody></table></div>
           <div class="empty-state" id="empty-state" hidden><div class="empty-symbol" aria-hidden="true">⌕</div><h3>No sessions found</h3><p id="empty-message">Try changing the filters or refresh the data.</p></div>
           <div class="pagination" id="pagination" hidden><span id="page-summary"></span><div><button class="button button-secondary" id="previous-page" type="button">Previous</button><button class="button button-secondary" id="next-page" type="button">Next</button></div></div>
@@ -89,6 +97,9 @@
     </div>
 
     <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+    <script src="vendor/exceljs-4.4.0.min.js"></script>
+    <script src="vendor/file-saver-2.0.5.min.js"></script>
+    <script src="vendor/html2pdf-0.10.1.bundle.min.js"></script>
     <script type="module" src="app.js"></script>
   </body>
 </html>

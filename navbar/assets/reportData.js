@@ -85,8 +85,8 @@ export function filterSessions(sessions, filters = {}) {
   });
 }
 
-/** Ticket outcomes use each ticket's latest session; session totals use every session. */
-export function summarizeSessions(sessions) {
+/** Latest matching session for each ticket. */
+export function latestTicketSessions(sessions) {
   const latestByTicket = new Map();
   for (const session of sessions) {
     const previous = latestByTicket.get(session.ticketId);
@@ -96,12 +96,18 @@ export function summarizeSessions(sessions) {
     }
   }
 
+  return [...latestByTicket.values()];
+}
+
+/** Ticket outcomes use each ticket's latest session; session totals use every session. */
+export function summarizeSessions(sessions) {
+  const tickets = latestTicketSessions(sessions);
   const sessionScores = scoreCounts(sessions);
-  const ticketScores = scoreCounts(latestByTicket.values());
+  const ticketScores = scoreCounts(tickets);
   const scoredSessions = sessionScores.satisfied + sessionScores.neutral + sessionScores.unsatisfied;
 
   return {
-    tickets: latestByTicket.size,
+    tickets: tickets.length,
     sessions: sessions.length,
     satisfiedTickets: ticketScores.satisfied,
     ticketScores,

@@ -1,5 +1,7 @@
 import { summarizeSessions } from "./reportData.js";
 import { fetchMonitoringPage, maxRangeDate, validateDateRange } from "./monitoringApi.js";
+import { fetchExportSessions, downloadMonitoringWorkbook } from "./excelExport.js";
+import { downloadDashboardPdf } from "./pdfExport.js";
 
 const SCORE_ORDER = ["satisfied", "neutral", "unsatisfied", "escalated", "insufficient_data"];
 const DETAIL_GROUPS = [
@@ -35,7 +37,7 @@ const DETAIL_GROUPS = [
 ];
 
 const elements = Object.fromEntries([
-  "refresh-button", "sync-text", "notice", "search-form", "search-button", "search", "from-date", "to-date",
+  "dashboard-report", "pdf-button", "pdf-button-label", "pdf-status", "refresh-button", "sync-text", "notice", "search-form", "search-button", "export-button", "export-button-label", "export-status", "search", "from-date", "to-date",
   "score-filter", "clear-filters", "range-label", "total-tickets",
   "satisfied-tickets", "total-sessions", "satisfaction-percent", "ticket-breakdown-total",
   "session-breakdown-total", "ticket-score-breakdown", "session-score-breakdown",
@@ -52,6 +54,8 @@ const state = {
   nextPosition: null,
   loaded: false,
   loading: false,
+  exporting: false,
+  pdfExporting: false,
   page: 1,
   focusedBeforeDetail: null,
 };
@@ -244,8 +248,70 @@ function renderRows(sessions) {
   elements["empty-state"].hidden = sessions.length > 0;
   elements["pagination"].hidden = !state.loaded || (sessions.length === 0 && state.page === 1);
   elements["page-summary"].textContent = `Page ${state.page} · ${sessions.length} sessions`;
-  elements["previous-page"].disabled = state.page <= 1;
-  elements["next-page"].disabled = !state.nextPosition;
+  updateActionButtons();
+}
+
+function updateActionButtons() {
+  const busy = state.loading || state.exporting || state.pdfExporting;
+  elements["refresh-button"].disabled = busy || !state.loaded;
+  elements["search-button"].disabled = busy;
+  elements["clear-filters"].disabled = busy;
+  elements["export-button"].disabled = busy || !state.loaded;
+  elements["pdf-button"].disabled = busy || !state.loaded;
+  elements["previous-page"].disabled = busy || !state.loaded || state.page <= 1;
+  elements["next-page"].disabled = busy || !state.nextPosition;
+}
+
+async function exportExcel() {
+  if (!state.client || !state.loaded || !state.filters || state.loading || state.exporting || state.pdfExporting) return;
+  const filters = { ...state.filters };
+  state.exporting = true;
+  updateActionButtons();
+  elements["export-button-label"].textContent = "Exporting…";
+  elements["export-status"].hidden = false;
+  elements["export-status"].textContent = `Preparing Excel for ${filters.from} to ${filters.to}…`;
+  clearNotice();
+  try {
+    if (!globalThis.ExcelJS?.Workbook || typeof globalThis.saveAs !== "function") {
+      throw new Error("The Excel export libraries could not load. Reload the app and try again.");
+    }
+    const sessions = await fetchExportSessions(state.client, filters, {
+      onProgress: ({ sessions, pages }) => {
+        elements["export-status"].textContent = `Collected ${sessions} sessions from ${pages} ${pages === 1 ? "page" : "pages"}…`;
+      },
+    });
+    elements["export-status"].textContent = "Creating Excel file…";
+    const result = await downloadMonitoringWorkbook(sessions, filters);
+    elements["export-status"].textContent = `Exported ${result.sessions} sessions for ${filters.from} to ${filters.to}.`;
+  } catch (error) {
+    elements["export-status"].hidden = true;
+    showNotice(`Excel export failed. ${requestErrorMessage(error)}`);
+  } finally {
+    state.exporting = false;
+    elements["export-button-label"].textContent = "Export Excel";
+    updateActionButtons();
+  }
+}
+
+async function exportPdf() {
+  if (!state.loaded || !state.filters || state.loading || state.exporting || state.pdfExporting) return;
+  state.pdfExporting = true;
+  updateActionButtons();
+  elements["pdf-button-label"].textContent = "Creating PDF…";
+  elements["pdf-status"].hidden = false;
+  elements["pdf-status"].textContent = "Preparing the displayed overview and charts…";
+  clearNotice();
+  try {
+    await downloadDashboardPdf(elements["dashboard-report"], { ...state.filters }, { page: state.page });
+    elements["pdf-status"].textContent = `PDF downloaded for ${state.filters.from} to ${state.filters.to} · page ${state.page}.`;
+  } catch (error) {
+    elements["pdf-status"].hidden = true;
+    showNotice(`PDF export failed. ${error?.message || "Please try again."}`);
+  } finally {
+    state.pdfExporting = false;
+    elements["pdf-button-label"].textContent = "Download PDF";
+    updateActionButtons();
+  }
 }
 
 function render() {
@@ -270,7 +336,7 @@ function requestErrorMessage(error) {
 }
 
 async function loadData({ newSearch = false, page = state.page } = {}) {
-  if (!state.client || state.loading) return;
+  if (!state.client || state.loading || state.exporting || state.pdfExporting) return;
   const filters = newSearch ? selectedFilters() : state.filters;
   const validationError = validateDateRange(filters?.from, filters?.to);
   if (validationError) {
@@ -279,10 +345,9 @@ async function loadData({ newSearch = false, page = state.page } = {}) {
   }
 
   state.loading = true;
-  elements["refresh-button"].disabled = true;
-  elements["search-button"].disabled = true;
-  elements["previous-page"].disabled = true;
-  elements["next-page"].disabled = true;
+  updateActionButtons();
+  elements["export-status"].hidden = true;
+  elements["pdf-status"].hidden = true;
   elements["refresh-button"].textContent = "Loading…";
   elements["sync-text"].textContent = "Searching monitoring data…";
   clearNotice();
@@ -305,14 +370,14 @@ async function loadData({ newSearch = false, page = state.page } = {}) {
     showNotice(requestErrorMessage(error));
   } finally {
     state.loading = false;
-    elements["refresh-button"].disabled = !state.loaded;
-    elements["search-button"].disabled = false;
     elements["refresh-button"].textContent = "Refresh page";
     renderRows(state.sessions);
   }
 }
 
 function bindEvents() {
+  elements["pdf-button"].addEventListener("click", exportPdf);
+  elements["export-button"].addEventListener("click", exportExcel);
   elements["search-form"].addEventListener("submit", (event) => {
     event.preventDefault();
     loadData({ newSearch: true, page: 1 });

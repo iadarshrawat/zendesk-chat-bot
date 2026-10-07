@@ -29,6 +29,18 @@ Requests use [Zendesk's proxy](https://developer.zendesk.com/documentation/apps/
 3. Upload `navbar/dist/ai-ticket-monitoring.zip` as an updated private app. This build has its hostname and report key included, so it does not prompt for connection settings.
 4. Restrict the installed app to the intended Zendesk agent roles. Open it from the Support navigation bar, select report dates, and click Search.
 
+## Export Excel
+
+Select your dates and filters and click **Search**, then click **Export Excel** beside the session directory heading. Export uses the filters from the latest successful search, follows every result page, and downloads `ai-ticket-monitoring_<from>_to_<to>.xlsx`. Changing dates or filters requires another Search before exporting them.
+
+The file contains one **Sessions** worksheet with a row for every completed session in the search, including multiple sessions for the same ticket. Columns include scores, reasons, key issues, IDs, and timestamps. It uses a plain header row, normal Excel gridlines, and readable column widths. Report dates and timestamps use UTC. IDs remain text to preserve their exact values. Progress is shown while results are collected. Failed requests stop the export before any partial file is downloaded.
+
+ExcelJS 4.4.0 and FileSaver.js 2.0.5 are bundled in `assets/vendor/`; the export feature does not load dependencies from a CDN at runtime.
+
+## Download PDF
+
+After **Search**, click **Download PDF** in the page header to save the header, applied filters, overview totals, and satisfaction breakdowns shown on the current page. The portrait A4 PDF uses 12 mm margins, a two-column filter layout, four totals in a 2 × 2 grid, and two aligned satisfaction charts. It excludes buttons and the session directory. It uses the latest successful search even if the input fields have been edited since. Its filename includes the searched date range and page number. Unlike the Excel export, this PDF describes the displayed page; it does not fetch additional sessions. html2pdf.js 0.10.1 is bundled locally with its rendering dependencies.
+
 ## API and dashboard behavior
 
 The app requests `GET https://<hostname>/sunshine/monitoring/sessions` with inclusive UTC report dates, optional text/satisfaction filters, and a page size of 20. Search is a literal case comparison according to the SQL database collation across ticket ID, subject, scoring reason and key issue. The backend caps date ranges at one calendar year and pages at 100 rows. Cursor pagination keeps only the displayed page and page positions in browser memory. Refresh, Next and Previous fetch from the API again. Counts and satisfaction percentages describe the displayed page; ticket outcomes use the latest session on that page.

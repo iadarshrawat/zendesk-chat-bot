@@ -36,7 +36,8 @@ h1 { margin-bottom: 6px; font-size: clamp(25px, 2.4vw, 34px); line-height: 1.13;
 h2 { margin-bottom: 0; font-size: 17px; line-height: 1.3; letter-spacing: -.025em; }
 h3 { font-size: 15px; }
 .page-subtitle { margin-bottom: 0; color: var(--ink-soft); font-size: 13px; }
-.header-actions { flex: none; gap: 18px; }
+.header-actions { flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; gap: 12px 18px; }
+.pdf-status { margin: -10px 0 18px; color: var(--teal-deep); font-size: 12px; }
 .sync-caption { display: flex; align-items: center; gap: 8px; color: var(--ink-faint); font-size: 11px; white-space: nowrap; }
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #16a084; box-shadow: 0 0 0 4px #dff2ed; }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 37px; padding: 0 15px; border-radius: 8px; font-size: 12px; font-weight: 700; white-space: nowrap; transition: background .16s, transform .16s, border-color .16s; }
@@ -125,9 +126,14 @@ h3 { font-size: 15px; }
 .bar-fill { background: var(--tone); }
 
 .records-panel { margin-top: 24px; overflow: hidden; }
-.records-heading { justify-content: space-between; gap: 14px; padding: 22px 22px 19px; }
+.records-heading { justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 22px 22px 19px; }
+.records-heading > div:first-child { flex: 1 1 300px; min-width: 0; }
+.records-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.export-button { gap: 7px; }
+.export-button svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.records-heading .export-status { margin: 6px 0 0; color: var(--teal-deep); font-size: 11px; line-height: 1.5; }
 .records-heading h2 { font-size: 19px; }
-.records-heading p:last-child { margin: 6px 0 0; color: var(--ink-faint); font-size: 11px; }
+.records-heading #records-summary { margin: 6px 0 0; color: var(--ink-faint); font-size: 11px; }
 .read-only-badge { padding: 6px 9px; border-radius: 6px; background: #edf4f2; color: var(--teal-deep); font-size: 10px; font-weight: 800; white-space: nowrap; }
 .table-scroll { position: relative; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
@@ -199,3 +205,46 @@ tbody tr:hover { background: #fbfdfc; }
   .metric-card strong { font-size: 29px; }
   .detail-grid { grid-template-columns: 1fr; }
 }
+
+/* A4 portrait report layout, independent of the Zendesk iframe's screen size. */
+.pdf-report { width: 720px !important; max-width: none !important; margin: 0 !important; padding: 0; background: #fff; font-family: Arial, sans-serif; }
+.pdf-report * { transition: none !important; animation: none !important; }
+.pdf-report .page-header { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 16px; }
+.pdf-report .title-group { align-items: center; gap: 12px; }
+.pdf-report h1 { font-size: 27px; }
+.pdf-report .brand-icon { width: 44px; height: 44px; border-radius: 12px; }
+.pdf-report .brand-icon svg { width: 24px; height: 24px; }
+.pdf-report .page-subtitle { font-size: 12px; line-height: 1.4; }
+.pdf-report .header-actions { width: 100%; flex-direction: row; justify-content: flex-end; }
+.pdf-report .sync-caption { font-size: 11px; white-space: normal; }
+.pdf-report .filters-panel, .pdf-report .metric-card, .pdf-report .insight-card { box-shadow: none; }
+.pdf-report .filters-panel { padding: 16px; }
+.pdf-report .filter-heading { flex-direction: row; align-items: center; margin-bottom: 14px; }
+.pdf-report .filter-title { align-items: center; gap: 10px; }
+.pdf-report .filter-icon { width: 34px; height: 34px; border-radius: 9px; }
+.pdf-report .filter-icon svg { width: 20px; height: 20px; }
+.pdf-report .filter-heading h2 { font-size: 17px; }
+.pdf-report .filter-heading p { font-size: 12px; line-height: 1.4; }
+.pdf-report .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 12px; }
+.pdf-report .field-search { grid-column: 1; grid-row: 1; }
+.pdf-report .field-score { grid-column: 2; grid-row: 1; }
+.pdf-report .date-range { grid-column: 1 / -1; grid-row: 2; }
+.pdf-report .date-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 12px; }
+.pdf-report .pdf-filter-value { display: flex; flex: 1; align-items: center; min-height: 38px; padding: 8px 10px; border: 1px solid #d7e2e0; border-radius: 8px; background: #fbfdfc; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.pdf-report .field-control { flex: 1; }
+.pdf-report .field-control .pdf-filter-value { height: 100%; }
+.pdf-report .section-caption { flex-direction: column; align-items: flex-start; gap: 4px; margin: 16px 0 10px; line-height: 1.4; }
+.pdf-report .section-caption span:last-child { display: inline; }
+.pdf-report .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pdf-report .metric-card { min-height: 108px; padding: 14px; }
+.pdf-report .metric-card strong { font-size: 34px; }
+.pdf-report .metric-note { line-height: 1.4; }
+.pdf-report .insights-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.pdf-report .insight-card { min-height: 0; padding: 16px; }
+.pdf-report .card-heading { gap: 6px; margin-bottom: 14px; }
+.pdf-report .card-heading h2 { font-size: 17px; }
+.pdf-report .card-heading .eyebrow { font-size: 9px; }
+.pdf-report .card-total { padding: 4px 6px; font-size: 9px; }
+.pdf-report .breakdown { gap: 11px; }
+.pdf-report .breakdown-labels { margin-bottom: 5px; font-size: 13px; line-height: 1.4; }
+.pdf-report .breakdown-count { font-size: 13px; }
