@@ -8,3 +8,5 @@ __MACOSX/
 data/seed/
 coverage/
 zcli.apps.config.json
+navbar/dist/
+navbar/tmp/

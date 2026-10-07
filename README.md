@@ -50,7 +50,7 @@ docs/                            Scenario diagrams and operations guide
 
 4. Review package ownership, then ingest each brand separately with the same commands without `--validate-only`. This publishes brand snapshots in Cosmos. The Cosmos vector dimension must match the Voyage embedding output dimension. The supplied default is 1024.
 5. Run `npm start` in one terminal. It verifies the three SQL Server tables, then starts the API, in-memory inbox processor and monitor together. Configure Zendesk's Conversations webhook for `conversation:create` and `conversation:message`, send it to `POST /sunshine/webhook`, and set the webhook shared secret to `SUNSHINE_WEBHOOK_SECRET`.
-6. Connect the website's logged-in user session to `POST /sunshine/auth` as described below. Set `REPORT_API_KEY` for report consumers. The temporary navbar build hardcodes this key and the ngrok hostname in `navbar/assets/monitoringConfig.js`; it reads SQL through the API. See [navbar setup](navbar/README.md).
+6. Connect the website's logged-in user session to `POST /sunshine/auth` as described below. Set `REPORT_API_KEY` for report consumers. The temporary navbar build hardcodes this key and the ngrok hostname in `navbar/assets/js/monitoringConfig.js`; it reads SQL through the API. The navbar folder guide is included in [its entry page](navbar/assets/index.html).
 
 `GET /health/live` checks the HTTP process; `GET /health/ready` checks SQL Server connectivity with `SELECT 1`. Startup verifies brand mappings, the three SQL Server tables, Cosmos and required bot credentials before starting both loops.
 

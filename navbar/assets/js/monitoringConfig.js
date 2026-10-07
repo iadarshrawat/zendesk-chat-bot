@@ -1,3 +1,4 @@
+// js/: app behavior and data access. This file stores the temporary backend hostname, API key, and page size.
 // Temporary local-preview configuration requested by the user.
 // The API key is visible in browser source and the packaged ZIP.
 export const MONITORING_API = Object.freeze({

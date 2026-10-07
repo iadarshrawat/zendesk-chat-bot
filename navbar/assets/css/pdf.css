@@ -1,0 +1,181 @@
+/* css/: export styles. This file controls the fixed A4 report layout independently of the screen size. */
+/* A4 portrait report layout, independent of the Zendesk iframe's screen size. */
+.pdf-report {
+  width: var(--pdf-report-width) !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0;
+  background: #fff;
+  font-family: Arial, sans-serif;
+}
+.pdf-report * {
+  transition: none !important;
+  animation: none !important;
+}
+.pdf-report .page-header {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.pdf-report .title-group {
+  align-items: center;
+  gap: 12px;
+}
+.pdf-report h1 {
+  font-size: 27px;
+}
+.pdf-report .brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+.pdf-report .brand-icon svg {
+  width: 24px;
+  height: 24px;
+}
+.pdf-report .page-subtitle {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.pdf-report .header-actions {
+  width: 100%;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+.pdf-report .sync-caption {
+  font-size: 11px;
+  white-space: normal;
+}
+.pdf-report .filters-panel,
+.pdf-report .metric-card,
+.pdf-report .insight-card {
+  box-shadow: none;
+}
+.pdf-report .filters-panel {
+  padding: 16px;
+}
+.pdf-report .filter-heading {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.pdf-report .filter-title {
+  align-items: center;
+  gap: 10px;
+}
+.pdf-report .filter-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+.pdf-report .filter-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.pdf-report .filter-heading h2 {
+  font-size: 17px;
+}
+.pdf-report .filter-heading p {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.pdf-report .filter-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+}
+.pdf-report .field-search {
+  grid-column: 1;
+  grid-row: 1;
+}
+.pdf-report .field-score {
+  grid-column: 2;
+  grid-row: 1;
+}
+.pdf-report .date-range {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.pdf-report .date-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+}
+.pdf-report .pdf-filter-value {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #d7e2e0;
+  border-radius: 8px;
+  background: #fbfdfc;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.pdf-report .field-control {
+  flex: 1;
+}
+.pdf-report .field-control .pdf-filter-value {
+  height: 100%;
+}
+.pdf-report .section-caption {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 16px 0 10px;
+  line-height: 1.4;
+}
+.pdf-report .section-caption span:last-child {
+  display: inline;
+}
+.pdf-report .metric-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.pdf-report .metric-card {
+  min-height: 108px;
+  padding: 14px;
+}
+.pdf-report .metric-card strong {
+  font-size: 34px;
+}
+.pdf-report .metric-note {
+  line-height: 1.4;
+}
+.pdf-report .insights-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.pdf-report .insight-card {
+  min-height: 0;
+  padding: 16px;
+}
+.pdf-report .card-heading {
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.pdf-report .card-heading h2 {
+  font-size: 17px;
+}
+.pdf-report .card-heading .eyebrow {
+  font-size: 9px;
+}
+.pdf-report .card-total {
+  padding: 4px 6px;
+  font-size: 9px;
+}
+.pdf-report .breakdown {
+  gap: 11px;
+}
+.pdf-report .breakdown-labels {
+  margin-bottom: 5px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.pdf-report .breakdown-count {
+  font-size: 13px;
+}

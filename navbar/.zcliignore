@@ -1,5 +1,3 @@
 dist/**
-tests/**
-tools/**
-README.md
+tmp/**
 zcli.apps.config.json
