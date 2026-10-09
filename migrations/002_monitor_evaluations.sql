@@ -24,6 +24,7 @@ BEGIN TRY
       [follow_up_required] BIT NULL,
       [key_issue] NVARCHAR(1024) NULL,
       [updated_at] DATETIME2(3) NOT NULL,
+      [issue_type] VARCHAR(32) NULL,
       CONSTRAINT [PK_bot_monitor_evaluations] PRIMARY KEY CLUSTERED ([session_id]),
       CONSTRAINT [FK_bot_monitor_evaluations_session] FOREIGN KEY ([session_id])
         REFERENCES [{{schema}}].[bot_monitor_sessions] ([session_id]),
@@ -38,6 +39,12 @@ BEGIN TRY
       ),
       CONSTRAINT [CK_bot_monitor_evaluations_counts] CHECK (
         [session_number] >= 1 AND [message_count] >= 0
+      ),
+      CONSTRAINT [CK_bot_monitor_evaluations_issue_type] CHECK (
+        [issue_type] IS NULL OR [issue_type] IN (
+          'product_information', 'order_status', 'delivery', 'returns_refunds',
+          'payment', 'account', 'technical_support', 'other', 'unknown'
+        )
       )
     );
 

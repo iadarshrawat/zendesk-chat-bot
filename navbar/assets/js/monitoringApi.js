@@ -63,26 +63,23 @@ export function monitoringApiErrorMessage(error) {
 }
 
 /**
- * Fetch one page of completed SQL sessions using the configured backend and Zendesk proxy.
- * @returns {Promise<Object>} Normalized sessions and the next cursor, or null when there is no next page. Throws if the request fails.
+ * Build the common date, text, and satisfaction parameters for both report views.
+ * @returns {URLSearchParams} Applied filters, without a page cursor or limit.
  */
-export async function fetchMonitoringPage(
-  client,
-  filters,
-  position = { cursor: null },
-) {
-  const error = validateDateRange(filters.from, filters.to);
-  if (error) throw new Error(error);
-  const params = new URLSearchParams({
-    from: filters.from,
-    to: filters.to,
-    limit: String(MONITORING_API.pageSize),
-  });
+function reportParams(filters) {
+  const params = new URLSearchParams({ from: filters.from, to: filters.to });
   if (filters.search?.trim()) params.set("search", filters.search.trim());
   if (filters.score) params.set("score", filters.score);
-  if (position?.cursor) params.set("cursor", position.cursor);
-  const response = await client.request({
-    url: `https://${MONITORING_API.hostname}/sunshine/monitoring/sessions?${params}`,
+  return params;
+}
+
+/**
+ * Request a monitoring resource through the Zendesk proxy with the configured key.
+ * @returns {Promise<Object>} The backend JSON response. Rejects if the request fails.
+ */
+function requestMonitoring(client, path, params) {
+  return client.request({
+    url: `https://${MONITORING_API.hostname}/sunshine/monitoring/${path}?${params}`,
     type: "GET",
     dataType: "json",
     cache: false,
@@ -94,6 +91,23 @@ export async function fetchMonitoringPage(
     secure: false,
     cors: false,
   });
+}
+
+/**
+ * Fetch one page of completed SQL sessions using the configured backend and Zendesk proxy.
+ * @returns {Promise<Object>} Normalized sessions and the next cursor, or null when there is no next page. Throws if the request fails.
+ */
+export async function fetchMonitoringPage(
+  client,
+  filters,
+  position = { cursor: null },
+) {
+  const error = validateDateRange(filters.from, filters.to);
+  if (error) throw new Error(error);
+  const params = reportParams(filters);
+  params.set("limit", String(MONITORING_API.pageSize));
+  if (position?.cursor) params.set("cursor", position.cursor);
+  const response = await requestMonitoring(client, "sessions", params);
   if (response?.success !== true || !Array.isArray(response.sessions)) {
     throw new Error("The monitoring API returned an invalid response.");
   }
@@ -108,4 +122,39 @@ export async function fetchMonitoringPage(
     sessions: completedSessions(response.sessions),
     next: response.pagination?.has_more ? { cursor } : null,
   };
+}
+
+/**
+ * Request primary issue counts for every session matching the applied search.
+ * @returns {Promise<Object>} Ranked issues and totalSessions for the entire date range.
+ */
+export async function fetchMonitoringIssues(client, filters) {
+  const error = validateDateRange(filters.from, filters.to);
+  if (error) throw new Error(error);
+  const response = await requestMonitoring(
+    client,
+    "issues",
+    reportParams(filters),
+  );
+  if (
+    response?.success !== true ||
+    !Array.isArray(response.issues) ||
+    !Number.isSafeInteger(response.total_sessions) ||
+    response.total_sessions < 0
+  ) {
+    throw new Error("The monitoring API returned invalid issue counts.");
+  }
+  for (const issue of response.issues) {
+    if (
+      typeof issue.issue_type !== "string" ||
+      !Number.isSafeInteger(issue.session_count) ||
+      issue.session_count < 1 ||
+      !Number.isFinite(issue.percentage) ||
+      issue.percentage < 0 ||
+      issue.percentage > 100
+    ) {
+      throw new Error("The monitoring API returned invalid issue counts.");
+    }
+  }
+  return { issues: response.issues, totalSessions: response.total_sessions };
 }

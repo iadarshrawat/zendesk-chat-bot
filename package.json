@@ -8,16 +8,16 @@
   },
   "description": "Zendesk Sunshine bot, knowledge retrieval and two-hour session monitoring",
   "scripts": {
-    "start": "node server.js",
-    "db:migrate": "node src/scripts/migrate.js",
-    "db:check": "node src/scripts/checkSqlServerConnection.js",
-    "diagnose": "node src/scripts/diagnoseInbox.js",
-    "ingest": "node src/scripts/ingestKnowledge.js",
-    "monitor:preview": "node src/scripts/previewMonitoringTicket.js",
-    "monitor:import": "node src/scripts/importMonitoringHistory.js",
-    "monitor:test": "node --test src/features/monitoring/*.test.js",
+    "start": "node index.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:check": "node scripts/checkSqlServerConnection.js",
+    "diagnose": "node scripts/diagnoseInbox.js",
+    "ingest": "node scripts/ingestKnowledge.js",
+    "monitor:preview": "node scripts/previewMonitoringTicket.js",
+    "monitor:import": "node scripts/importMonitoringHistory.js",
+    "monitor:test": "node --test tests/monitoring/*.test.js",
     "test": "node --test",
-    "check": "node --check server.js && node --check src/runtime/background.js && node --check src/config/sql.js && node --check src/config/schema.js && node --check src/features/monitoring/monitoringJob.js && node --check src/features/monitoring/monitoringRepository.js && node --check src/features/monitoring/monitoringWorker.js && node --check src/features/messaging/inboxRepository.js && node --check src/features/messaging/conversationStateService.js && node --check src/scripts/checkSqlServerConnection.js && node --check src/scripts/previewMonitoringTicket.js"
+    "check": "node --check index.js && node --check src/common/cron/index.js && node --check src/loaders/database/sql.js && node --check src/models/schema.js && node --check src/services/monitoring/index.js && node --check src/models/monitoring/index.js && node --check src/services/monitoring/worker.js && node --check src/models/inbox/index.js && node --check src/models/conversationState/index.js && node --check scripts/checkSqlServerConnection.js && node --check scripts/previewMonitoringTicket.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",

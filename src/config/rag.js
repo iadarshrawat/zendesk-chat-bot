@@ -1,59 +1,61 @@
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 
 dotenv.config();
 
 function positiveInteger(value, fallback) {
   const parsed = Number.parseInt(value, 10);
+
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function nonNegativeInteger(value, fallback) {
   const parsed = Number.parseInt(value, 10);
+
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 function booleanValue(value, fallback) {
-  if (value == null || value === "") return fallback;
-  return String(value).toLowerCase() === "true";
+  if (value == null || value === '') {
+    return fallback;
+  }
+
+  return String(value).toLowerCase() === 'true';
 }
 
 function finiteNumber(value, fallback) {
-  if (value == null || String(value).trim() === "") return fallback;
+  if (value == null || String(value).trim() === '') {
+    return fallback;
+  }
   const parsed = Number(value);
+
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function effortLevel(value, fallback) {
-  return ["low", "medium", "high"].includes(value) ? value : fallback;
+  return ['low', 'medium', 'high'].includes(value) ? value : fallback;
 }
 
-const responseTargetMs = Math.min(
-  60_000,
-  Math.max(5_000, positiveInteger(process.env.BOT_RESPONSE_TARGET_MS, 15_000)),
-);
-const configuredHardTimeoutMs = Math.min(
-  120_000,
-  Math.max(5_000, positiveInteger(process.env.BOT_RESPONSE_HARD_TIMEOUT_MS, 45_000)),
-);
+const responseTargetMs = Math.min(60_000, Math.max(5_000, positiveInteger(process.env.BOT_RESPONSE_TARGET_MS, 15_000)));
+const configuredHardTimeoutMs = Math.min(120_000, Math.max(5_000, positiveInteger(process.env.BOT_RESPONSE_HARD_TIMEOUT_MS, 45_000)));
 const responseHardTimeoutMs = Math.max(responseTargetMs, configuredHardTimeoutMs);
 
 export const RAG_CONFIG = {
   cosmos: {
-    endpoint: process.env.COSMOS_ENDPOINT?.trim() || "",
-    key: process.env.COSMOS_KEY?.trim() || "",
-    databaseId: process.env.COSMOS_DATABASE_ID?.trim() || "zendesk-rag",
-    containerId: process.env.COSMOS_CONTAINER_ID?.trim() || "knowledge",
+    endpoint: process.env.COSMOS_ENDPOINT?.trim() || '',
+    key: process.env.COSMOS_KEY?.trim() || '',
+    databaseId: process.env.COSMOS_DATABASE_ID?.trim() || 'zendesk-rag',
+    containerId: process.env.COSMOS_CONTAINER_ID?.trim() || 'knowledge',
     vectorDimensions: positiveInteger(process.env.RAG_VECTOR_DIMENSIONS, 1024),
-    vectorIndexType: process.env.COSMOS_VECTOR_INDEX_TYPE?.trim() || "quantizedFlat",
+    vectorIndexType: process.env.COSMOS_VECTOR_INDEX_TYPE?.trim() || 'quantizedFlat',
     writeConcurrency: positiveInteger(process.env.COSMOS_WRITE_CONCURRENCY, 4),
     maxRetries: nonNegativeInteger(process.env.COSMOS_MAX_RETRIES, 8),
     retryBaseDelayMs: nonNegativeInteger(process.env.COSMOS_RETRY_BASE_DELAY_MS, 500),
-    retryMaxDelayMs: nonNegativeInteger(process.env.COSMOS_RETRY_MAX_DELAY_MS, 10_000),
+    retryMaxDelayMs: nonNegativeInteger(process.env.COSMOS_RETRY_MAX_DELAY_MS, 10_000)
   },
   voyage: {
-    apiKey: process.env.VOYAGE_API_KEY?.trim() || "",
-    baseUrl: process.env.VOYAGE_BASE_URL?.trim() || "https://api.voyageai.com/v1",
-    model: process.env.VOYAGE_EMBEDDING_MODEL?.trim() || "voyage-4-lite",
+    apiKey: process.env.VOYAGE_API_KEY?.trim() || '',
+    baseUrl: process.env.VOYAGE_BASE_URL?.trim() || 'https://api.voyageai.com/v1',
+    model: process.env.VOYAGE_EMBEDDING_MODEL?.trim() || 'voyage-4-lite',
     batchSize: positiveInteger(process.env.VOYAGE_BATCH_SIZE, 16),
     maxRetries: nonNegativeInteger(process.env.VOYAGE_MAX_RETRIES, 8),
     retryBaseDelayMs: nonNegativeInteger(process.env.VOYAGE_RETRY_BASE_DELAY_MS, 1_000),
@@ -61,10 +63,7 @@ export const RAG_CONFIG = {
     requestDelayMs: nonNegativeInteger(process.env.VOYAGE_REQUEST_DELAY_MS, 1_000),
     requestConcurrency: Math.min(8, positiveInteger(process.env.VOYAGE_REQUEST_CONCURRENCY, 2)),
     queryCacheTtlMs: nonNegativeInteger(process.env.RAG_EMBEDDING_CACHE_TTL_MS, 3_600_000),
-    queryCacheMaxEntries: Math.min(
-      5_000,
-      nonNegativeInteger(process.env.RAG_EMBEDDING_CACHE_MAX_ENTRIES, 500),
-    ),
+    queryCacheMaxEntries: Math.min(5_000, nonNegativeInteger(process.env.RAG_EMBEDDING_CACHE_MAX_ENTRIES, 500))
   },
   retrieval: {
     candidateCount: Math.min(100, positiveInteger(process.env.RAG_CANDIDATE_COUNT, 24)),
@@ -82,30 +81,17 @@ export const RAG_CONFIG = {
     maxRecoveryQueries: Math.min(3, positiveInteger(process.env.RAG_MAX_RECOVERY_QUERIES, 3)),
     catalogCacheMs: nonNegativeInteger(process.env.RAG_CATALOG_CACHE_MS, 60_000),
     revisionCacheMs: nonNegativeInteger(process.env.RAG_REVISION_CACHE_MS, 30_000),
-    snapshotCleanupGraceMs: nonNegativeInteger(
-      process.env.RAG_SNAPSHOT_CLEANUP_GRACE_MS,
-      35_000,
-    ),
-    debug: booleanValue(process.env.RAG_DEBUG, false),
+    snapshotCleanupGraceMs: nonNegativeInteger(process.env.RAG_SNAPSHOT_CLEANUP_GRACE_MS, 35_000),
     includeSources: booleanValue(process.env.RAG_INCLUDE_SOURCES, false),
     compactContext: booleanValue(process.env.RAG_COMPACT_CONTEXT, true),
     citationRepairEnabled: booleanValue(process.env.RAG_CITATION_REPAIR_ENABLED, true),
-    citationRepairTimeoutMs: positiveInteger(
-      process.env.RAG_CITATION_REPAIR_TIMEOUT_MS,
-      10_000,
-    ),
-    citationRepairMaxTokens: Math.min(
-      2_048,
-      positiveInteger(process.env.RAG_CITATION_REPAIR_MAX_TOKENS, 768),
-    ),
+    citationRepairTimeoutMs: positiveInteger(process.env.RAG_CITATION_REPAIR_TIMEOUT_MS, 10_000),
+    citationRepairMaxTokens: Math.min(2_048, positiveInteger(process.env.RAG_CITATION_REPAIR_MAX_TOKENS, 768))
   },
   conversation: {
     responseTargetMs,
     responseHardTimeoutMs,
-    deliveryReserveMs: Math.min(
-      4_000,
-      positiveInteger(process.env.BOT_DELIVERY_RESERVE_MS, 4_000),
-    ),
+    deliveryReserveMs: Math.min(4_000, positiveInteger(process.env.BOT_DELIVERY_RESERVE_MS, 4_000)),
     classifierTimeoutMs: positiveInteger(process.env.BOT_CLASSIFIER_TIMEOUT_MS, 2500),
     plannerStageTimeoutMs: positiveInteger(process.env.BOT_PLANNER_STAGE_TIMEOUT_MS, 6000),
     historyTimeoutMs: positiveInteger(process.env.BOT_HISTORY_TIMEOUT_MS, 1500),
@@ -114,22 +100,26 @@ export const RAG_CONFIG = {
     typingTimeoutMs: positiveInteger(process.env.BOT_TYPING_TIMEOUT_MS, 1250),
     typingStopTimeoutMs: positiveInteger(process.env.BOT_TYPING_STOP_TIMEOUT_MS, 1500),
     sendTimeoutMs: positiveInteger(process.env.BOT_SEND_TIMEOUT_MS, 3000),
-    answerEffort: effortLevel(process.env.BOT_ANSWER_EFFORT, "medium"),
-    plannerEffort: effortLevel(process.env.BOT_PLANNER_EFFORT, "low"),
+    answerEffort: effortLevel(process.env.BOT_ANSWER_EFFORT, 'medium'),
+    plannerEffort: effortLevel(process.env.BOT_PLANNER_EFFORT, 'low'),
     structuredAnswers: booleanValue(process.env.BOT_STRUCTURED_ANSWERS, true),
-    historyMessages: Math.min(60, positiveInteger(process.env.BOT_HISTORY_MESSAGES, 10)),
+    historyMessages: Math.min(60, positiveInteger(process.env.BOT_HISTORY_MESSAGES, 10))
   },
   chunking: {
     wordsPerChunk: positiveInteger(process.env.RAG_CHUNK_WORDS, 380),
-    overlapWords: nonNegativeInteger(process.env.RAG_CHUNK_OVERLAP_WORDS, 60),
-  },
+    overlapWords: nonNegativeInteger(process.env.RAG_CHUNK_OVERLAP_WORDS, 60)
+  }
 };
 
-export function getMissingRagConfiguration() {
+/**
+ * List required knowledge-store and embedding settings missing from the configuration.
+ * @returns {Array<string>} Names of the missing environment settings.
+ */
+function getMissingRagConfiguration() {
   const required = {
     COSMOS_ENDPOINT: RAG_CONFIG.cosmos.endpoint,
     COSMOS_KEY: RAG_CONFIG.cosmos.key,
-    VOYAGE_API_KEY: RAG_CONFIG.voyage.apiKey,
+    VOYAGE_API_KEY: RAG_CONFIG.voyage.apiKey
   };
 
   return Object.entries(required)
@@ -137,13 +127,13 @@ export function getMissingRagConfiguration() {
     .map(([key]) => key);
 }
 
-export function isRagConfigured() {
-  return getMissingRagConfiguration().length === 0;
-}
-
+/**
+ * Require the existing knowledge-store and embedding configuration.
+ * @returns {void} Returns normally when configured; otherwise throws.
+ */
 export function assertRagConfigured() {
   const missing = getMissingRagConfiguration();
   if (missing.length > 0) {
-    throw new Error(`RAG configuration is missing: ${missing.join(", ")}`);
+    throw new Error(`RAG configuration is missing: ${missing.join(', ')}`);
   }
 }

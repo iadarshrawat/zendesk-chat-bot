@@ -9,11 +9,11 @@ A Node.js service for the supplied Mr Brand and Comfort Zone support bot. It rec
 | Webhook | HTTP 200 before work started in process memory | Authenticate, validate and queue in bounded process memory before HTTP 200 |
 | Background work | Per-web-process callback and cron | In-memory inbox and monitor loops run inside `npm start`; a queued webhook wakes the inbox immediately |
 | Conversation form | Process-local `Map` | Process-local form store with 30-minute expiry |
-| Customer messages | Strings and Sunshine POSTs spread over modules | Wording in `customerMessages.js`, message/form/activity delivery in `messageGateway.js` |
+| Customer messages | Strings and Sunshine POSTs spread over modules | Wording in `src/lib/message/`, message/form/activity delivery in `src/services/messaging/messages.js` |
 | Widget JWT | Signed arbitrary request-body identity | Verify website session JWT against JWKS; sign only verified claims |
 | Report | Public endpoint | Bearer API key required |
 | Monitoring | Old export cursors revisited previous tickets | Every five minutes, check tickets updated in the last five hours; track completed two-hour sessions in SQL Server |
-| Structure | Generic controllers, methods, utilities | Feature modules for messaging, knowledge, monitoring, auth; shared infrastructure |
+| Structure | Generic controllers, methods, utilities | Controllers, services, models, middlewares, loaders and common helpers, following the reference layout |
 | Dead paths | Old search pagination, per-process queue, quick-reply LLM, unused upload test file | Removed |
 
 The archive already used **Cosmos DB + Voyage + Claude**, not the earlier Pinecone + Gemini design. This refactor preserves the archive's provider combination and its evidence validation behavior.
@@ -21,26 +21,30 @@ The archive already used **Cosmos DB + Voyage + Claude**, not the earlier Pineco
 ## Layout
 
 ```text
-server.js                        Express API and background processing entry point
-src/runtime/background.js        Inbox wakeup, polling recovery and monitoring loops
-migrations/001_core.sql          SQL Server state/session metadata migration
-migrations/002_monitor_evaluations.sql Full SQL monitoring evaluation schema
-src/app.js                       HTTP routes, request guards, health checks
-src/config/                     Brand IDs and external-service configuration
-src/features/auth/              Website identity, Zendesk JWT and report access
-src/features/messaging/         Webhook, in-memory inbox, turn, form, handoff, text and delivery
-src/features/knowledge/         Parsing, ingestion, chunking, search, grounding, citations
-src/features/monitoring/        Two-hour sessions, evaluation, SQL Server ledger and monitor lock
-src/shared/                     Time budgets, retries, timing and bounded SQL
-src/scripts/                    Database migration and knowledge ingestion CLI
-data/seed/                       Bundled private knowledge archives (ignored by git)
-docs/                            Scenario diagrams and operations guide
+index.js                         HTTP server and background processing entry point
+src/
+  controllers/                   auth, health, messaging and monitoring HTTP handlers
+  services/                      messaging, monitoring, RAG, knowledge, escalation and business hours
+  models/                        conversation state/forms, inbox, monitoring, knowledge and SQL schema
+  middlewares/                   authentication, request validation and HTTP error handling
+  routers/index.js               existing endpoint paths and middleware order
+  loaders/                       Express assembly and SQL/Cosmos startup
+  common/                        shared utilities, feature helpers and scheduled loops
+  lib/                           customer messages and support prompts
+  config/                        existing environment and brand configuration
+  api/                           Zendesk, Sunshine, Anthropic, Voyage and website-key requests
+scripts/                         migration, ingestion and operational commands
+migrations/                      existing SQL Server migration files
+tests/                           regression checks outside production source
+navbar/                          Zendesk navbar monitoring app
+data/seed/                       private knowledge archives (ignored by git)
+docs/                            existing deployment and operations guides
 ```
 
 ## Run locally
 
 1. Use Node 20+ and Microsoft SQL Server with a dedicated database login. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT` (normally `1433`), `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_SCHEMA` (default `dbo`). Never commit `.env` or the private knowledge archives to a public repository.
-2. Run `npm ci` once. Have the client confirm the target database and schema, review `migrations/001_core.sql` and `migrations/002_monitor_evaluations.sql`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"` with the exact configured `DB_NAME.DB_SCHEMA` and permission to create the three application tables. The command refuses to connect without that match. It can create only `bot_conversation_state`, `bot_monitor_sessions`, and `bot_monitor_evaluations`; it will not modify other tables or create a database/schema. Afterwards, `npm start` verifies these tables but never creates or changes them. The normal app login needs access only to its three tables and system-catalog metadata, not DDL permission.
+2. Run `npm ci` once. Have the client confirm the target database and schema, review `migrations/001_core.sql`, `migrations/002_monitor_evaluations.sql`, and `migrations/003_monitor_issue_type.sql`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"` with the exact configured `DB_NAME.DB_SCHEMA` and permission to create the three application tables or add the monitoring issue-type column and constraint. The command refuses to connect without that match. It can create only `bot_conversation_state`, `bot_monitor_sessions`, and `bot_monitor_evaluations`; it can also add the nullable `issue_type` column and category constraint to existing monitoring evaluations. It will not modify other tables or create a database/schema. Afterwards, `npm start` verifies these tables but never creates or changes them. The normal app login needs access only to its three tables and system-catalog metadata, not DDL permission.
 3. Validate the supplied knowledge packages without API calls:
 
    ```bash
@@ -76,13 +80,14 @@ These tests use local Zendesk, Claude, and database fixtures plus a synthetic cl
 
 | Endpoint | Caller | Authentication | Result |
 | --- | --- | --- | --- |
-| `POST /sunshine/webhook` | Sunshine Conversations | `X-API-Key` shared secret; expected `app.id` | Durable event insert, then `200`; malformed `400`, untrusted `401`, persistence failure `503` |
+| `POST /sunshine/webhook` | Sunshine Conversations | `X-API-Key` shared secret; expected `app.id` | In-memory event enqueue, then `200`; malformed `400`, untrusted `401`, queue failure `503` |
 | `POST /sunshine/auth` | Logged-in website | `Authorization: Bearer <website-session-JWT>` | Short-lived Zendesk messaging JWT; body identity ignored |
 | `GET /sunshine/monitoring/sessions?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Paginated SQL session rows; date, text, score and cursor filters |
+| `GET /sunshine/monitoring/issues?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Issue categories ranked by session count across the full date/text/score search; no pagination |
 | `GET /health/live` / `/health/ready` | Hosting health probe | None | Liveness / SQL Server connectivity |
 | `GET /sunshine/inbox` | Local diagnostic | `Authorization: Bearer <REPORT_API_KEY>` | In-memory inbox counts, no payloads |
 
-The website's JWT must be signed with RS256 and contain `sub`, `iss`, `aud`, and expiration. The optional `name`, `email`, and `email_verified` claims come from the website's verified identity system. Configure its JWKS URL, issuer and audience. `ZENDESK_WIDGET_KEY_ID` and `ZENDESK_WIDGET_JWT_SECRET` are a **different** signing key from Zendesk Admin Center. If your website uses a cookie session or a different token format, adapt `src/features/auth/siteIdentity.js` to verify that existing session on the server before issuing the Zendesk token. Do not send user identity in a client-controlled JSON body.
+The website's JWT must be signed with RS256 and contain `sub`, `iss`, `aud`, and expiration. The optional `name`, `email`, and `email_verified` claims come from the website's verified identity system. Configure its JWKS URL, issuer and audience. `ZENDESK_WIDGET_KEY_ID` and `ZENDESK_WIDGET_JWT_SECRET` are a **different** signing key from Zendesk Admin Center. If your website uses a cookie session or a different token format, adapt `src/middlewares/auth/index.js` to verify that existing session on the server before issuing the Zendesk token. Do not send user identity in a client-controlled JSON body.
 
 ## Key scenarios
 

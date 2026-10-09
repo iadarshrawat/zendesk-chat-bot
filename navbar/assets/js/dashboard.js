@@ -1,6 +1,11 @@
 // js/: dashboard behavior. This file displays totals, charts, session rows, and the detail dialog.
 import { SATISFACTION_SCORES, summarizeSessions } from "./reportData.js";
-import { formatLabel, formatTimestamp, formatValue } from "./formatters.js";
+import {
+  formatIssueType,
+  formatLabel,
+  formatTimestamp,
+  formatValue,
+} from "./formatters.js";
 
 const DETAIL_GROUPS = [
   [
@@ -10,6 +15,7 @@ const DETAIL_GROUPS = [
       ["Scoring reason", "reason"],
       ["Monitoring status", "status"],
       ["Key issue", "keyIssue"],
+      ["Issue type", "issueType"],
     ],
   ],
   [
@@ -55,6 +61,7 @@ const elements = {
   ticketBreakdown: document.getElementById("ticket-score-breakdown"),
   sessionBreakdown: document.getElementById("session-score-breakdown"),
   recordsSummary: document.getElementById("records-summary"),
+  recordsHeading: document.getElementById("records-heading"),
   recordsBody: document.getElementById("records-body"),
   emptyState: document.getElementById("empty-state"),
   emptyMessage: document.getElementById("empty-message"),
@@ -64,6 +71,14 @@ const elements = {
   detailTitle: document.getElementById("detail-title"),
   detailBody: document.getElementById("detail-body"),
   closeDetailButton: document.getElementById("close-detail"),
+  sessionsTab: document.getElementById("sessions-tab"),
+  issuesTab: document.getElementById("issues-tab"),
+  sessionsPanel: document.getElementById("sessions-panel"),
+  issuesPanel: document.getElementById("issues-panel"),
+  issuesSummary: document.getElementById("issues-summary"),
+  issuesBody: document.getElementById("issues-body"),
+  issuesEmpty: document.getElementById("issues-empty"),
+  retryIssues: document.getElementById("retry-issues"),
 };
 let focusedBeforeDetail = null;
 let openTicket = null; // Assigned during setup; app.js handles Zendesk navigation.
@@ -145,9 +160,12 @@ function openDetail(session) {
     section.append(createTextElement("h3", "", heading));
     for (const [label, key] of fields) {
       const item = createTextElement("div", "detail-item", "");
-      const value = key.endsWith("At")
-        ? formatTimestamp(session[key])
-        : formatValue(session[key]);
+      const value =
+        key === "issueType"
+          ? formatIssueType(session[key])
+          : key.endsWith("At")
+            ? formatTimestamp(session[key])
+            : formatValue(session[key]);
       item.append(
         createTextElement("dt", "", label),
         createTextElement("dd", "", value),
@@ -241,7 +259,8 @@ function renderRows(sessions) {
  * Display page totals, satisfaction charts, session rows, and pagination labels.
  * @returns {void} Updates the dashboard using the supplied saved page state.
  */
-export function renderDashboard({ sessions, filters, page, loaded }) {
+export function renderDashboard(state) {
+  const { sessions, filters, page, loaded } = state;
   const summary = summarizeSessions(sessions);
   elements.totalTickets.textContent = String(summary.tickets);
   elements.satisfiedTickets.textContent = String(summary.satisfiedTickets);
@@ -275,6 +294,57 @@ export function renderDashboard({ sessions, filters, page, loaded }) {
   elements.emptyMessage.textContent = loaded
     ? "No completed AI sessions match this search. Try different dates or keywords."
     : "The dashboard has not searched monitoring data yet.";
+  renderCommonIssues(state);
+  showDirectoryTab(state.activeTab);
+}
+
+/**
+ * Show the selected directory view and update its accessible tab state.
+ * @returns {void} Toggles panel visibility and the selected tab's keyboard position.
+ */
+function showDirectoryTab(tab) {
+  const showIssues = tab === "issues";
+  elements.recordsSummary.hidden = showIssues;
+  elements.recordsHeading.textContent = showIssues
+    ? "Common issues"
+    : "Tickets and sessions";
+  elements.sessionsPanel.hidden = showIssues;
+  elements.issuesPanel.hidden = !showIssues;
+  elements.sessionsTab.setAttribute("aria-selected", String(!showIssues));
+  elements.issuesTab.setAttribute("aria-selected", String(showIssues));
+  elements.sessionsTab.tabIndex = showIssues ? -1 : 0;
+  elements.issuesTab.tabIndex = showIssues ? 0 : -1;
+}
+
+/**
+ * Display issue categories in descending frequency for the full applied search.
+ * @returns {void} Updates the issue table, its scope message, and loading or error state.
+ */
+function renderCommonIssues(state) {
+  const rows = [];
+  for (const issue of state.issues) {
+    const row = document.createElement("tr");
+    row.append(
+      createTextElement("td", "issue-name", formatIssueType(issue.issue_type)),
+      createTextElement("td", "issue-count", String(issue.session_count)),
+      createTextElement("td", "issue-share", `${issue.percentage}%`),
+    );
+    rows.push(row);
+  }
+  elements.issuesBody.replaceChildren(...rows);
+  elements.issuesEmpty.hidden = !state.issuesLoaded || state.issues.length > 0;
+  elements.retryIssues.hidden = !state.issuesError;
+  if (state.activity === "issues") {
+    elements.issuesSummary.textContent =
+      "Loading common issues for the applied search…";
+  } else if (state.issuesError) {
+    elements.issuesSummary.textContent = state.issuesError;
+  } else if (state.issuesLoaded) {
+    elements.issuesSummary.textContent = `${state.filters.from} → ${state.filters.to} · ${state.issueTotal} matching sessions across all pages · one primary issue per session`;
+  } else {
+    elements.issuesSummary.textContent =
+      "Search monitoring sessions, then open this tab to see the most common issues.";
+  }
 }
 
 /**

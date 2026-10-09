@@ -1,7 +1,7 @@
 // js/: Excel export. This file fetches all matching sessions and downloads one plain Sessions worksheet.
 import { fetchMonitoringPage, validateDateRange } from "./monitoringApi.js";
 import { compareSessionsNewestFirst } from "./reportData.js";
-import { formatLabel } from "./formatters.js";
+import { formatIssueType, formatLabel } from "./formatters.js";
 
 const HEADER_ROW = 1;
 const MAX_SESSIONS = 1_048_576 - HEADER_ROW;
@@ -68,6 +68,7 @@ const sessionColumns = [
   { header: "Subject", key: "ticketSubject", width: 42 },
   { header: "Session", key: "sessionNumber", width: 12, type: "number" },
   { header: "Satisfaction", key: "score", width: 21, type: "label" },
+  { header: "Issue type", key: "issueType", width: 24, type: "issue" },
   { header: "Report date (UTC)", key: "reportDate", width: 19, type: "date" },
   {
     header: "Started (UTC)",
@@ -133,6 +134,7 @@ function addSessionsSheet(workbook, records) {
       if (column.type === "date" || column.type === "datetime")
         return toExcelDate(value);
       if (column.type === "label") return formatLabel(value, "");
+      if (column.type === "issue") return formatIssueType(value);
       return value == null ? "" : String(value);
     });
     const row = sheet.addRow(values);

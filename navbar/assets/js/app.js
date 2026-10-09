@@ -3,6 +3,7 @@ import { renderDashboard, setupDashboard } from "./dashboard.js";
 import { formatTimestamp } from "./formatters.js";
 import {
   fetchMonitoringPage,
+  fetchMonitoringIssues,
   maxRangeDate,
   monitoringApiErrorMessage,
   validateDateRange,
@@ -33,6 +34,10 @@ const elements = {
   pdfStatus: document.getElementById("pdf-status"),
   previousPageButton: document.getElementById("previous-page"),
   nextPageButton: document.getElementById("next-page"),
+  sessionsTab: document.getElementById("sessions-tab"),
+  issuesTab: document.getElementById("issues-tab"),
+  directoryTabs: document.getElementById("directory-tabs"),
+  retryIssuesButton: document.getElementById("retry-issues"),
 };
 
 // Keep the displayed page and the last successful search separate from form edits.
@@ -44,7 +49,12 @@ const state = {
   nextPagePosition: null,
   page: 1,
   loaded: false,
-  activity: null, // null, "search", "excel", or "pdf"; one operation at a time.
+  activity: null, // null, "search", "issues", "excel", or "pdf"; one operation at a time.
+  activeTab: "sessions",
+  issues: [],
+  issueTotal: 0,
+  issuesLoaded: false,
+  issuesError: "",
 };
 
 /**
@@ -123,6 +133,9 @@ function updateActionButtons() {
     busy || !state.loaded || state.page <= 1;
   elements.nextPageButton.disabled =
     busy || !state.loaded || !state.nextPagePosition;
+  elements.sessionsTab.disabled = busy && state.activity !== "issues";
+  elements.issuesTab.disabled = busy && state.activity !== "issues";
+  elements.retryIssuesButton.disabled = busy;
   elements.refreshButton.textContent =
     state.activity === "search" ? "Loading…" : "Refresh page";
   elements.excelButtonLabel.textContent =
@@ -179,6 +192,7 @@ async function loadPage(page, filters = state.filters) {
   elements.syncText.textContent = "Searching monitoring data…";
   clearNotice();
 
+  let searchSucceeded = false;
   try {
     // Page one starts a fresh cursor chain. Later pages use their saved cursor.
     let positions = [{ cursor: null }];
@@ -195,6 +209,11 @@ async function loadPage(page, filters = state.filters) {
     state.nextPagePosition = result.next;
     state.page = page;
     state.loaded = true;
+    state.issues = [];
+    state.issueTotal = 0;
+    state.issuesLoaded = false;
+    state.issuesError = "";
+    searchSucceeded = true;
     if (result.next) state.pagePositions[page] = result.next;
     elements.syncText.textContent = `Updated ${formatTimestamp(Date.now())}`;
     updateDashboard();
@@ -205,6 +224,72 @@ async function loadPage(page, filters = state.filters) {
     showNotice(monitoringApiErrorMessage(error));
   } finally {
     setActivity(null);
+  }
+  if (searchSucceeded && state.activeTab === "issues") await loadIssues();
+}
+
+/**
+ * Load category counts for every session matching the last successful search.
+ * @returns {Promise<void>} Stores the full-search ranking or shows a retryable error.
+ */
+async function loadIssues() {
+  if (!state.loaded || state.activity || state.issuesLoaded) return;
+  setActivity("issues");
+  state.issuesError = "";
+  updateDashboard();
+  try {
+    const result = await fetchMonitoringIssues(state.client, {
+      ...state.filters,
+    });
+    state.issues = result.issues;
+    state.issueTotal = result.totalSessions;
+    state.issuesLoaded = true;
+  } catch (error) {
+    state.issuesError = monitoringApiErrorMessage(error);
+  } finally {
+    setActivity(null);
+    updateDashboard();
+  }
+}
+
+/**
+ * Switch back to the session directory without fetching another results page.
+ * @returns {void} Shows the saved session page and its navigation controls.
+ */
+function showSessionsTab() {
+  if (state.activity && state.activity !== "issues") return;
+  state.activeTab = "sessions";
+  updateDashboard();
+}
+
+/**
+ * Open the common-issues view and fetch its ranking when it is not cached.
+ * @returns {Promise<void>} Shows issue counts for the current applied search.
+ */
+async function showIssuesTab() {
+  if (state.activity && state.activity !== "issues") return;
+  state.activeTab = "issues";
+  updateDashboard();
+  await loadIssues();
+}
+
+/**
+ * Support Arrow, Home, and End keys for the two directory tabs.
+ * @returns {void} Selects and focuses the requested tab without moving the page.
+ */
+function handleDirectoryTabsKeydown(event) {
+  if (state.activity && state.activity !== "issues") return;
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const showIssues =
+    event.key === "End" ||
+    (event.key !== "Home" && state.activeTab === "sessions");
+  if (showIssues) {
+    showIssuesTab();
+    elements.issuesTab.focus();
+  } else {
+    showSessionsTab();
+    elements.sessionsTab.focus();
   }
 }
 
@@ -322,6 +407,13 @@ function bindEvents() {
   elements.nextPageButton.addEventListener("click", nextPage);
   elements.excelButton.addEventListener("click", exportExcel);
   elements.pdfButton.addEventListener("click", exportPdf);
+  elements.sessionsTab.addEventListener("click", showSessionsTab);
+  elements.issuesTab.addEventListener("click", showIssuesTab);
+  elements.directoryTabs.addEventListener(
+    "keydown",
+    handleDirectoryTabsKeydown,
+  );
+  elements.retryIssuesButton.addEventListener("click", loadIssues);
 }
 
 /**

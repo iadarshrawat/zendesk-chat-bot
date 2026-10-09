@@ -9,6 +9,26 @@ const timestampFormatter = new Intl.DateTimeFormat("en", {
   timeZone: "UTC",
 });
 
+const ISSUE_LABELS = {
+  product_information: "Product information",
+  order_status: "Order status",
+  delivery: "Delivery",
+  returns_refunds: "Returns and refunds",
+  payment: "Payment",
+  account: "Account",
+  technical_support: "Technical support",
+  other: "Other",
+  unknown: "Unknown",
+};
+
+/**
+ * Convert a stored primary issue category to its readable dashboard label.
+ * @returns {string} The category label, or Unknown if no supported category is recorded.
+ */
+export function formatIssueType(value) {
+  return Object.hasOwn(ISSUE_LABELS, value) ? ISSUE_LABELS[value] : "Unknown";
+}
+
 /**
  * Replace underscores with spaces and capitalize the first letter.
  * @returns {string} A readable label, or the supplied fallback when the value is empty.

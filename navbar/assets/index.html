@@ -254,45 +254,125 @@
               </button>
             </div>
           </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Ticket</th>
-                  <th scope="col">Session</th>
-                  <th scope="col">Satisfaction</th>
-                  <th scope="col">Evaluated</th>
-                  <th scope="col"><span class="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody id="records-body"></tbody>
-            </table>
+          <div
+            class="directory-tabs"
+            id="directory-tabs"
+            role="tablist"
+            aria-label="Monitoring report views"
+          >
+            <button
+              class="directory-tab"
+              id="sessions-tab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="sessions-panel"
+            >
+              Session directory
+            </button>
+            <button
+              class="directory-tab"
+              id="issues-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="issues-panel"
+              tabindex="-1"
+            >
+              Common issues
+            </button>
           </div>
-          <div class="empty-state" id="empty-state" hidden>
-            <div class="empty-symbol" aria-hidden="true">⌕</div>
-            <h3>No sessions found</h3>
-            <p id="empty-message">
-              Try changing the filters or refresh the data.
-            </p>
+          <div
+            id="sessions-panel"
+            role="tabpanel"
+            aria-labelledby="sessions-tab"
+            tabindex="0"
+          >
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Ticket</th>
+                    <th scope="col">Session</th>
+                    <th scope="col">Satisfaction</th>
+                    <th scope="col">Evaluated</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody id="records-body"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="empty-state" hidden>
+              <div class="empty-symbol" aria-hidden="true">⌕</div>
+              <h3>No sessions found</h3>
+              <p id="empty-message">
+                Try changing the filters or refresh the data.
+              </p>
+            </div>
+            <div class="pagination" id="pagination" hidden>
+              <span id="page-summary"></span>
+              <div>
+                <button
+                  class="button button-secondary"
+                  id="previous-page"
+                  type="button"
+                >
+                  Previous
+                </button>
+                <button
+                  class="button button-secondary"
+                  id="next-page"
+                  type="button"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="pagination" id="pagination" hidden>
-            <span id="page-summary"></span>
-            <div>
+          <div
+            id="issues-panel"
+            role="tabpanel"
+            aria-labelledby="issues-tab"
+            tabindex="0"
+            hidden
+          >
+            <div class="issues-caption">
+              <p id="issues-summary" role="status">
+                Search monitoring sessions, then open this tab to see the most
+                common issues.
+              </p>
               <button
                 class="button button-secondary"
-                id="previous-page"
+                id="retry-issues"
                 type="button"
+                hidden
               >
-                Previous
-              </button>
-              <button
-                class="button button-secondary"
-                id="next-page"
-                type="button"
-              >
-                Next
+                Retry
               </button>
             </div>
+            <div class="table-scroll">
+              <table
+                class="issues-table"
+                aria-label="Issues ranked by number of matching sessions"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">Issue type</th>
+                    <th scope="col">Sessions</th>
+                    <th scope="col">Share</th>
+                  </tr>
+                </thead>
+                <tbody id="issues-body"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="issues-empty" hidden>
+              <h3>No matching sessions</h3>
+              <p>Try different dates, search text, or satisfaction filters.</p>
+            </div>
+            <p class="issues-note">
+              Share is the percentage of all matched sessions. Unknown means no
+              category was recorded; older sessions may appear here.
+            </p>
           </div>
         </section>
       </main>

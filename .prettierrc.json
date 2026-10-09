@@ -1,0 +1,17 @@
+{
+  "overrides": [
+    {
+      "files": ["src/**/*.js", "scripts/**/*.js", "tests/**/*.js", "index.js"],
+      "options": {
+        "singleQuote": true,
+        "tabWidth": 2,
+        "useTabs": false,
+        "semi": true,
+        "trailingComma": "none",
+        "printWidth": 140,
+        "arrowParens": "avoid",
+        "endOfLine": "lf"
+      }
+    }
+  ]
+}

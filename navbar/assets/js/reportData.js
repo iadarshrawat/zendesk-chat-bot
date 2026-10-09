@@ -79,6 +79,7 @@ export function sessionFromRecord(record) {
     reason: text(record.reason),
     status: text(record.monitoring_status),
     keyIssue: text(record.key_issue),
+    issueType: text(record.issue_type) || "unknown",
   };
 }
 

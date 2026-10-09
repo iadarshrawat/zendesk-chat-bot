@@ -651,6 +651,70 @@ h3 {
   font-weight: 800;
   white-space: nowrap;
 }
+/* Session directory and common-issues tabs */
+.directory-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 22px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.directory-tab {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.directory-tab[aria-selected="true"] {
+  border-color: var(--teal);
+  background: var(--teal-wash);
+  color: var(--teal-deep);
+}
+[role="tabpanel"]:focus-visible {
+  outline: 3px solid #8fd4cb;
+  outline-offset: -3px;
+}
+.issues-caption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 22px;
+}
+.issues-caption p,
+.issues-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.issues-caption p {
+  flex: 1 1 220px;
+}
+.issues-table {
+  min-width: 0;
+}
+.issues-table th,
+.issues-table td {
+  white-space: normal;
+}
+.issue-name {
+  font-weight: 700;
+}
+.issue-count,
+.issue-share,
+.issues-table th:nth-child(n + 2) {
+  text-align: right;
+}
+.issues-note {
+  padding: 16px 22px;
+  border-top: 1px solid var(--line);
+}
+
 .table-scroll {
   position: relative;
   overflow-x: auto;
