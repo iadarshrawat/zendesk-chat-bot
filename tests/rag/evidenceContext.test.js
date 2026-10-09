@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { productEvidence, renderProductEvidence } from '../../src/common/rag/evidenceContext.js';
-import { createRetrievalPipeline } from '../../src/services/rag/retrievalPipeline.js';
+import { productEvidence, renderProductEvidence } from '../../src/common/rag/evidenceContext/index.js';
+import { createRetrievalPipeline } from '../../src/services/rag/retrievalPipeline/index.js';
 
 const selectionPlan = {
   intent: 'product_search',

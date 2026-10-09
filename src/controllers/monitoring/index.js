@@ -1,8 +1,8 @@
-import { getPool } from '../../loaders/database/sql.js';
-import { safeErrorMetadata } from '../../common/utils/timingLogger.js';
+import { getPool } from '../../loaders/database/sql/index.js';
+import { safeErrorMetadata } from '../../common/utils/timingLogger/index.js';
 import { monitoringIssues, monitoringPage } from '../../models/monitoring/index.js';
 import { reportFilters } from '../../middlewares/validation/monitoring/index.js';
-import { sessionFromRow, summarizeSessions, rankIssueCounts } from '../../common/monitoring/reportData.js';
+import { sessionFromRow, summarizeSessions, rankIssueCounts } from '../../common/monitoring/reportData/index.js';
 
 /**
  * Bind SQL report dependencies to the existing filtered session-report HTTP handler.

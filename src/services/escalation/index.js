@@ -1,13 +1,13 @@
-import { createSunshineClient } from '../../api/sunshine/client.js';
-import { createZendeskClient } from '../../api/zendesk/client.js';
-import { fetchEscalationCategories } from '../../api/zendesk/customObjects.js';
-import { passConversationControl } from '../../api/sunshine/conversations.js';
+import { createSunshineClient } from '../../api/sunshine/client/index.js';
+import { createZendeskClient } from '../../api/zendesk/client/index.js';
+import { fetchEscalationCategories } from '../../api/zendesk/customObjects/index.js';
+import { passConversationControl } from '../../api/sunshine/conversations/index.js';
 import { getForm, deleteForm, saveForm } from '../../models/conversationForm/index.js';
-import { generateClaudeText } from '../rag/replies.js';
-import { sendSunshineMessage, sendSunshineForm } from '../messaging/messages.js';
+import { generateClaudeText } from '../rag/replies/index.js';
+import { sendSunshineMessage, sendSunshineForm } from '../messaging/messages/index.js';
 import { customerMessages } from '../../lib/message/index.js';
-import { logStage, measureStage } from '../../common/utils/timingLogger.js';
-import { isClearInformationRequest, mightRequestHumanSupport } from '../../common/messaging/intent.js';
+import { logStage, measureStage } from '../../common/utils/timingLogger/index.js';
+import { isClearInformationRequest, mightRequestHumanSupport } from '../../common/messaging/intent/index.js';
 import { isWithinBusinessHours } from '../businessHours/index.js';
 
 const CATEGORY_OBJECT_KEY = process.env.CATEGORY_OBJECT_NAME;

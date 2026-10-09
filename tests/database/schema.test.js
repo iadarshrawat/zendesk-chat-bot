@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { databaseSchema, applyIssueTypeSchema, initializeCoreSchema, sqlTable, verifyCoreSchema } from '../../src/models/schema.js';
-import { sqlServerConfig } from '../../src/loaders/database/sql.js';
+import { databaseSchema, applyIssueTypeSchema, initializeCoreSchema, sqlTable, verifyCoreSchema } from '../../src/models/schema/index.js';
+import { sqlServerConfig } from '../../src/loaders/database/sql/index.js';
 
 function conversationStateDefinition() {
   return {

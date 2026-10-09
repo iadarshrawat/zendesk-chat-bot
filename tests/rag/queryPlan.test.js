@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHeuristicQueryPlan, buildPlannerMessages, normalizeQueryPlan, uniqueQueries } from '../../src/common/rag/queryPlan.js';
+import { buildHeuristicQueryPlan, buildPlannerMessages, normalizeQueryPlan, uniqueQueries } from '../../src/common/rag/queryPlan/index.js';
 
 const PLAN_FIELDS = [
   'alternativeQueries',

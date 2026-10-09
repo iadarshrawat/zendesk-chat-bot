@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { executeBoundedSql } from '../../src/common/utils/boundedSql.js';
+import { executeBoundedSql } from '../../src/common/utils/boundedSql/index.js';
 
 function fakePool(runQuery) {
   const requests = [];

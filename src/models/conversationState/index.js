@@ -1,11 +1,11 @@
 import sql from 'mssql';
-import { getPool } from '../../loaders/database/sql.js';
-import { RAG_CONFIG } from '../../config/rag.js';
-import { sqlTable } from '../schema.js';
-import { normalizeConversationState } from '../../common/messaging/context.js';
-import { logStage, measureStage, safeErrorMetadata } from '../../common/utils/timingLogger.js';
-import { executeBoundedSql } from '../../common/utils/boundedSql.js';
-import { getResponseBudget } from '../../common/utils/responseBudget.js';
+import { getPool } from '../../loaders/database/sql/index.js';
+import { RAG_CONFIG } from '../../config/rag/index.js';
+import { sqlTable } from '../schema/index.js';
+import { normalizeConversationState } from '../../common/messaging/context/index.js';
+import { logStage, measureStage, safeErrorMetadata } from '../../common/utils/timingLogger/index.js';
+import { executeBoundedSql } from '../../common/utils/boundedSql/index.js';
+import { getResponseBudget } from '../../common/utils/responseBudget/index.js';
 
 const RECOVERABLE_STATE_ERRORS = new Set([
   'ECONNRESET',

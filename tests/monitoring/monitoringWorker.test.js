@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runExclusiveMonitor } from '../../src/services/monitoring/worker.js';
+import { runExclusiveMonitor } from '../../src/services/monitoring/worker/index.js';
 
 function fakePool(lockCode) {
   const calls = [];

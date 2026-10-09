@@ -4,10 +4,10 @@ import {
   detectMonitoringSessions,
   isEscalatedMonitoringSession,
   normalizeConversationEvents
-} from '../../src/services/monitoring/sessions.js';
-import { runReport } from '../../src/services/monitoring/index.js';
-import { buildMonitoringEvaluationInput, parseMonitoringEvaluation } from '../../src/services/monitoring/evaluation.js';
-import { monitoringIssueType } from '../../src/common/monitoring/index.js';
+} from '../../src/services/monitoring/sessions/index.js';
+import { runReport } from '../../src/services/monitoring/report/index.js';
+import { buildMonitoringEvaluationInput, parseMonitoringEvaluation } from '../../src/services/monitoring/evaluation/index.js';
+import { monitoringIssueType } from '../../src/common/monitoring/validation/index.js';
 
 const HOUR_MS = 60 * 60 * 1000;
 

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createIssuesController, createReportController } from '../../src/controllers/monitoring/index.js';
 import { reportFilters } from '../../src/middlewares/validation/monitoring/index.js';
-import { sessionFromRow, summarizeSessions } from '../../src/common/monitoring/reportData.js';
+import { sessionFromRow, summarizeSessions } from '../../src/common/monitoring/reportData/index.js';
 import { monitoringIssues, monitoringPage } from '../../src/models/monitoring/index.js';
 
 function row(id = 'message-1') {

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { validReportDate, latestReportEndDate } from '../../../common/utils/dates.js';
-import { MONITORING_SCORES } from '../../../common/monitoring/index.js';
+import { validReportDate, latestReportEndDate } from '../../../common/utils/dates/index.js';
+import { MONITORING_SCORES } from '../../../common/monitoring/validation/index.js';
 
 function filterHash(filters) {
   return createHash('sha256').update(JSON.stringify(filters)).digest('hex').slice(0, 32);

@@ -1,4 +1,4 @@
-import { checkDatabaseConnection } from '../../loaders/database/sql.js';
+import { checkDatabaseConnection } from '../../loaders/database/sql/index.js';
 
 export function livenessCheck(_req, res) {
   return res.json({ status: 'ok' });

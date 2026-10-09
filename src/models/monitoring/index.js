@@ -1,7 +1,7 @@
 import sql from 'mssql';
-import { sqlTable } from '../schema.js';
-import { executeBoundedSql } from '../../common/utils/boundedSql.js';
-import { monitoringRecord } from '../../common/monitoring/index.js';
+import { sqlTable } from '../schema/index.js';
+import { executeBoundedSql } from '../../common/utils/boundedSql/index.js';
+import { monitoringRecord } from '../../common/monitoring/validation/index.js';
 
 const EVALUATION_TYPES = {
   session_id: sql.NVarChar(255),

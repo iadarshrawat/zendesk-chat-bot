@@ -1,7 +1,12 @@
 import 'dotenv/config';
-import { createApp, databaseLoader, closeDB } from './src/loaders/index.js';
-import { assertRuntimeConfiguration } from './src/config/runtime.js';
-import { startBackgroundRuntime, stopBackgroundRuntime } from './src/common/cron/index.js';
+import {
+  createApp,
+  databaseLoader,
+  closeDB,
+  assertRuntimeConfiguration,
+  startBackgroundRuntime,
+  stopBackgroundRuntime
+} from './src/index.js';
 
 const PORT = Number(process.env.PORT || 4000);
 const SHUTDOWN_TIMEOUT_MS = 120_000;

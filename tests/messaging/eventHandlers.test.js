@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCustomerMessageProcessor } from '../../src/services/messaging/events.js';
-import { normalizeConversationState } from '../../src/common/messaging/context.js';
-import { createResponseBudget, runWithDeadline } from '../../src/common/utils/responseBudget.js';
+import { createCustomerMessageProcessor } from '../../src/services/messaging/events/index.js';
+import { normalizeConversationState } from '../../src/common/messaging/context/index.js';
+import { createResponseBudget, runWithDeadline } from '../../src/common/utils/responseBudget/index.js';
 
 const event = {
   payload: {

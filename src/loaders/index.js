@@ -1,3 +1,3 @@
-export { createApp } from './app/index.js';
-export { databaseLoader } from './database/index.js';
-export { closeDB } from './database/sql.js';
+// Exports the loaders modules from one place.
+export * from './app/index.js';
+export * from './database/index.js';

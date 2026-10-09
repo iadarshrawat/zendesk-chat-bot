@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { processOneInboxJob } from '../../services/messaging/worker.js';
-import { runExclusiveMonitor } from '../../services/monitoring/worker.js';
+import { processOneInboxJob } from '../../services/messaging/worker/index.js';
+import { runExclusiveMonitor } from '../../services/monitoring/worker/index.js';
 
 /**
  * Create inbox and monitoring loops with the existing wakeup, polling, and shutdown rules.

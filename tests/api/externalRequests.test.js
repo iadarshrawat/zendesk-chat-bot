@@ -7,10 +7,10 @@ import {
   postConversationActivity,
   postConversationMessage,
   markDeliveryUncertain
-} from '../../src/api/sunshine/conversations.js';
-import { createClaudeMessage } from '../../src/api/anthropic/messages.js';
-import { fetchConversationEvents } from '../../src/api/zendesk/conversations.js';
-import { withZendeskRateLimitRetry } from '../../src/api/zendesk/client.js';
+} from '../../src/api/sunshine/conversations/index.js';
+import { createClaudeMessage } from '../../src/api/anthropic/messages/index.js';
+import { fetchConversationEvents } from '../../src/api/zendesk/conversations/index.js';
+import { withZendeskRateLimitRetry } from '../../src/api/zendesk/client/index.js';
 
 test('Sunshine requests keep message bodies, paths, and cancellation settings', async () => {
   const savedAppId = process.env.SUNSHINE_APP_ID;

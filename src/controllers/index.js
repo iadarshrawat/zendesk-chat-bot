@@ -1,4 +1,5 @@
-export { generateZendeskJWT } from './auth/index.js';
-export { livenessCheck, readinessCheck } from './health/index.js';
-export { handleSunshineMessage, getInboxDiagnostics } from './messaging/index.js';
-export { generateIssues, generateReport } from './monitoring/index.js';
+// Exports the controllers modules from one place.
+export * from './auth/index.js';
+export * from './health/index.js';
+export * from './messaging/index.js';
+export * from './monitoring/index.js';

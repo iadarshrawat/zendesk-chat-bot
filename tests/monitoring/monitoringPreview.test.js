@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { previewTicketMonitoring } from '../../src/services/monitoring/index.js';
+import { previewTicketMonitoring } from '../../src/services/monitoring/report/index.js';
 
 const START = Date.parse('2026-09-30T09:47:39Z');
 

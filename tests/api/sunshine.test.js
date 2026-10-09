@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSunshineClient } from '../../src/api/sunshine/client.js';
+import { createSunshineClient } from '../../src/api/sunshine/client/index.js';
 
 test('Sunshine Conversations calls preserve the working API endpoint', () => {
   const environmentNames = ['SUNSHINE_KEY_ID', 'SUNSHINE_KEY_SECRET', 'SUNSHINE_APP_ID', 'ZENDESK_SUBDOMAIN'];

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import sql from 'mssql';
-import { sqlTable } from '../../src/models/schema.js';
+import { sqlTable } from '../../src/models/schema/index.js';
 import { loadConversationState, saveConversationState } from '../../src/models/conversationState/index.js';
 
 function recordingPool(result = { recordset: [] }) {

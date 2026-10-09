@@ -1,6 +1,6 @@
-import { createZendeskClient } from '../../api/zendesk/client.js';
-import { fetchTimeZones, fetchBusinessHoursSchedule, fetchDynamicContentItem } from '../../api/zendesk/businessHours.js';
-import { logStage, measureStage } from '../../common/utils/timingLogger.js';
+import { createZendeskClient } from '../../api/zendesk/client/index.js';
+import { fetchTimeZones, fetchBusinessHoursSchedule, fetchDynamicContentItem } from '../../api/zendesk/businessHours/index.js';
+import { logStage, measureStage } from '../../common/utils/timingLogger/index.js';
 import { customerMessages } from '../../lib/message/index.js';
 
 const DYNAMIC_CONTENT_ITEM_ID = process.env.ZENDESK_SCHEDULE_DYNAMIC_CONTENT_ID || process.env.DYNAMIC_CONTENT_ITEM_ID;

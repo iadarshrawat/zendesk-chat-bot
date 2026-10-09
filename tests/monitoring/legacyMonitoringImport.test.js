@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { importLegacyMonitoring, legacyMonitoringRecord } from '../../src/services/monitoring/historyImport.js';
+import { importLegacyMonitoring, legacyMonitoringRecord } from '../../src/services/monitoring/historyImport/index.js';
 
 function record(updated = '2026-10-02T12:00:00Z') {
   return {

@@ -9,7 +9,7 @@ A Node.js service for the supplied Mr Brand and Comfort Zone support bot. It rec
 | Webhook | HTTP 200 before work started in process memory | Authenticate, validate and queue in bounded process memory before HTTP 200 |
 | Background work | Per-web-process callback and cron | In-memory inbox and monitor loops run inside `npm start`; a queued webhook wakes the inbox immediately |
 | Conversation form | Process-local `Map` | Process-local form store with 30-minute expiry |
-| Customer messages | Strings and Sunshine POSTs spread over modules | Wording in `src/lib/message/`, message/form/activity delivery in `src/services/messaging/messages.js` |
+| Customer messages | Strings and Sunshine POSTs spread over modules | Wording in `src/lib/message/`, message/form/activity delivery in `src/services/messaging/messages/index.js` |
 | Widget JWT | Signed arbitrary request-body identity | Verify website session JWT against JWKS; sign only verified claims |
 | Report | Public endpoint | Bearer API key required |
 | Monitoring | Old export cursors revisited previous tickets | Every five minutes, check tickets updated in the last five hours; track completed two-hour sessions in SQL Server |
@@ -33,13 +33,15 @@ src/
   lib/                           customer messages and support prompts
   config/                        existing environment and brand configuration
   api/                           Zendesk, Sunshine, Anthropic, Voyage and website-key requests
-scripts/                         migration, ingestion and operational commands
+scripts/<command>/index.js       migration, ingestion and operational commands
 migrations/                      existing SQL Server migration files
 tests/                           regression checks outside production source
 navbar/                          Zendesk navbar monitoring app
 data/seed/                       private knowledge archives (ignored by git)
 docs/                            existing deployment and operations guides
 ```
+
+Each backend module uses a named folder containing `index.js`. Its parent `index.js` exports the child modules. For example, `src/middlewares/auth/report/index.js` contains report authentication, and `src/middlewares/auth/index.js` exports it. Internal modules import the specific implementation they use to avoid circular imports.
 
 ## Run locally
 
@@ -87,7 +89,7 @@ These tests use local Zendesk, Claude, and database fixtures plus a synthetic cl
 | `GET /health/live` / `/health/ready` | Hosting health probe | None | Liveness / SQL Server connectivity |
 | `GET /sunshine/inbox` | Local diagnostic | `Authorization: Bearer <REPORT_API_KEY>` | In-memory inbox counts, no payloads |
 
-The website's JWT must be signed with RS256 and contain `sub`, `iss`, `aud`, and expiration. The optional `name`, `email`, and `email_verified` claims come from the website's verified identity system. Configure its JWKS URL, issuer and audience. `ZENDESK_WIDGET_KEY_ID` and `ZENDESK_WIDGET_JWT_SECRET` are a **different** signing key from Zendesk Admin Center. If your website uses a cookie session or a different token format, adapt `src/middlewares/auth/index.js` to verify that existing session on the server before issuing the Zendesk token. Do not send user identity in a client-controlled JSON body.
+The website's JWT must be signed with RS256 and contain `sub`, `iss`, `aud`, and expiration. The optional `name`, `email`, and `email_verified` claims come from the website's verified identity system. Configure its JWKS URL, issuer and audience. `ZENDESK_WIDGET_KEY_ID` and `ZENDESK_WIDGET_JWT_SECRET` are a **different** signing key from Zendesk Admin Center. If your website uses a cookie session or a different token format, adapt `src/middlewares/auth/siteIdentity/index.js` to verify that existing session on the server before issuing the Zendesk token. Do not send user identity in a client-controlled JSON body.
 
 ## Key scenarios
 
