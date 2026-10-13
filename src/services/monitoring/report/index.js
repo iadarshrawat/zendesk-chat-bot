@@ -1,4 +1,5 @@
 import { CLAUDE_CONFIG } from '../../../config/claude/index.js';
+import { MONITORING_CONFIG } from '../../../config/monitoring/index.js';
 import { fetchIncrementalTicketsPage } from '../../../api/zendesk/tickets/index.js';
 import { fetchConversationEvents } from '../../../api/zendesk/conversations/index.js';
 import { createZendeskClient } from '../../../api/zendesk/client/index.js';
@@ -10,16 +11,14 @@ import { detectMonitoringSessions, monitoringSessionId, normalizeConversationEve
 import { resolveMonitoringIntent } from '../intents/index.js';
 import { safeErrorMetadata } from '../../../common/utils/timingLogger/index.js';
 
-const LOOKBACK_MS = 5 * 60 * 60 * 1000;
-
 /**
- * Collect and deduplicate exported tickets updated inside the existing five-hour lookback window.
+ * Collect and deduplicate exported tickets updated inside the configured lookback window.
  * @param {Object} client - Authenticated provider client.
  * @param {number} now - Current Unix timestamp in milliseconds.
  * @returns {Promise<Array<Object>>} Eligible updated tickets; rejects when the export cursor stalls.
  */
 async function fetchUpdatedTickets(client, now) {
-  const windowStart = now - LOOKBACK_MS;
+  const windowStart = now - MONITORING_CONFIG.lookbackMs;
   const startTime = Math.floor(windowStart / 1000);
   const ticketsById = new Map();
   let cursor = null;
@@ -82,7 +81,7 @@ async function processTicket(client, db, ticket, now) {
 
   const messages = normalizeConversationEvents(events, ticket.requester_id);
 
-  // The five-hour export can include unrelated support tickets. Only assess
+  // The ticket export can include unrelated support tickets. Only assess
   // conversations involving an AI/bot or a known bot handoff.
   const hasBotMessage = messages.some(message => message.speaker === 'Bot');
   const involvesAi = hasBotMessage || ticket.support_type === 'ai_agent' || ticket.tags?.includes('escalated_to_agent');

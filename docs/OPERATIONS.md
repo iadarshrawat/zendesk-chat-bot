@@ -19,7 +19,7 @@ The original archive did not contain deploy credentials or a website session-ver
 - Accepted events wake the local inbox loop immediately. The loop also polls every 750 ms while idle. It handles one eligible job at a time, keeps earlier events for the same conversation ahead of later ones, and renews a 120-second processing lease.
 - Pre-delivery failures retry with bounded delay for up to five attempts. A network timeout or 5xx after a Sunshine message POST enters `delivery_uncertain` because the message might have arrived. Terminal outcomes remain only in a bounded recent-count snapshot; the full job is no longer available for database requeue.
 - Restarting or redeploying the process loses pending and processing jobs, recent duplicate IDs, and unconfirmed escalation forms. A provider retry can restore an event only if Zendesk actually sends it again. Review the Sunshine conversation before manually repeating a customer-visible send.
-- The monitor uses a SQL Server application lock to prevent concurrent runs. Each poll starts a fresh Zendesk export with a five-hour lookback, follows that poll's pagination cursor, and fetches conversation logs for tickets updated in the window. It stores full evaluations in `bot_monitor_evaluations` with completed IDs in `bot_monitor_sessions`, in one SQL transaction. Monitor and inbox loops execute independently.
+- The monitor uses a SQL Server application lock to prevent concurrent runs. Each poll starts a fresh Zendesk export with the `MONITOR_LOOKBACK_HOURS` window (five hours by default), follows that poll's pagination cursor, and fetches conversation logs for tickets updated in the window. It stores full evaluations in `bot_monitor_evaluations` with completed IDs in `bot_monitor_sessions`, in one SQL transaction. Monitor and inbox loops execute independently.
 
 ## Inspect and recover
 
@@ -29,11 +29,11 @@ Keep an alert on growing active inbox counts, recent failures, `/health/ready`, 
 
 ## Monitoring meaning
 
-- A session starts with a customer message. A customer message at least **two hours** after the previous customer message starts another session. Bot or agent messages do not reset this customer inactivity clock.
-- `evaluation_due_at` is two hours after the last customer message in that session. The monitor loop starts about every five minutes, so evaluation can occur a few minutes later. Zendesk's incremental export omits the latest minute; the next overlapping poll includes it.
+- A session starts with a customer message. A customer message at least `MONITOR_SESSION_IDLE_HOURS` after the previous customer message starts another session (two hours by default). Bot or agent messages do not reset this customer inactivity clock.
+- `evaluation_due_at` is the configured idle gap after the last customer message in that session. The monitor runs immediately at startup and then at `MONITOR_POLL_INTERVAL_MINUTES` (five minutes by default), so evaluation can occur on a later poll. It counts intervals from each poll's start and never overlaps runs within one loop. If a poll exceeds its interval, the next starts after a one-second wait. Zendesk's incremental export omits the latest minute; the next overlapping poll includes it.
 - `satisfied`, `neutral`, `unsatisfied`, `escalated`, and `insufficient_data` are local report classes. A human-handled session is excluded from the bot's inferred score. The model judges satisfaction from the conversation; its result does not update native Zendesk CSAT.
 - Results use a v2 key made from ticket ID and first customer message ID, separate from old five-hour v1 records. Before calling the LLM, the monitor checks SQL Server completed session IDs. It never deliberately rescores a completed session. A new session in the same ticket gets a new record.
-- The five-hour ticket lookback is strict: a ticket not updated in that period is not fetched. If the app is down for more than five hours, a missed session is discovered only if that ticket receives another update; there is no historical backfill in this mode. Earlier chat messages for a selected ticket are still included as context for a due session, without later outcomes leaking backward.
+- The configured ticket lookback is strict: a ticket not updated in that period is not fetched. If the app is down longer than the window, a missed session is discovered only if that ticket receives another update or the lookback is widened; there is no automatic historical backfill in this mode. Earlier chat messages for a selected ticket are still included as context for a due session, without later outcomes leaking backward.
 
 To see which sessions have finished, query SQL Server. Replace `dbo` if `DB_SCHEMA` is set:
 
@@ -42,7 +42,15 @@ SELECT TOP (50) ticket_id, session_id, session_started_at, last_customer_at, eva
 FROM [dbo].[bot_monitor_sessions] ORDER BY evaluated_at DESC;
 ```
 
-An existing `.env` may still contain `MONITOR_SESSION_IDLE_HOURS` or `MONITOR_LOOKBACK_HOURS` from an older release. The new monitor uses the requested fixed two-hour gap and five-hour lookback and ignores those old settings.
+Set the following in `.env` and restart the process:
+
+```dotenv
+MONITOR_LOOKBACK_HOURS=5
+MONITOR_SESSION_IDLE_HOURS=2
+MONITOR_POLL_INTERVAL_MINUTES=5
+```
+
+The hour settings accept positive fractions: `MONITOR_SESSION_IDLE_HOURS=0.5` gives a 30-minute gap, and `MONITOR_LOOKBACK_HOURS=24` selects tickets updated in the last 24 hours. Polling uses minutes: `MONITOR_POLL_INTERVAL_MINUTES=1` polls every minute, and `0.5` polls every 30 seconds. Its minimum interval is one second. Invalid values stop startup. Lookback must exceed the idle gap; leave additional room for the configured poll and export delay. Changing the gap does not rewrite saved evaluations, but can regroup older chats when their tickets are selected again. Historical intent backfills recover the original gap from each stored session's due time; legacy imports retain their original two-hour timing.
 
 ## Latency controls
 

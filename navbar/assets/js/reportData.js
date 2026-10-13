@@ -86,7 +86,7 @@ export function compareSessionsNewestFirst(first, second) {
 }
 
 /**
- * Convert one completed two-hour SQL monitoring row to the fields used by this app.
+ * Convert one completed SQL monitoring session to the fields used by this app.
  * @returns {Object|null} A normalized session, or null for an invalid or incomplete row.
  */
 export function sessionFromRecord(record) {

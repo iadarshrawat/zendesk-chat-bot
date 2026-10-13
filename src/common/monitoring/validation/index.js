@@ -1,7 +1,8 @@
 import { validReportDate } from '../../utils/dates/index.js';
 import { customerIntentId } from '../intent/index.js';
+import { MONITORING_CONFIG } from '../../../config/monitoring/index.js';
 
-export const SESSION_GAP_MS = 2 * 60 * 60 * 1000;
+export const SESSION_GAP_MS = MONITORING_CONFIG.sessionIdleMs;
 export const MONITORING_SCORES = ['satisfied', 'neutral', 'unsatisfied', 'escalated', 'insufficient_data'];
 const MONITORING_STATUSES = ['evaluated', 'escalated'];
 export const MONITORING_ISSUE_TYPES = [

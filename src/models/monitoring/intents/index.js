@@ -78,12 +78,13 @@ export async function createMonitoringIntent(db, draft, expectedCount) {
  * @param {Object} db - SQL connection pool.
  * @param {string} after - Last inspected session identifier.
  * @param {Object} options - allSessions includes inspected rows; before excludes evaluations saved after the run started.
- * @returns {Promise<Array<Object>>} Up to 50 session identities and their original evidence cutoff.
+ * @returns {Promise<Array<Object>>} Up to 50 session identities, original idle periods, and evidence cutoffs.
  */
 export async function readMonitoringIntentSessions(db, after = '', { allSessions = false, before = null } = {}) {
   const result = await executeBoundedSql(
     db,
-    `SELECT TOP (50) e.session_id, s.ticket_id, e.first_message_id, e.last_message_at, e.intent_id
+    `SELECT TOP (50) e.session_id, s.ticket_id, e.first_message_id, e.last_message_at, e.intent_id,
+        s.last_customer_at, e.evaluation_due_at
       FROM ${sqlTable('bot_monitor_evaluations')} AS e
       INNER JOIN ${sqlTable('bot_monitor_sessions')} AS s ON s.session_id = e.session_id
       WHERE (@allSessions = 1 OR e.intent_classified_at IS NULL) AND e.session_id > @after

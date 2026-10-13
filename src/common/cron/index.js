@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { processOneInboxJob } from '../../services/messaging/worker/index.js';
 import { runExclusiveMonitor } from '../../services/monitoring/worker/index.js';
+import { MONITORING_CONFIG } from '../../config/monitoring/index.js';
 
 /**
  * Create inbox and monitoring loops with the existing wakeup, polling, and shutdown rules.
@@ -12,7 +13,7 @@ export function createBackgroundRuntime({
   runMonitor = runExclusiveMonitor,
   pollMs = 750,
   errorDelayMs = 5_000,
-  monitorMs = 300_000,
+  monitorMs = MONITORING_CONFIG.pollIntervalMs,
   logger = console
 } = {}) {
   let running = false;
@@ -78,7 +79,7 @@ export function createBackgroundRuntime({
   }
 
   /**
-   * Run monitoring polls roughly five minutes apart without overlapping one loop's polls.
+   * Run monitoring polls at the configured interval without overlapping one loop's polls.
    * @returns {Promise<void>} Resolves when background processing stops.
    */
   async function monitorLoop() {
@@ -91,8 +92,8 @@ export function createBackgroundRuntime({
         logger.error('Monitoring failed', error);
       }
 
-      // Start polls roughly five minutes apart, rather than five minutes
-      // after the previous poll finishes. Avoid a tight loop on slow polls.
+      // Count the interval from the previous poll's start, allowing for its duration.
+      // Keep a one-second minimum wait when a poll exceeds the configured interval.
       const elapsedMs = Date.now() - startedAt;
       await pause(Math.max(1_000, monitorMs - elapsedMs));
     }

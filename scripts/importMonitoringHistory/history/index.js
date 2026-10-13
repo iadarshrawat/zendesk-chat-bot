@@ -1,7 +1,10 @@
 // Maintenance-only import of the historical Zendesk monitoring object.
-import { monitoringRecord, SESSION_GAP_MS } from '../../../src/common/monitoring/validation/index.js';
+import { monitoringRecord } from '../../../src/common/monitoring/validation/index.js';
 import { saveMonitoringSession } from '../../../src/models/monitoring/index.js';
 import { fetchLegacyMonitoringRecords } from '../../../src/api/zendesk/customObjects/index.js';
+
+// The old custom-object monitor used two hours; preserve that timing during import.
+const LEGACY_SESSION_GAP_MS = 2 * 60 * 60 * 1000;
 
 /**
  * Normalize an eligible historical custom-object record for the explicit SQL import.
@@ -28,7 +31,7 @@ export function legacyMonitoringRecord(record) {
     last_customer_at: customerAt,
     last_message_at: fields.session_last_message_at || customerAt,
     message_count: fields.session_message_count ?? 0,
-    evaluation_due_at: fields.evaluation_due_at || new Date(Date.parse(customerAt) + SESSION_GAP_MS).toISOString(),
+    evaluation_due_at: fields.evaluation_due_at || new Date(Date.parse(customerAt) + LEGACY_SESSION_GAP_MS).toISOString(),
     evaluated_at: evaluatedAt,
     report_date: fields.report_date || evaluatedAt?.slice(0, 10),
     csat_score: fields.csat_score,

@@ -1,6 +1,6 @@
 # Zendesk support platform
 
-A Node.js service for the supplied Mr Brand and Comfort Zone support bot. It receives Sunshine Conversations webhooks, answers from a brand-partitioned Cosmos DB knowledge store using Voyage embeddings and Claude, collects escalation details, passes control to Zendesk Agent Workspace, and evaluates customer satisfaction for sessions separated by two hours of customer inactivity. The satisfaction score is an internal estimate, **not Zendesk's official CSAT**.
+A Node.js service for the supplied Mr Brand and Comfort Zone support bot. It receives Sunshine Conversations webhooks, answers from a brand-partitioned Cosmos DB knowledge store using Voyage embeddings and Claude, collects escalation details, passes control to Zendesk Agent Workspace, and evaluates customer satisfaction for sessions separated by a configurable customer inactivity gap (two hours by default). The satisfaction score is an internal estimate, **not Zendesk's official CSAT**.
 
 ## What changed from the supplied archive
 
@@ -12,7 +12,7 @@ A Node.js service for the supplied Mr Brand and Comfort Zone support bot. It rec
 | Customer messages | Strings and Sunshine POSTs spread over modules | Wording in `src/lib/message/`, message/form/activity delivery in `src/services/messaging/messages/index.js` |
 | Widget JWT | Signed arbitrary request-body identity | Verify website session JWT against JWKS; sign only verified claims |
 | Report | Public endpoint | Bearer API key required |
-| Monitoring | Old export cursors revisited previous tickets | Every five minutes, check tickets updated in the last five hours; track completed two-hour sessions in SQL Server |
+| Monitoring | Old export cursors revisited previous tickets | Check recently updated tickets at a configurable interval; configurable lookback and customer inactivity gap; completed sessions tracked in SQL Server |
 | Structure | Generic controllers, methods, utilities | Controllers, services, models, middlewares, loaders and common helpers, following the reference layout |
 | Dead paths | Old search pagination, per-process queue, quick-reply LLM, unused upload test file | Removed |
 
@@ -67,6 +67,8 @@ If the widget receives no reply, keep `npm start` running, send a fresh test mes
 
 `ETIMEDOUT` and `ENETUNREACH` during connection setup are network/connectivity failures, not failures of a particular table. Check the configured SQL Server connection with `npm run db:check`. It performs only `SELECT 1` and never creates or reads a table. If it cannot connect, check the SQL Server host/port, firewall or IP allowlist, VPN, and server availability before investigating schema.
 
+Configure monitoring in `.env` with `MONITOR_LOOKBACK_HOURS=5`, `MONITOR_SESSION_IDLE_HOURS=2`, and `MONITOR_POLL_INTERVAL_MINUTES=5`. The hour settings accept positive fractions (`0.5` means 30 minutes); polling uses minutes (`0.5` means 30 seconds), with a one-second minimum. Monitoring runs immediately at startup, then counts each interval from the previous run's start without overlapping runs. Lookback filters ticket `updated_at`, not ticket creation or chat date; selected tickets contribute their full conversation. A customer return after at least the configured gap starts another session, and evaluation becomes due after that gap without a customer reply. Lookback must exceed the gap; leave enough extra time for the configured poll and export delay. Restart after changing settings. Saved evaluations are not rewritten, but a different gap can regroup older chats when their ticket is fetched again. Historical intent backfills use each saved session's original gap.
+
 ## HTTP contract
 
 | Endpoint | Caller | Authentication | Result |
@@ -82,7 +84,7 @@ The website's JWT must be signed with RS256 and contain `sub`, `iss`, `aud`, and
 
 ## Key scenarios
 
-The [flowcharts](docs/FLOWS.md) cover welcome, normal and follow-up answers, fallback, escalation, widget authentication, knowledge ingestion, the five-minute monitoring cycle and two-hour sessions, reports, and failed deliveries. The [operations guide](docs/OPERATIONS.md) covers Azure deployment, monitoring and recovery.
+The [flowcharts](docs/FLOWS.md) cover welcome, normal and follow-up answers, fallback, escalation, widget authentication, knowledge ingestion, configurable monitoring polls and customer sessions, reports, and failed deliveries. The [operations guide](docs/OPERATIONS.md) covers Azure deployment, monitoring and recovery.
 
 For Azure App Service deployment, see [the GitHub deployment steps](docs/AZURE_APP_SERVICE.md). Connect the repository to App Service so GitHub pushes deploy automatically. App Service runs `npm start`; no manual deployment ZIP, separate worker command or WebJob is required. If a previous version installed `bot-worker`, stop and remove that old WebJob when upgrading.
 

@@ -118,13 +118,13 @@ flowchart TD
 
 Use `--validate-only` first. Ingestion is an explicit CLI action, never a web request or background startup task. The two bundled archives remain separate, and the vector dimension must match the embedding model output.
 
-## 8. Five-minute polling and two-hour customer sessions
+## 8. Configurable polling and customer sessions
 
 ```mermaid
 flowchart TD
-    A[Every five minutes] --> B[Export tickets updated in last five hours]
+    A[At startup, then at configured poll interval] --> B[Export tickets updated within configured lookback]
     B --> C[Fetch each ticket conversation]
-    C --> D[Split at two-hour customer gaps]
+    C --> D[Split at configured customer inactivity gap]
     D --> E{Session due and not completed?}
     E -- No --> A
     E -- Yes --> F{Human handled it?}
@@ -135,7 +135,7 @@ flowchart TD
     I --> J[(SQL Server session metadata in same transaction)]
 ```
 
-A customer return before two hours extends the current session. A return after two hours creates another session, even in the same ticket. The evaluator sees the full earlier conversation through the target session, never future outcomes. A unique SQL session ID and an atomic evaluation/completion transaction prevent repeated LLM scoring. Silence alone is not considered satisfaction. Only tickets updated in the previous five hours enter a poll.
+A customer return before `MONITOR_SESSION_IDLE_HOURS` extends the current session. A return at or after that gap creates another session, even in the same ticket. The default gap is two hours and the default `MONITOR_LOOKBACK_HOURS` is five hours. `MONITOR_POLL_INTERVAL_MINUTES` controls polling, with a five-minute default. The evaluator sees the full earlier conversation through the target session, never future outcomes. A unique SQL session ID and an atomic evaluation/completion transaction prevent repeated LLM scoring. Silence alone is not considered satisfaction. Only tickets updated within the configured lookback enter a poll.
 
 ## 9. Report and failure recovery
 

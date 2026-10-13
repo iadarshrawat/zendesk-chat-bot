@@ -2,7 +2,6 @@
 import { fetchTicket } from '../../../src/api/zendesk/tickets/index.js';
 import { fetchConversationEvents } from '../../../src/api/zendesk/conversations/index.js';
 import { readMonitoringIntentSessions, assignMonitoringIntent } from '../../../src/models/monitoring/intents/index.js';
-import { SESSION_GAP_MS } from '../../../src/common/monitoring/validation/index.js';
 import { safeErrorMetadata } from '../../../src/common/utils/timingLogger/index.js';
 import { normalizeConversationEvents, detectMonitoringSessions } from '../../../src/services/monitoring/sessions/index.js';
 import { resolveMonitoringIntent } from '../../../src/services/monitoring/intents/index.js';
@@ -19,10 +18,10 @@ function historicalIntentContext(row, ticket, events) {
   if (!Number.isFinite(cutoff)) {
     throw new Error('Historical session has an invalid evidence cutoff');
   }
+  // Recover the gap used when this session was saved, even if .env has since changed.
+  const idleMs = new Date(row.evaluation_due_at).getTime() - new Date(row.last_customer_at).getTime();
   const ticketMessages = normalizeConversationEvents(events, ticket.requester_id).filter(message => message.at <= cutoff);
-  const session = detectMonitoringSessions(ticketMessages, SESSION_GAP_MS).find(
-    candidate => candidate.firstMessageId === row.first_message_id
-  );
+  const session = detectMonitoringSessions(ticketMessages, idleMs).find(candidate => candidate.firstMessageId === row.first_message_id);
   if (!session) {
     throw new Error('Original customer session is no longer available in Zendesk');
   }
