@@ -1,6 +1,6 @@
 # Zendesk support platform
 
-A Node.js service for the supplied Mr Brand and Comfort Zone support bot. It receives Sunshine Conversations webhooks, answers from a brand-partitioned Cosmos DB knowledge store using Voyage embeddings and Claude, collects escalation details, passes control to Zendesk Agent Workspace, and evaluates customer satisfaction for sessions separated by a configurable customer inactivity gap (two hours by default). The satisfaction score is an internal estimate, **not Zendesk's official CSAT**.
+A Node.js service for the supplied Mr Brand and Comfort Zone support bot. It receives Sunshine Conversations webhooks, answers from a brand-partitioned Cosmos DB knowledge store using Voyage embeddings and Claude, collects escalation details, passes control to Zendesk Agent Workspace, and evaluates customer satisfaction for sessions separated by a configurable customer inactivity gap (two hours by default). The satisfaction score is an internal estimate, **not Zendesk's official CSAT**. A complete, relevant bot answer or requested guidance can be scored satisfied without customer acknowledgement; partial or pending answers remain neutral, and unresolved negative feedback is unsatisfied. This applies across all topics.
 
 ## What changed from the supplied archive
 
@@ -76,6 +76,7 @@ Configure monitoring in `.env` with `MONITOR_LOOKBACK_HOURS=5`, `MONITOR_SESSION
 | `POST /sunshine/webhook` | Sunshine Conversations | `X-API-Key` shared secret; expected `app.id` | In-memory event enqueue, then `200`; malformed `400`, untrusted `401`, queue failure `503` |
 | `POST /sunshine/auth` | Logged-in website | `Authorization: Bearer <website-session-JWT>` | Short-lived Zendesk messaging JWT; body identity ignored |
 | `GET /sunshine/monitoring/sessions?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Paginated SQL session rows; date, text, score and cursor filters |
+| `GET /sunshine/monitoring/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Full-search ticket/session totals and both satisfaction breakdowns; date, text and score filters |
 | `GET /sunshine/monitoring/issues?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Specific customer intents ranked by session count across the full date/text/score search; no pagination |
 | `GET /health/live` / `/health/ready` | Hosting health probe | None | Liveness / SQL Server connectivity |
 | `GET /sunshine/inbox` | Local diagnostic | `Authorization: Bearer <REPORT_API_KEY>` | In-memory inbox counts, no payloads |
@@ -92,9 +93,11 @@ For Azure App Service deployment, see [the GitHub deployment steps](docs/AZURE_A
 
 Monitoring extracts one specific customer issue/request from the target session, resolving references with earlier messages. The intent includes a concise name, a product/model when known, and a description. Satisfaction reasons do not determine intent. There is no predefined intent list: Claude compares against every saved intent in bounded batches, reuses a confident equivalent, or creates a new canonical intent. Confirmed causes, observed symptoms, and different known products stay separate.
 
-The catalogue lives in `bot_monitor_intents`; evaluations reference it through `intent_id`. Common issues ranks identified intents across the applied date/text/score search, without an "Intent not identified" group. Its percentages still cover all matching sessions. Pending sessions and conversations without a clear request remain available in the session directory. Session details and plain Excel exports also show the intent. Old `issue_type` values remain for compatibility and are not used for grouping.
+The catalogue lives in `bot_monitor_intents`; evaluations reference it through `intent_id`. Common issues ranks intents across the applied date/text/score search and includes an "Intent not detected" group for sessions without an assigned intent, including pending classification. Its percentages cover all matching sessions. Clicking any group opens only its matching sessions through the shared paginated session table and details sidebar. Session details and plain Excel exports use the same missing-intent label. Old `issue_type` values remain for compatibility and are not used for grouping.
 
-The session directory, Common issues ranking, and sessions within an intent show up to 15 results per page using shared Previous/Next controls. Each view keeps its page when switching tabs or returning from session details. Excel exports still include all matching sessions across pages.
+The session directory, Common issues ranking, and sessions within an intent show up to 15 results per page using shared Previous/Next controls. Each view keeps its page when switching tabs or returning from session details. Excel follows the active tab: Session directory exports all matching sessions across pages; Common issues exports all ranked customer intents, including their product, session count, and percentage share. When a particular intent is open, its export contains that intent's single summary row. Both reports use the applied filters and plain worksheets.
+
+The overview cards, ticket/session charts, and PDF cover the entire applied date/text/score search. SQL counts all matching sessions and uses each ticket's latest matching session for ticket outcomes. The frontend fetches these compact totals alongside a new search, keeps them while paging or opening an intent, and refreshes them with the session directory. It does not download every session to calculate statistics. The session endpoint's existing page-only `summary` remains available; the overview uses the separate `/sunshine/monitoring/summary` endpoint.
 
 After applying migration 004, classify existing/pending sessions with:
 

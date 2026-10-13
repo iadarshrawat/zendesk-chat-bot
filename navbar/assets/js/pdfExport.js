@@ -82,17 +82,17 @@ export function createDashboardReport(source, filters) {
 }
 
 /**
- * Capture the current page overview and charts as a portrait A4 PDF with 12 mm margins.
+ * Capture the full-search overview and charts as a portrait A4 PDF with 12 mm margins.
  * @returns {Promise<Object>} The download filename after saving. Throws if rendering or downloading fails.
  */
-export async function downloadDashboardPdf(source, filters, page = 1) {
+export async function downloadDashboardPdf(source, filters) {
   const html2pdf = globalThis.html2pdf;
   if (typeof html2pdf !== "function")
     throw new Error(
       "The PDF library could not load. Reload the app and try again.",
     );
   const report = createDashboardReport(source, filters);
-  const fileName = `ai-ticket-monitoring_${filters.from}_to_${filters.to}_page-${page}.pdf`;
+  const fileName = `ai-ticket-monitoring_${filters.from}_to_${filters.to}.pdf`;
   try {
     const worker = html2pdf()
       .set({

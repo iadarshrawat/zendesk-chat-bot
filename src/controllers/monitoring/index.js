@@ -1,8 +1,8 @@
 import { getPool } from '../../loaders/database/sql/index.js';
 import { safeErrorMetadata } from '../../common/utils/timingLogger/index.js';
-import { monitoringIssues, monitoringPage } from '../../models/monitoring/index.js';
+import { monitoringIssues, monitoringPage, monitoringSummary } from '../../models/monitoring/index.js';
 import { reportFilters } from '../../middlewares/validation/monitoring/index.js';
-import { sessionFromRow, summarizeSessions, rankIssueCounts } from '../../common/monitoring/reportData/index.js';
+import { sessionFromRow, summarizeSessions, summarizeMonitoringCounts, rankIssueCounts } from '../../common/monitoring/reportData/index.js';
 
 /**
  * Validate a search, read one session page, and return the existing summary and cursor response.
@@ -56,6 +56,36 @@ export async function generateReport(req, res) {
       success: false,
       error: 'Monitoring data is temporarily unavailable.'
     });
+  }
+}
+
+/**
+ * Return overview totals for all sessions matching the applied search, without page limits.
+ * @param {Object} req - Express request with dates, text, and score filters.
+ * @param {Object} res - Express response.
+ * @returns {Promise<Object>} Full-search summary or a validation/unavailable response.
+ */
+export async function generateSummary(req, res) {
+  let filters;
+  try {
+    filters = reportFilters({ from: req.query.from, to: req.query.to, search: req.query.search, score: req.query.score });
+  } catch (error) {
+    return res.status(400).json({ success: false, error: error.message });
+  }
+  try {
+    const rows = await monitoringSummary(getPool(), filters);
+    res.set('Cache-Control', 'no-store');
+
+    return res.status(200).json({
+      success: true,
+      generated_at: new Date().toISOString(),
+      date_range: { from: filters.from, to: filters.to },
+      summary: summarizeMonitoringCounts(rows)
+    });
+  } catch (error) {
+    console.error('SQL monitoring summary unavailable', safeErrorMetadata(error));
+
+    return res.status(503).json({ success: false, error: 'Monitoring data is temporarily unavailable.' });
   }
 }
 

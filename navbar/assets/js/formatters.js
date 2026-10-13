@@ -14,7 +14,7 @@ const timestampFormatter = new Intl.DateTimeFormat("en", {
  * @returns {string} The canonical intent name, or the unclassified-session label.
  */
 export function formatCustomerIntent(value) {
-  return String(value || "").trim() || "Intent not identified";
+  return String(value || "").trim() || "Intent not detected";
 }
 
 /**

@@ -3,6 +3,7 @@ import {
   generateZendeskJWT,
   generateIssues,
   generateReport,
+  generateSummary,
   getInboxDiagnostics,
   handleSunshineMessage,
   livenessCheck,
@@ -25,6 +26,7 @@ export function createRoutes() {
   router.post('/sunshine/auth', requireAllowedOrigin, widgetCors, express.json({ limit: '1kb' }), requireSiteIdentity, generateZendeskJWT);
   router.get('/sunshine/report', requireReportKey, generateReport);
   router.get('/sunshine/monitoring/sessions', requireReportKey, generateReport);
+  router.get('/sunshine/monitoring/summary', requireReportKey, generateSummary);
   router.get('/sunshine/monitoring/issues', requireReportKey, generateIssues);
   router.get('/sunshine/inbox', requireReportKey, getInboxDiagnostics);
 

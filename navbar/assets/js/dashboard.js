@@ -275,14 +275,14 @@ function renderRows(sessions) {
 }
 
 /**
- * Display page totals, satisfaction charts, session rows, and pagination labels.
+ * Display full-search totals and charts alongside the paginated session or intent list.
  * @returns {void} Updates the dashboard using the supplied saved page state.
  */
 export function renderDashboard(state) {
-  const { sessions, filters, page, loaded } = state;
+  const { sessions, filters, loaded } = state;
   const view = displayedSessionPage(state);
   const pagination = displayedPagination(state);
-  const summary = summarizeSessions(sessions);
+  const summary = state.summary || summarizeSessions([]);
   elements.totalTickets.textContent = String(summary.tickets);
   elements.satisfiedTickets.textContent = String(summary.satisfiedTickets);
   elements.totalSessions.textContent = String(summary.sessions);
@@ -293,7 +293,7 @@ export function renderDashboard(state) {
   elements.ticketBreakdownTotal.textContent = `${summary.tickets} tickets`;
   elements.sessionBreakdownTotal.textContent = `${summary.sessions} sessions`;
   elements.rangeLabel.textContent = filters
-    ? `${filters.from} → ${filters.to} (report date · page ${page})`
+    ? `${filters.from} → ${filters.to} (report date · all matching sessions)`
     : "Choose a report date range";
   renderBreakdown(
     elements.ticketBreakdown,
@@ -368,7 +368,7 @@ function renderCommonIssues(state) {
     );
     intentButton.type = "button";
     intentButton.disabled = state.activity !== null;
-    intentButton.setAttribute("data-intent", issue.intent_id);
+    intentButton.setAttribute("data-intent", issue.intent_id ?? "unidentified");
     intentButton.setAttribute(
       "aria-label",
       `View ${issue.session_count} sessions for ${issue.intent_name}`,

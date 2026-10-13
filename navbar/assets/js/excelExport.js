@@ -1,10 +1,10 @@
-// js/: Excel export. This file fetches all matching sessions and downloads one plain Sessions worksheet.
+// js/: Excel export. This file downloads plain session or customer-intent reports using shared workbook helpers.
 import { fetchMonitoringPage, validateDateRange } from "./monitoringApi.js";
 import { compareSessionsNewestFirst } from "./reportData.js";
 import { formatCustomerIntent, formatLabel } from "./formatters.js";
 
 const HEADER_ROW = 1;
-const MAX_SESSIONS = 1_048_576 - HEADER_ROW;
+const MAX_EXCEL_ROWS = 1_048_576 - HEADER_ROW;
 const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -27,7 +27,7 @@ export async function fetchExportSessions(client, filters, onProgress) {
       if (!previous || session.updatedAt > previous.updatedAt)
         sessionsById.set(session.sessionId, session);
     }
-    if (sessionsById.size > MAX_SESSIONS)
+    if (sessionsById.size > MAX_EXCEL_ROWS)
       throw new Error(
         "This report exceeds Excel's row limit. Select a shorter date range.",
       );
@@ -54,7 +54,7 @@ function toExcelDate(value) {
 }
 
 /**
- * Convert a session number or message count to an Excel number cell value.
+ * Convert a numeric report field to an Excel number cell value.
  * @returns {number|null} A finite number, or null for a missing or invalid value.
  */
 function toExcelNumber(value) {
@@ -121,34 +121,48 @@ const sessionColumns = [
   { header: "Requester ID", key: "ticketRequesterId", width: 20 },
 ];
 
+const intentColumns = [
+  { header: "Customer intent", key: "intent_name", width: 60, type: "intent" },
+  { header: "Product", key: "product", width: 30 },
+  { header: "Sessions", key: "session_count", width: 14, type: "number" },
+  { header: "Share (%)", key: "percentage", width: 14, type: "decimal" },
+];
+
 /**
- * Add a plain Sessions worksheet with readable headers, typed dates, and exact text IDs.
+ * Add a plain report worksheet with readable headers and typed values.
+ * @param {Object} workbook - ExcelJS workbook receiving the sheet.
+ * @param {Array<Object>} records - Session or intent rows to export.
+ * @param {string} sheetName - Worksheet title.
+ * @param {Array<Object>} columns - Headers, record keys, widths, and value types.
  * @returns {Object} The worksheet that was added to the workbook.
  */
-function addSessionsSheet(workbook, records) {
-  const sheet = workbook.addWorksheet("Sessions");
-  sheet.columns = sessionColumns.map(({ header, key, width }) => ({
+function addReportSheet(workbook, records, sheetName, columns) {
+  const sheet = workbook.addWorksheet(sheetName);
+  sheet.columns = columns.map(({ header, key, width }) => ({
     header,
     key,
     width,
   }));
   sheet.getRow(HEADER_ROW).font = { bold: true };
   for (const record of records) {
-    const values = sessionColumns.map((column) => {
+    const values = columns.map((column) => {
       const value = record[column.key];
-      if (column.type === "number") return toExcelNumber(value);
+      if (column.type === "number" || column.type === "decimal")
+        return toExcelNumber(value);
       if (column.type === "date" || column.type === "datetime")
         return toExcelDate(value);
-      if (column.type === "label") return formatLabel(value, "");
+      if (column.type === "label") return formatLabel(value, "") || null;
       if (column.type === "intent") return formatCustomerIntent(value);
-      return value == null ? "" : String(value);
+      // Real blank cells avoid empty shared-string references appearing as numbers in some readers.
+      return value == null || value === "" ? null : String(value);
     });
     const row = sheet.addRow(values);
     row.eachCell({ includeEmpty: true }, (cell, index) => {
-      const column = sessionColumns[index - 1];
+      const column = columns[index - 1];
       if (column.type === "date") cell.numFmt = "yyyy-mm-dd";
       if (column.type === "datetime") cell.numFmt = "yyyy-mm-dd hh:mm:ss";
       if (column.type === "number") cell.numFmt = "#,##0";
+      if (column.type === "decimal") cell.numFmt = "0.0";
       if (!column.type) cell.numFmt = "@";
     });
   }
@@ -156,10 +170,17 @@ function addSessionsSheet(workbook, records) {
 }
 
 /**
- * Create a plain session-wise workbook after checking the date range and Excel row limit.
- * @returns {Object} The workbook, download filename, and number of exported sessions. Throws for empty or invalid reports.
+ * Validate report bounds and create a plain workbook for either export view.
+ * @param {Array<Object>} records - Rows for the chosen report.
+ * @param {Object} filters - Applied report dates and filters.
+ * @param {Object} options - Sheet name, columns, filename prefix, and empty-report message.
+ * @returns {Object} Workbook and download filename; throws for missing libraries or invalid reports.
  */
-export function createMonitoringWorkbook(sessions, filters) {
+function createReportWorkbook(
+  records,
+  filters,
+  { sheetName, columns, filePrefix, emptyMessage },
+) {
   const ExcelJS = globalThis.ExcelJS;
   if (typeof ExcelJS?.Workbook !== "function")
     throw new Error(
@@ -167,35 +188,89 @@ export function createMonitoringWorkbook(sessions, filters) {
     );
   const error = validateDateRange(filters.from, filters.to);
   if (error) throw new Error(error);
-  if (!sessions.length)
-    throw new Error(
-      "No monitoring sessions match this search. Choose different dates or filters.",
-    );
-  if (sessions.length > MAX_SESSIONS)
+  if (!records.length) throw new Error(emptyMessage);
+  if (records.length > MAX_EXCEL_ROWS)
     throw new Error(
       "This report exceeds Excel's row limit. Select a shorter date range.",
     );
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "AI Ticket Monitoring";
   workbook.created = new Date();
-  addSessionsSheet(workbook, sessions);
+  addReportSheet(workbook, records, sheetName, columns);
   return {
     workbook,
-    fileName: `ai-ticket-monitoring_${filters.from}_to_${filters.to}.xlsx`,
+    fileName: `${filePrefix}_${filters.from}_to_${filters.to}.xlsx`,
+  };
+}
+
+/**
+ * Create the existing session-wise report with all session details.
+ * @param {Array<Object>} sessions - Completed sessions matching the applied search.
+ * @param {Object} filters - Applied report dates and filters.
+ * @returns {Object} Workbook, download filename, and exported session count.
+ */
+export function createMonitoringWorkbook(sessions, filters) {
+  return {
+    ...createReportWorkbook(sessions, filters, {
+      sheetName: "Sessions",
+      columns: sessionColumns,
+      filePrefix: "ai-ticket-monitoring",
+      emptyMessage:
+        "No monitoring sessions match this search. Choose different dates or filters.",
+    }),
     sessions: sessions.length,
   };
 }
 
 /**
- * Write the completed workbook as an XLSX Blob and start its browser download.
- * @returns {Promise<Object>} The workbook, filename, and session count after the file is ready to download.
+ * Create one row per customer intent with its product, frequency, and share.
+ * @param {Array<Object>} intents - All ranked intents or the selected intent group.
+ * @param {Object} filters - Applied report dates and filters.
+ * @returns {Object} Workbook, download filename, and exported intent count.
  */
-export async function downloadMonitoringWorkbook(sessions, filters) {
-  const result = createMonitoringWorkbook(sessions, filters);
+export function createIntentWorkbook(intents, filters) {
+  return {
+    ...createReportWorkbook(intents, filters, {
+      sheetName: "Customer intents",
+      columns: intentColumns,
+      filePrefix: "customer-intents",
+      emptyMessage:
+        "No customer intents match this search. Choose different dates or filters.",
+    }),
+    intents: intents.length,
+  };
+}
+
+/**
+ * Write a completed workbook as an XLSX Blob and start its browser download.
+ * @param {Object} result - Created workbook, filename, and exported row count.
+ * @returns {Promise<Object>} The same report metadata after starting the download.
+ */
+async function downloadWorkbook(result) {
   const buffer = await result.workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: XLSX_MIME });
   downloadBlob(blob, result.fileName);
   return result;
+}
+
+/**
+ * Download a plain session report using the shared XLSX writer.
+ * @param {Array<Object>} sessions - Completed sessions to export.
+ * @param {Object} filters - Applied report dates and filters.
+ * @returns {Promise<Object>} Workbook, filename, and exported session count.
+ */
+export async function downloadMonitoringWorkbook(sessions, filters) {
+  return downloadWorkbook(createMonitoringWorkbook(sessions, filters));
+}
+
+/**
+ * Download a plain customer-intent report using the shared XLSX writer.
+ * @param {Array<Object>} intents - All ranked intents or the selected intent group.
+ * @param {Object} filters - Applied report dates and filters.
+ * @returns {Promise<Object>} Workbook, filename, and exported intent count.
+ */
+export async function downloadIntentWorkbook(intents, filters) {
+  return downloadWorkbook(createIntentWorkbook(intents, filters));
 }
 
 /**

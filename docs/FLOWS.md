@@ -135,7 +135,7 @@ flowchart TD
     I --> J[(SQL Server session metadata in same transaction)]
 ```
 
-A customer return before `MONITOR_SESSION_IDLE_HOURS` extends the current session. A return at or after that gap creates another session, even in the same ticket. The default gap is two hours and the default `MONITOR_LOOKBACK_HOURS` is five hours. `MONITOR_POLL_INTERVAL_MINUTES` controls polling, with a five-minute default. The evaluator sees the full earlier conversation through the target session, never future outcomes. A unique SQL session ID and an atomic evaluation/completion transaction prevent repeated LLM scoring. Silence alone is not considered satisfaction. Only tickets updated within the configured lookback enter a poll.
+A customer return before `MONITOR_SESSION_IDLE_HOURS` extends the current session. A return at or after that gap creates another session, even in the same ticket. The default gap is two hours and the default `MONITOR_LOOKBACK_HOURS` is five hours. `MONITOR_POLL_INTERVAL_MINUTES` controls polling, with a five-minute default. The evaluator sees the full earlier conversation through the target session, never future outcomes. A unique SQL session ID and an atomic evaluation/completion transaction prevent repeated LLM scoring. A complete, relevant answer is sufficient for satisfied without acknowledgement; silence alone is not. Only tickets updated within the configured lookback enter a poll.
 
 ## 9. Report and failure recovery
 

@@ -70,6 +70,42 @@ export function summarizeSessions(sessions) {
 }
 
 /**
+ * Convert SQL aggregate counts into overview totals for the complete filtered search.
+ * @param {Array<Object>} rows - Session and latest-ticket counts grouped by score.
+ * @returns {Object} Full-search totals, both breakdowns, and the scored-session satisfaction percentage.
+ */
+export function summarizeMonitoringCounts(rows) {
+  const sessionScores = Object.fromEntries(MONITORING_SCORES.map(score => [score, 0]));
+  const ticketScores = { ...sessionScores };
+  for (const row of rows) {
+    const sessions = Number(row.session_count);
+    const tickets = Number(row.ticket_count);
+    if (
+      !MONITORING_SCORES.includes(row.score) ||
+      !Number.isSafeInteger(sessions) ||
+      sessions < 0 ||
+      !Number.isSafeInteger(tickets) ||
+      tickets < 0 ||
+      tickets > sessions
+    ) {
+      throw new Error('Invalid monitoring summary counts');
+    }
+    sessionScores[row.score] = sessions;
+    ticketScores[row.score] = tickets;
+  }
+  const scored = sessionScores.satisfied + sessionScores.neutral + sessionScores.unsatisfied;
+
+  return {
+    scope: 'search',
+    total_tickets: Object.values(ticketScores).reduce((total, count) => total + count, 0),
+    total_sessions: Object.values(sessionScores).reduce((total, count) => total + count, 0),
+    ticket_score_breakdown: ticketScores,
+    score_breakdown: sessionScores,
+    csat_percent: scored ? Math.round((sessionScores.satisfied / scored) * 100) : null
+  };
+}
+
+/**
  * Rank canonical customer intents and calculate their share of matched sessions.
  * @param {Array<Object>} rows - SQL intent metadata and counts, including unclassified sessions.
  * @returns {Object} issues in descending frequency and totalSessions.
@@ -77,7 +113,7 @@ export function summarizeSessions(sessions) {
 export function rankIssueCounts(rows) {
   const issues = rows.map(row => ({
     intent_id: customerIntentId(row.intent_id),
-    intent_name: row.intent_name || 'Intent not identified',
+    intent_name: row.intent_name || 'Intent not detected',
     product: row.product || null,
     description: row.description || null,
     session_count: Number(row.session_count)

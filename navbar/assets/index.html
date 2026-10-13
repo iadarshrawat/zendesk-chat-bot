@@ -138,7 +138,7 @@
         </div>
         <div class="filter-actions">
           <p class="filter-note">
-            Search applies all filters. Counts reflect this page.
+            Search applies all filters. Counts cover all matching sessions.
           </p>
           <div class="filter-action-buttons">
             <button
@@ -167,32 +167,32 @@
         <div class="section-caption">
           <span id="range-label">Choose a report date range</span>
           <span>
-            Figures apply only to this page; ticket outcomes use the latest
-            session on this page.
+            Figures cover all matching sessions; ticket outcomes use the latest
+            matching session for each ticket.
           </span>
         </div>
         <section class="metric-grid" aria-label="Monitoring overview">
           <article class="metric-card">
-            <span class="metric-label">AI tickets on page</span>
+            <span class="metric-label">AI tickets</span>
             <strong id="total-tickets">—</strong>
-            <span class="metric-note">Distinct tickets shown</span>
+            <span class="metric-note">Distinct tickets in results</span>
           </article>
           <article class="metric-card">
-            <span class="metric-label">Satisfied tickets on page</span>
+            <span class="metric-label">Satisfied tickets</span>
             <strong id="satisfied-tickets">—</strong>
             <span class="metric-note">
-              Latest shown session scored satisfied
+              Latest matching session scored satisfied
             </span>
           </article>
           <article class="metric-card">
-            <span class="metric-label">Monitored sessions on page</span>
+            <span class="metric-label">Monitored sessions</span>
             <strong id="total-sessions">—</strong>
-            <span class="metric-note">Completed evaluations shown</span>
+            <span class="metric-note">Completed evaluations in results</span>
           </article>
           <article class="metric-card metric-card-accent">
-            <span class="metric-label">Estimated satisfaction on page</span>
+            <span class="metric-label">Estimated satisfaction</span>
             <strong id="satisfaction-percent">—</strong>
-            <span class="metric-note">Satisfied ÷ scored sessions shown</span>
+            <span class="metric-note">Satisfied ÷ all scored sessions</span>
           </article>
         </section>
 
@@ -200,7 +200,7 @@
           <article class="insight-card">
             <div class="card-heading">
               <div>
-                <p class="eyebrow">TICKETS ON PAGE</p>
+                <p class="eyebrow">TICKETS IN RESULTS</p>
                 <h2>Satisfaction by ticket</h2>
               </div>
               <span class="card-total" id="ticket-breakdown-total">
@@ -212,7 +212,7 @@
           <article class="insight-card">
             <div class="card-heading">
               <div>
-                <p class="eyebrow">SESSIONS ON PAGE</p>
+                <p class="eyebrow">SESSIONS IN RESULTS</p>
                 <h2>Satisfaction by session</h2>
               </div>
               <span class="card-total" id="session-breakdown-total">
@@ -329,17 +329,17 @@
                 </table>
               </div>
               <div class="empty-state" id="issues-empty" hidden>
-                <h3>No identified customer intents</h3>
+                <h3>No sessions found</h3>
                 <p>
-                  Sessions with an identified request appear here. View all
-                  matching sessions in the session directory.
+                  No monitored sessions match the applied filters. Try another
+                  date range or clear your search filters.
                 </p>
               </div>
               <p class="issues-note">
                 Similar customer requests share one intent. Product-specific
                 problems are grouped separately. Share covers all matched
-                sessions. Only identified intents are shown; all sessions remain
-                available in the session directory.
+                sessions. Sessions without a detected intent appear in the
+                "Intent not detected" group.
               </p>
             </div>
           </div>

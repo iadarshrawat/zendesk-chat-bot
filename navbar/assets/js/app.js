@@ -4,6 +4,7 @@ import { formatTimestamp } from "./formatters.js";
 import { displayedPagination, displayedSessionPage } from "./reportData.js";
 import {
   fetchMonitoringPage,
+  fetchMonitoringSummary,
   fetchMonitoringIssues,
   maxRangeDate,
   monitoringApiErrorMessage,
@@ -12,6 +13,7 @@ import {
 import {
   fetchExportSessions,
   downloadMonitoringWorkbook,
+  downloadIntentWorkbook,
 } from "./excelExport.js";
 import { downloadDashboardPdf } from "./pdfExport.js";
 
@@ -46,6 +48,7 @@ const elements = {
 const state = {
   client: null,
   sessions: [],
+  summary: null, // Whole-search overview, independent of the visible session page.
   filters: null,
   pagePositions: [{ cursor: null }],
   nextPagePosition: null,
@@ -127,13 +130,16 @@ function updateDateLimit() {
  */
 function updateActionButtons() {
   const busy = state.activity !== null;
-  const view = displayedSessionPage(state);
+  const isIntentExport = state.activeTab === "issues";
   const pagination = displayedPagination(state);
   elements.report.setAttribute("aria-busy", String(busy));
   elements.refreshButton.disabled = busy || !state.loaded;
   elements.searchButton.disabled = busy || !state.client;
   elements.clearFiltersButton.disabled = busy;
-  elements.excelButton.disabled = busy || !state.loaded;
+  elements.excelButton.disabled =
+    busy ||
+    !state.loaded ||
+    (isIntentExport && (!state.issuesLoaded || !state.issues.length));
   elements.pdfButton.disabled = busy || !state.loaded;
   elements.previousPageButton.disabled =
     busy || !pagination.loaded || !pagination.hasPrevious;
@@ -143,13 +149,19 @@ function updateActionButtons() {
   elements.issuesTab.disabled = busy && state.activity !== "issues";
   elements.retryIssuesButton.disabled = busy;
   elements.backToIssuesButton.disabled = busy;
-  elements.excelButton.title = view.issue
-    ? "Export all matching sessions for this intent"
-    : "Export all results matching your latest search";
+  elements.excelButton.title = isIntentExport
+    ? state.intentView
+      ? "Export this customer intent to Excel"
+      : "Export all customer intents matching your latest search to Excel"
+    : "Export all sessions matching your latest search to Excel";
   elements.refreshButton.textContent =
     state.activity === "search" ? "Loading…" : "Refresh page";
   elements.excelButtonLabel.textContent =
-    state.activity === "excel" ? "Exporting…" : "Export Excel";
+    state.activity === "excel"
+      ? "Exporting…"
+      : isIntentExport
+        ? "Export intents"
+        : "Export Excel";
   elements.pdfButtonLabel.textContent =
     state.activity === "pdf" ? "Creating PDF…" : "Download PDF";
 }
@@ -189,12 +201,14 @@ async function openTicket(ticketId) {
  * @param {number} page - Requested page number.
  * @param {Object} target - Saved page state to update; defaults to the visible view.
  * @param {Object} filters - Applied search, defaulting to the target's saved filters.
+ * @param {Object} options - refreshSummary refreshes totals when reloading a directory page.
  * @returns {Promise<void>} Updates the saved page on success; displays an error on failure.
  */
 async function loadPage(
   page,
   target = displayedSessionPage(state),
   filters = target.filters || state.filters,
+  { refreshSummary = false } = {},
 ) {
   if (!state.client || state.activity) return;
   const error = validateDateRange(filters?.from, filters?.to);
@@ -216,11 +230,14 @@ async function loadPage(
     // Page one starts a fresh cursor chain. Later pages use their saved cursor.
     let positions = [{ cursor: null }];
     if (page > 1) positions = target.pagePositions.slice(0, page);
-    const result = await fetchMonitoringPage(
-      state.client,
-      filters,
-      positions[page - 1],
-    );
+    const needsSummary =
+      target === state && (page === 1 || refreshSummary || !state.summary);
+    const [result, summary] = await Promise.all([
+      fetchMonitoringPage(state.client, filters, positions[page - 1]),
+      needsSummary
+        ? fetchMonitoringSummary(state.client, filters)
+        : Promise.resolve(state.summary),
+    ]);
 
     target.sessions = result.sessions;
     target.filters = { ...filters };
@@ -229,6 +246,7 @@ async function loadPage(
     target.page = page;
     target.loaded = true;
     if (target === state) {
+      state.summary = summary;
       state.intentView = null;
       state.issues = [];
       state.issuesPage = 1;
@@ -262,7 +280,7 @@ async function showIntentSessions(issue) {
   if (!state.loaded || state.activity) return;
   state.intentView = {
     issue,
-    filters: { ...state.filters, intent: issue.intent_id },
+    filters: { ...state.filters, intent: issue.intent_id ?? "unidentified" },
     sessions: [],
     pagePositions: [{ cursor: null }],
     nextPagePosition: null,
@@ -372,7 +390,10 @@ async function refreshPage() {
     await loadIssues();
     return;
   }
-  await loadPage(displayedSessionPage(state).page);
+  const view = displayedSessionPage(state);
+  await loadPage(view.page, view, view.filters || state.filters, {
+    refreshSummary: view === state,
+  });
 }
 
 /**
@@ -419,12 +440,13 @@ function showExportProgress(progress) {
 }
 
 /**
- * Download all sessions matching the last successful search as a plain Excel file.
+ * Export customer intents from Common issues, or all sessions from Session directory.
  * @returns {Promise<void>} Finishes after the download starts or an error is shown.
  */
 async function exportExcel() {
   if (!state.loaded || state.activity) return;
-  const filters = { ...displayedSessionPage(state).filters };
+  const isIntentExport = state.activeTab === "issues";
+  const filters = { ...state.filters };
   setActivity("excel");
   elements.excelStatus.hidden = false;
   elements.excelStatus.textContent = `Preparing Excel for ${filters.from} to ${filters.to}…`;
@@ -436,14 +458,23 @@ async function exportExcel() {
         "The Excel library could not load. Reload the app and try again.",
       );
     }
-    const sessions = await fetchExportSessions(
-      state.client,
-      filters,
-      showExportProgress,
-    );
-    elements.excelStatus.textContent = "Creating Excel file…";
-    const result = await downloadMonitoringWorkbook(sessions, filters);
-    elements.excelStatus.textContent = `Exported ${result.sessions} sessions for ${filters.from} to ${filters.to}.`;
+    if (isIntentExport) {
+      const intents = state.intentView
+        ? [state.intentView.issue]
+        : state.issues;
+      elements.excelStatus.textContent = "Creating customer intent Excel file…";
+      const result = await downloadIntentWorkbook(intents, filters);
+      elements.excelStatus.textContent = `Exported ${result.intents} customer intents for ${filters.from} to ${filters.to}.`;
+    } else {
+      const sessions = await fetchExportSessions(
+        state.client,
+        filters,
+        showExportProgress,
+      );
+      elements.excelStatus.textContent = "Creating Excel file…";
+      const result = await downloadMonitoringWorkbook(sessions, filters);
+      elements.excelStatus.textContent = `Exported ${result.sessions} sessions for ${filters.from} to ${filters.to}.`;
+    }
   } catch (error) {
     elements.excelStatus.hidden = true;
     showNotice(`Excel export failed. ${monitoringApiErrorMessage(error)}`);
@@ -453,13 +484,12 @@ async function exportExcel() {
 }
 
 /**
- * Download the displayed overview and charts as an A4 PDF.
+ * Download the full-search overview and charts as an A4 PDF.
  * @returns {Promise<void>} Finishes after the download starts or an error is shown.
  */
 async function exportPdf() {
   if (!state.loaded || state.activity) return;
   const filters = { ...state.filters };
-  const page = state.page;
   setActivity("pdf");
   elements.pdfStatus.hidden = false;
   elements.pdfStatus.textContent =
@@ -467,8 +497,8 @@ async function exportPdf() {
   clearNotice();
 
   try {
-    await downloadDashboardPdf(elements.report, filters, page);
-    elements.pdfStatus.textContent = `PDF downloaded for ${filters.from} to ${filters.to} · page ${page}.`;
+    await downloadDashboardPdf(elements.report, filters);
+    elements.pdfStatus.textContent = `PDF downloaded for ${filters.from} to ${filters.to}.`;
   } catch (error) {
     elements.pdfStatus.hidden = true;
     showNotice(`PDF export failed. ${error?.message || "Please try again."}`);

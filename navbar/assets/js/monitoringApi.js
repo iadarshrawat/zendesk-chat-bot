@@ -1,6 +1,7 @@
 // js/: API access. This file validates report dates and fetches SQL sessions through the Zendesk proxy.
-import { completedSessions } from "./reportData.js";
+import { completedSessions, SATISFACTION_SCORES } from "./reportData.js";
 import { MONITORING_API } from "./monitoringConfig.js";
+import { formatCustomerIntent } from "./formatters.js";
 
 /**
  * Read an exact YYYY-MM-DD date and reject invalid calendar dates.
@@ -53,7 +54,7 @@ export function monitoringApiErrorMessage(error) {
   if (status === 401 || status === 403)
     return "Report access was denied. Check that the frontend API key matches the backend REPORT_API_KEY.";
   if (status === 404)
-    return "The monitoring API endpoint was not found. Check the frontend backend hostname.";
+    return "The monitoring endpoint was not found. Restart the backend with the latest code, reload the app, and check the configured backend hostname.";
   if (status === 400)
     return "The monitoring API rejected this search. Check the dates and search text.";
   return (
@@ -141,7 +142,59 @@ export async function fetchMonitoringPage(
 }
 
 /**
- * Request canonical customer intent counts for every session matching the applied search.
+ * Fetch overview totals and both satisfaction breakdowns for the entire applied search.
+ * @param {Object} client - Zendesk SDK client.
+ * @param {Object} filters - Applied report dates, text, and satisfaction score.
+ * @returns {Promise<Object>} Full-search totals in the dashboard's display format.
+ */
+export async function fetchMonitoringSummary(client, filters) {
+  const error = validateDateRange(filters.from, filters.to);
+  if (error) throw new Error(error);
+  const response = await requestMonitoring(
+    client,
+    "summary",
+    reportParams(filters),
+  );
+  const summary = response?.summary;
+  const sessionScores = summary?.score_breakdown;
+  const ticketScores = summary?.ticket_score_breakdown;
+  const counts = [
+    summary?.total_tickets,
+    summary?.total_sessions,
+    ...SATISFACTION_SCORES.flatMap((score) => [
+      sessionScores?.[score],
+      ticketScores?.[score],
+    ]),
+  ];
+  if (
+    response?.success !== true ||
+    summary?.scope !== "search" ||
+    counts.some((count) => !Number.isSafeInteger(count) || count < 0) ||
+    !(
+      summary.csat_percent === null ||
+      (Number.isInteger(summary.csat_percent) &&
+        summary.csat_percent >= 0 &&
+        summary.csat_percent <= 100)
+    ) ||
+    Object.values(sessionScores).reduce((total, count) => total + count, 0) !==
+      summary.total_sessions ||
+    Object.values(ticketScores).reduce((total, count) => total + count, 0) !==
+      summary.total_tickets
+  ) {
+    throw new Error("The monitoring API returned invalid full-search totals.");
+  }
+  return {
+    tickets: summary.total_tickets,
+    sessions: summary.total_sessions,
+    satisfiedTickets: ticketScores.satisfied,
+    ticketScores,
+    sessionScores,
+    estimatedSatisfactionPercent: summary.csat_percent,
+  };
+}
+
+/**
+ * Request customer intent counts, including sessions without a detected intent.
  * @returns {Promise<Object>} Ranked issues and totalSessions for the entire date range.
  */
 export async function fetchMonitoringIssues(client, filters) {
@@ -180,7 +233,11 @@ export async function fetchMonitoringIssues(client, filters) {
     }
   }
   return {
-    issues: response.issues.filter((issue) => issue.intent_id !== null),
+    issues: response.issues.map((issue) =>
+      issue.intent_id === null
+        ? { ...issue, intent_name: formatCustomerIntent(null) }
+        : issue,
+    ),
     totalSessions: response.total_sessions,
   };
 }

@@ -198,6 +198,36 @@ export async function monitoringPage(db, { from, to, score, search, intent = '',
 }
 
 /**
+ * Count all matching sessions and the latest matching session for each ticket, without pagination.
+ * @param {Object} db - SQL connection pool.
+ * @param {Object} filters - Applied report dates, search text, and satisfaction score.
+ * @returns {Promise<Array<Object>>} Session and latest-ticket counts grouped by satisfaction score.
+ */
+export async function monitoringSummary(db, filters) {
+  const result = await executeBoundedSql(
+    db,
+    `SELECT score, COUNT_BIG(*) AS session_count,
+      SUM(CASE WHEN ticket_rank = 1 THEN CAST(1 AS BIGINT) ELSE 0 END) AS ticket_count
+    FROM (
+      SELECT e.csat_score AS score,
+        ROW_NUMBER() OVER (PARTITION BY s.ticket_id
+          ORDER BY e.session_number DESC, s.evaluated_at DESC, e.updated_at DESC, e.session_id DESC) AS ticket_rank
+      ${reportFilterSql()}
+    ) AS matched_sessions
+    GROUP BY score`,
+    reportParameters(filters),
+    {
+      timeoutMs: 10_000,
+      retryRead: true,
+      stage: 'mssql.monitor_summary',
+      parameterTypes: REPORT_PARAMETER_TYPES
+    }
+  );
+
+  return result.recordset || [];
+}
+
+/**
  * Count each matching session once by its canonical customer intent across the full applied search.
  * @param {Object} db - SQL connection pool.
  * @param {Object} filters - Existing search filters.
