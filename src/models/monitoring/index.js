@@ -22,7 +22,9 @@ const EVALUATION_TYPES = {
   follow_up_required: sql.Bit,
   key_issue: sql.NVarChar(1024),
   updated_at: sql.DateTime2(3),
-  issue_type: sql.VarChar(32)
+  issue_type: sql.VarChar(32),
+  intent_id: sql.Char(64),
+  intent_classified_at: sql.DateTime2(3)
 };
 
 const REPORT_PARAMETER_TYPES = {
@@ -30,6 +32,7 @@ const REPORT_PARAMETER_TYPES = {
   to: sql.Date,
   score: sql.VarChar(32),
   search: sql.NVarChar(200),
+  intent: sql.VarChar(64),
   pattern: sql.NVarChar(402)
 };
 
@@ -40,23 +43,27 @@ const REPORT_PARAMETER_TYPES = {
 function reportFilterSql() {
   return `FROM ${sqlTable('bot_monitor_evaluations')} AS e
     INNER JOIN ${sqlTable('bot_monitor_sessions')} AS s ON s.session_id = e.session_id
+    LEFT JOIN ${sqlTable('bot_monitor_intents')} AS i ON i.intent_id = e.intent_id
     WHERE e.report_date BETWEEN @from AND @to
       AND (@score = '' OR e.csat_score = @score)
+      AND (@intent = '' OR e.intent_id = @intent OR (@intent = 'unidentified' AND e.intent_id IS NULL))
       AND (@search = '' OR s.ticket_id LIKE @pattern ESCAPE '~'
         OR e.ticket_subject LIKE @pattern ESCAPE '~' OR e.reason LIKE @pattern ESCAPE '~'
-        OR e.key_issue LIKE @pattern ESCAPE '~')`;
+        OR e.key_issue LIKE @pattern ESCAPE '~' OR i.name LIKE @pattern ESCAPE '~'
+        OR i.product LIKE @pattern ESCAPE '~' OR i.description LIKE @pattern ESCAPE '~')`;
 }
 
 /**
  * Bind the report dates and filters, escaping LIKE characters as literal text.
  * @returns {Object} Parameter values shared by directory and issue-count queries.
  */
-function reportParameters({ from, to, score, search }) {
+function reportParameters({ from, to, score, search, intent = '' }) {
   return {
     from: new Date(`${from}T00:00:00Z`),
     to: new Date(`${to}T00:00:00Z`),
     score,
     search,
+    intent,
     pattern: `%${search.replace(/[~%_\[]/g, character => `~${character}`)}%`
   };
 }
@@ -103,9 +110,11 @@ export async function saveMonitoringSession(db, record, { replaceOlder = false }
       ELSE IF @replaceOlder = 1
       BEGIN
         UPDATE ${evaluations} SET ${columns
-          .filter(name => name !== 'session_id')
+          .filter(name => !['session_id', 'intent_id', 'intent_classified_at'].includes(name))
           .map(name => `${name} = @${name}`)
-          .join(', ')}
+          .join(', ')},
+          intent_id = CASE WHEN @intent_classified_at IS NULL THEN intent_id ELSE @intent_id END,
+          intent_classified_at = COALESCE(@intent_classified_at, intent_classified_at)
           WHERE session_id = @session_id AND updated_at < @updated_at;
         IF @@ROWCOUNT > 0 SET @written = 1;
       END;
@@ -143,10 +152,10 @@ export async function saveMonitoringSession(db, record, { replaceOlder = false }
 /**
  * Read one bounded, filtered session page and check whether another cursor page exists.
  * @param {Object} db - SQL connection pool.
- * @param {Object} options - Options: from, to, score, search, limit, after.
+ * @param {Object} options - Options: from, to, score, search, intent, limit, after.
  * @returns {Promise<Object>} Page rows and hasMore using the existing report ordering.
  */
-export async function monitoringPage(db, { from, to, score, search, limit, after }) {
+export async function monitoringPage(db, { from, to, score, search, intent = '', limit, after }) {
   const result = await executeBoundedSql(
     db,
     `SELECT TOP (@rowLimit)
@@ -156,14 +165,15 @@ export async function monitoringPage(db, { from, to, score, search, limit, after
       e.last_message_at AS session_last_message_at, e.message_count AS session_message_count,
       e.evaluation_due_at, e.report_date, e.csat_score AS score, e.reason,
       e.monitoring_status, e.confidence, e.human_required, e.follow_up_required,
-      e.key_issue, e.issue_type, e.updated_at
+      e.key_issue, e.issue_type, e.updated_at, e.intent_id, e.intent_classified_at,
+      i.name AS intent_name, i.product AS intent_product
     ${reportFilterSql()}
       AND (@afterId IS NULL OR e.report_date < @afterDate
         OR (e.report_date = @afterDate AND e.updated_at < @afterUpdated)
         OR (e.report_date = @afterDate AND e.updated_at = @afterUpdated AND e.session_id < @afterId))
     ORDER BY e.report_date DESC, e.updated_at DESC, e.session_id DESC`,
     {
-      ...reportParameters({ from, to, score, search }),
+      ...reportParameters({ from, to, score, search, intent }),
       rowLimit: limit + 1,
       afterId: after?.session_id || null,
       afterDate: after ? new Date(`${after.report_date}T00:00:00Z`) : null,
@@ -188,19 +198,19 @@ export async function monitoringPage(db, { from, to, score, search, limit, after
 }
 
 /**
- * Count each matching session once by its primary issue across the full applied search.
+ * Count each matching session once by its canonical customer intent across the full applied search.
  * @param {Object} db - SQL connection pool.
  * @param {Object} filters - Existing search filters.
- * @returns {Promise<Array<Object>>} SQL categories and counts in descending frequency; legacy nulls remain unknown.
+ * @returns {Promise<Array<Object>>} Intent descriptions and counts; unclassified sessions have a null intent ID.
  */
 export async function monitoringIssues(db, filters) {
   const result = await executeBoundedSql(
     db,
     `SELECT
-      COALESCE(e.issue_type, 'unknown') AS issue_type, COUNT_BIG(*) AS session_count
+      e.intent_id, i.name AS intent_name, i.product, i.description, COUNT_BIG(*) AS session_count
     ${reportFilterSql()}
-    GROUP BY COALESCE(e.issue_type, 'unknown')
-    ORDER BY session_count DESC, issue_type ASC`,
+    GROUP BY e.intent_id, i.name, i.product, i.description
+    ORDER BY session_count DESC, intent_name ASC, e.intent_id ASC`,
     reportParameters(filters),
     {
       timeoutMs: 10_000,
@@ -212,3 +222,5 @@ export async function monitoringIssues(db, filters) {
 
   return result.recordset || [];
 }
+
+export * from './intents/index.js';

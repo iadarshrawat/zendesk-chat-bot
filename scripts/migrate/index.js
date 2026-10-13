@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import sql from 'mssql';
 import { sqlServerConfig } from '../../src/loaders/database/sql/index.js';
-import { applyIssueTypeSchema, databaseSchema, initializeCoreSchema } from '../../src/models/schema/index.js';
+import { applyIssueTypeSchema, applyIntentSchema, databaseSchema, initializeCoreSchema } from '../../src/models/schema/index.js';
 import { safeErrorMetadata } from '../../src/common/utils/timingLogger/index.js';
 
 const config = sqlServerConfig();
@@ -20,7 +20,8 @@ try {
   await pool.connect();
   await initializeCoreSchema(pool, process.env.DB_SCHEMA);
   await applyIssueTypeSchema(pool, process.env.DB_SCHEMA);
-  console.log('SQL Server migration complete, including monitoring issue types');
+  await applyIntentSchema(pool, process.env.DB_SCHEMA);
+  console.log('SQL Server migration complete, including the monitoring customer intent catalogue');
 } catch (error) {
   console.error('SQL Server migration failed', safeErrorMetadata(error));
   process.exitCode = 1;

@@ -56,7 +56,9 @@ const monitoringEvaluations = {
     follow_up_required: { type: 'bit', nullable: true },
     key_issue: { type: 'nvarchar', maxLength: 2048, nullable: true },
     updated_at: { type: 'datetime2', scale: 3, nullable: false },
-    issue_type: { type: 'varchar', maxLength: 32, nullable: true }
+    issue_type: { type: 'varchar', maxLength: 32, nullable: true },
+    intent_id: { type: 'char', maxLength: 64, nullable: true },
+    intent_classified_at: { type: 'datetime2', scale: 3, nullable: true }
   },
   primaryKey: ['session_id'],
   indexes: {
@@ -73,13 +75,28 @@ const monitoringEvaluations = {
     name: 'FK_bot_monitor_evaluations_session',
     column: 'session_id',
     table: 'bot_monitor_sessions'
-  }
+  },
+  foreignKeys: [
+    { name: 'FK_bot_monitor_evaluations_intent', column: 'intent_id', table: 'bot_monitor_intents', referencedColumn: 'intent_id' }
+  ]
+};
+const monitoringIntents = {
+  columns: {
+    intent_id: { type: 'char', maxLength: 64, nullable: false },
+    name: { type: 'nvarchar', maxLength: 480, nullable: false },
+    product: { type: 'nvarchar', maxLength: 320, nullable: true },
+    description: { type: 'nvarchar', maxLength: 2000, nullable: false },
+    created_at: { type: 'datetime2', scale: 3, nullable: false }
+  },
+  primaryKey: ['intent_id'],
+  indexes: {}
 };
 const tableDefinitions = Object.freeze({
   ...coreTables,
-  bot_monitor_evaluations: monitoringEvaluations
+  bot_monitor_evaluations: monitoringEvaluations,
+  bot_monitor_intents: monitoringIntents
 });
-const coreTableNames = Object.freeze(Object.keys(tableDefinitions));
+const coreTableNames = Object.freeze(Object.keys(tableDefinitions).filter(name => name !== 'bot_monitor_intents'));
 
 function schemaError(code, message) {
   const error = new Error(message);
@@ -369,10 +386,16 @@ function describeCheckMismatch(tableName, checks, jsonColumn) {
  * @param {string} schemaName - Validated SQL schema name.
  * @param {string} tableName - Application-owned SQL table name.
  * @param {Object} expected - Expected schema contract.
- * @param {boolean} allowLegacyIssueType - Allow only the exact pre-issue schema during an explicit migration.
+ * @param {Object} options - Allow only missing additive issue/intent fields during an explicit migration.
  * @returns {Promise<void>} Resolves for a compatible table; otherwise throws the schema error.
  */
-async function verifyTableDefinition(db, schemaName, tableName, expected, allowLegacyIssueType = false) {
+async function verifyTableDefinition(
+  db,
+  schemaName,
+  tableName,
+  expected,
+  { allowLegacyIssueType = false, allowLegacyIntents = false } = {}
+) {
   const [columns, indexes, checks] = await Promise.all([
     readColumns(db, schemaName, tableName),
     readIndexes(db, schemaName, tableName),
@@ -388,6 +411,15 @@ async function verifyTableDefinition(db, schemaName, tableName, expected, allowL
       columns: legacyColumns,
       requiredChecks: expected.requiredChecks.filter(name => name !== 'CK_bot_monitor_evaluations_issue_type')
     };
+  }
+  if (tableName === 'bot_monitor_evaluations' && allowLegacyIntents) {
+    const legacyColumns = { ...expected.columns };
+    for (const field of ['intent_id', 'intent_classified_at']) {
+      if (!columns.some(column => column.column_name === field)) {
+        delete legacyColumns[field];
+      }
+    }
+    expected = { ...expected, columns: legacyColumns };
   }
 
   const mismatch =
@@ -405,7 +437,8 @@ async function verifyTableDefinition(db, schemaName, tableName, expected, allowL
       `Existing table [${schemaName}].[${tableName}] is incompatible: ${mismatch || `missing trusted check ${missingCheck}`}`
     );
   }
-  if (expected.foreignKey) {
+  const foreignKeys = [expected.foreignKey, ...(expected.foreignKeys || [])].filter(Boolean);
+  if (foreignKeys.length) {
     const result = await query(
       db,
       `SELECT keys.name AS constraint_name, keys.is_disabled, keys.is_not_trusted,
@@ -420,18 +453,23 @@ async function verifyTableDefinition(db, schemaName, tableName, expected, allowL
       WHERE schemas.name = @schemaName AND tables.name = @tableName`,
       { schemaName, tableName }
     );
-    const rows = result.recordset.filter(row => row.constraint_name === expected.foreignKey.name);
-    const row = rows[0];
-    if (
-      rows.length !== 1 ||
-      booleanValue(row.is_disabled) ||
-      booleanValue(row.is_not_trusted) ||
-      row.column_name !== expected.foreignKey.column ||
-      row.referenced_schema !== schemaName ||
-      row.referenced_table !== expected.foreignKey.table ||
-      row.referenced_column !== 'session_id'
-    ) {
-      throw schemaError('SQLSERVER_INCOMPATIBLE_SCHEMA', `${tableName} requires a trusted session foreign key`);
+    for (const foreignKey of foreignKeys) {
+      const rows = result.recordset.filter(row => row.constraint_name === foreignKey.name);
+      if (allowLegacyIntents && foreignKey.name === 'FK_bot_monitor_evaluations_intent' && !rows.length) {
+        continue;
+      }
+      const row = rows[0];
+      if (
+        rows.length !== 1 ||
+        booleanValue(row.is_disabled) ||
+        booleanValue(row.is_not_trusted) ||
+        row.column_name !== foreignKey.column ||
+        row.referenced_schema !== schemaName ||
+        row.referenced_table !== foreignKey.table ||
+        row.referenced_column !== (foreignKey.referencedColumn || 'session_id')
+      ) {
+        throw schemaError('SQLSERVER_INCOMPATIBLE_SCHEMA', `${tableName} requires trusted foreign key ${foreignKey.name}`);
+      }
     }
   }
 }
@@ -440,10 +478,10 @@ async function verifyTableDefinition(db, schemaName, tableName, expected, allowL
  * Verify the application tables without creating or changing database objects.
  * @param {Object} db - SQL connection pool.
  * @param {string} requestedSchema - Configured SQL schema name.
- * @param {Object} options - Options: allowLegacyIssueType.
+ * @param {Object} options - Allow missing additive fields only while explicitly migrating.
  * @returns {Promise<void>} Resolves for the expected contract; otherwise throws a schema error.
  */
-export async function verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType = false } = {}) {
+export async function verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType = false, allowLegacyIntents = false } = {}) {
   const schemaName = databaseSchema(requestedSchema);
 
   if (!(await schemaExists(db, schemaName))) {
@@ -461,7 +499,7 @@ export async function verifyCoreSchema(db, requestedSchema, { allowLegacyIssueTy
       continue;
     }
 
-    await verifyTableDefinition(db, schemaName, tableName, tableDefinitions[tableName], allowLegacyIssueType);
+    await verifyTableDefinition(db, schemaName, tableName, tableDefinitions[tableName], { allowLegacyIssueType, allowLegacyIntents });
   }
 
   if (missingTables.length > 0) {
@@ -469,6 +507,15 @@ export async function verifyCoreSchema(db, requestedSchema, { allowLegacyIssueTy
       'SQLSERVER_MISSING_TABLE',
       `Missing SQL Server table(s): ${missingTables.map(name => sqlTable(name, schemaName)).join(', ')}`
     );
+  }
+  if (!allowLegacyIntents) {
+    if (!(await tableExists(db, schemaName, 'bot_monitor_intents'))) {
+      throw schemaError(
+        'SQLSERVER_MISSING_TABLE',
+        `Missing SQL Server table ${sqlTable('bot_monitor_intents', schemaName)}; run db:migrate`
+      );
+    }
+    await verifyTableDefinition(db, schemaName, 'bot_monitor_intents', monitoringIntents);
   }
 }
 
@@ -536,7 +583,7 @@ async function applyCoreSchema(db, requestedSchema) {
  */
 export async function initializeCoreSchema(db, requestedSchema) {
   try {
-    await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true });
+    await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true, allowLegacyIntents: true });
 
     return false;
   } catch (error) {
@@ -546,7 +593,7 @@ export async function initializeCoreSchema(db, requestedSchema) {
   }
 
   await applyCoreSchema(db, requestedSchema);
-  await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true });
+  await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true, allowLegacyIntents: true });
 
   return true;
 }
@@ -559,8 +606,25 @@ export async function initializeCoreSchema(db, requestedSchema) {
  */
 export async function applyIssueTypeSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
-  await verifyCoreSchema(db, schemaName, { allowLegacyIssueType: true });
+  await verifyCoreSchema(db, schemaName, { allowLegacyIssueType: true, allowLegacyIntents: true });
   const template = await readFile(new URL('../../../migrations/003_monitor_issue_type.sql', import.meta.url), 'utf8');
+  await db.request().batch(template.replaceAll('{{schema}}', schemaName));
+  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true });
+}
+
+/**
+ * Add the dynamic intent catalogue and nullable session assignments after validating existing storage.
+ * @param {Object} db - Explicit migration SQL connection pool.
+ * @param {string} requestedSchema - Configured SQL schema name.
+ * @returns {Promise<void>} Completes an additive, rerunnable upgrade without changing existing evaluations.
+ */
+export async function applyIntentSchema(db, requestedSchema) {
+  const schemaName = databaseSchema(requestedSchema);
+  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true });
+  if (await tableExists(db, schemaName, 'bot_monitor_intents')) {
+    await verifyTableDefinition(db, schemaName, 'bot_monitor_intents', monitoringIntents);
+  }
+  const template = await readFile(new URL('../../../migrations/004_monitor_customer_intents.sql', import.meta.url), 'utf8');
   await db.request().batch(template.replaceAll('{{schema}}', schemaName));
   await verifyCoreSchema(db, schemaName);
 }

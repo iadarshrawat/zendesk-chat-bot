@@ -1,6 +1,7 @@
-import { monitoringRecord, SESSION_GAP_MS } from '../../../common/monitoring/validation/index.js';
-import { saveMonitoringSession } from '../../../models/monitoring/index.js';
-import { fetchLegacyMonitoringRecords } from '../../../api/zendesk/customObjects/index.js';
+// Maintenance-only import of the historical Zendesk monitoring object.
+import { monitoringRecord, SESSION_GAP_MS } from '../../../src/common/monitoring/validation/index.js';
+import { saveMonitoringSession } from '../../../src/models/monitoring/index.js';
+import { fetchLegacyMonitoringRecords } from '../../../src/api/zendesk/customObjects/index.js';
 
 /**
  * Normalize an eligible historical custom-object record for the explicit SQL import.
@@ -46,10 +47,10 @@ export function legacyMonitoringRecord(record) {
 
 /**
  * Read historical records without changing Zendesk and import only new or explicitly newer SQL results.
- * @param {Object} options - Options: client, db, save.
+ * @param {Object} options - Authenticated Zendesk client and SQL db.
  * @returns {Promise<Object>} Read, imported, unchanged, skipped, and invalid record counts.
  */
-export async function importLegacyMonitoring({ client, db, save = saveMonitoringSession }) {
+export async function importLegacyMonitoring({ client, db }) {
   const summary = {
     read: 0,
     imported: 0,
@@ -80,7 +81,7 @@ export async function importLegacyMonitoring({ client, db, save = saveMonitoring
         continue;
       }
       // Newest historical duplicate wins; existing newer SQL results remain.
-      const changed = await save(db, value, { replaceOlder: true });
+      const changed = await saveMonitoringSession(db, value, { replaceOlder: true });
       summary[changed ? 'imported' : 'unchanged'] += 1;
     }
     if (!data.meta?.has_more) {

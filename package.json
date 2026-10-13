@@ -13,11 +13,9 @@
     "db:check": "node scripts/checkSqlServerConnection/index.js",
     "diagnose": "node scripts/diagnoseInbox/index.js",
     "ingest": "node scripts/ingestKnowledge/index.js",
-    "monitor:preview": "node scripts/previewMonitoringTicket/index.js",
     "monitor:import": "node scripts/importMonitoringHistory/index.js",
-    "monitor:test": "node --test tests/monitoring/*.test.js",
-    "test": "node --test",
-    "check": "node --check index.js && node --check src/common/cron/index.js && node --check src/loaders/database/sql/index.js && node --check src/models/schema/index.js && node --check src/services/monitoring/report/index.js && node --check src/models/monitoring/index.js && node --check src/services/monitoring/worker/index.js && node --check src/models/inbox/index.js && node --check src/models/conversationState/index.js && node --check scripts/checkSqlServerConnection/index.js && node --check scripts/previewMonitoringTicket/index.js"
+    "monitor:intents": "node scripts/backfillMonitoringIntents/index.js",
+    "check": "node --check index.js && node --check src/common/cron/index.js && node --check src/loaders/database/sql/index.js && node --check src/models/schema/index.js && node --check src/services/monitoring/report/index.js && node --check src/models/monitoring/index.js && node --check src/services/monitoring/worker/index.js && node --check src/models/inbox/index.js && node --check src/models/conversationState/index.js && node --check scripts/checkSqlServerConnection/index.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",

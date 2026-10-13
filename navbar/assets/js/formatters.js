@@ -9,24 +9,12 @@ const timestampFormatter = new Intl.DateTimeFormat("en", {
   timeZone: "UTC",
 });
 
-const ISSUE_LABELS = {
-  product_information: "Product information",
-  order_status: "Order status",
-  delivery: "Delivery",
-  returns_refunds: "Returns and refunds",
-  payment: "Payment",
-  account: "Account",
-  technical_support: "Technical support",
-  other: "Other",
-  unknown: "Unknown",
-};
-
 /**
- * Convert a stored primary issue category to its readable dashboard label.
- * @returns {string} The category label, or Unknown if no supported category is recorded.
+ * Display a freely named customer intent without replacing it with a fixed category.
+ * @returns {string} The canonical intent name, or the unclassified-session label.
  */
-export function formatIssueType(value) {
-  return Object.hasOwn(ISSUE_LABELS, value) ? ISSUE_LABELS[value] : "Unknown";
+export function formatCustomerIntent(value) {
+  return String(value || "").trim() || "Intent not identified";
 }
 
 /**

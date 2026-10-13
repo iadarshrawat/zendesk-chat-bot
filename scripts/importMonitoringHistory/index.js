@@ -3,7 +3,7 @@ import sql from 'mssql';
 import { sqlServerConfig } from '../../src/loaders/database/sql/index.js';
 import { databaseSchema, verifyCoreSchema } from '../../src/models/schema/index.js';
 import { createZendeskClient } from '../../src/api/zendesk/client/index.js';
-import { importLegacyMonitoring } from '../../src/services/monitoring/historyImport/index.js';
+import { importLegacyMonitoring } from './history/index.js';
 import { safeErrorMetadata } from '../../src/common/utils/timingLogger/index.js';
 
 const config = sqlServerConfig();

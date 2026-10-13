@@ -7,7 +7,7 @@ function filterHash(filters) {
 }
 
 /**
- * Validate report dates, score, text, limit, and cursor ownership before a SQL read.
+ * Validate report dates, score, text, optional intent, limit, and cursor ownership before a SQL read.
  * @param {Object} query - Incoming report query parameters.
  * @param {string} today - UTC report-date default.
  * @returns {Object} Normalized filters, their fingerprint, and any validated cursor position.
@@ -35,6 +35,13 @@ export function reportFilters(query, today = new Date().toISOString().slice(0, 1
     throw new TypeError('Search text must be no more than 200 characters.');
   }
   filters.search = filters.search.trim();
+  if (query.intent != null) {
+    if (typeof query.intent !== 'string' || (query.intent && query.intent !== 'unidentified' && !/^[a-f0-9]{64}$/.test(query.intent))) {
+      throw new TypeError('Invalid customer intent.');
+    }
+    // Omit an empty intent so existing directory cursors keep their fingerprint.
+    if (query.intent) filters.intent = query.intent;
+  }
   if (typeof filters.limit !== 'string' || !/^\d+$/.test(filters.limit) || Number(filters.limit) < 1 || Number(filters.limit) > 100) {
     throw new TypeError('Page limit must be between 1 and 100.');
   }

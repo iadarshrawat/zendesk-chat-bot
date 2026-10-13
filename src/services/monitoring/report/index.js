@@ -1,13 +1,14 @@
 import { CLAUDE_CONFIG } from '../../../config/claude/index.js';
-import { fetchIncrementalTicketsPage, fetchTicket } from '../../../api/zendesk/tickets/index.js';
+import { fetchIncrementalTicketsPage } from '../../../api/zendesk/tickets/index.js';
 import { fetchConversationEvents } from '../../../api/zendesk/conversations/index.js';
 import { createZendeskClient } from '../../../api/zendesk/client/index.js';
 import { getPool } from '../../../loaders/database/sql/index.js';
 import { completedSessionIds, saveMonitoringSession } from '../../../models/monitoring/index.js';
 import { SESSION_GAP_MS } from '../../../common/monitoring/validation/index.js';
-import { toIsoString } from '../../../common/utils/dates/index.js';
-import { evaluateWithClaude, evaluateSession, sessionEvaluationRecord } from '../evaluation/index.js';
+import { evaluateSession, sessionEvaluationRecord } from '../evaluation/index.js';
 import { detectMonitoringSessions, monitoringSessionId, normalizeConversationEvents } from '../sessions/index.js';
+import { resolveMonitoringIntent } from '../intents/index.js';
+import { safeErrorMetadata } from '../../../common/utils/timingLogger/index.js';
 
 const LOOKBACK_MS = 5 * 60 * 60 * 1000;
 
@@ -70,10 +71,9 @@ async function fetchUpdatedTickets(client, now) {
  * @param {Object} db - SQL connection pool.
  * @param {Object} ticket - Zendesk ticket metadata.
  * @param {number} now - Evaluation time as a Unix timestamp in milliseconds.
- * @param {Function} evaluate - Session scoring dependency.
  * @returns {Promise<Array<Object>>} Newly persisted session evaluation results for the ticket.
  */
-async function processTicket(client, db, ticket, now, evaluate) {
+async function processTicket(client, db, ticket, now) {
   const events = await fetchConversationEvents(client, ticket.id);
   const hasMessagingEvents = events.some(event => event.type === 'Messaging::ConversationMessage');
   if (!hasMessagingEvents) {
@@ -114,7 +114,23 @@ async function processTicket(client, db, ticket, now, evaluate) {
       continue;
     }
 
-    const evaluation = await evaluateSession(ticket, session, messages, evaluate);
+    const evaluation = { ...(await evaluateSession(ticket, session, messages)) };
+    try {
+      evaluation.intent_id = await resolveMonitoringIntent({
+        db,
+        context: { ticket, session, ticketMessages: messages },
+        draft: evaluation.customer_intent
+      });
+    } catch (error) {
+      // Preserve a valid satisfaction evaluation; the backfill can retry this pending intent.
+      evaluation.intent_id = null;
+      evaluation.intent_classified_at = null;
+      console.warn('Monitoring customer intent remains pending', {
+        ticketId: String(ticket.id),
+        session: session.number,
+        ...safeErrorMetadata(error)
+      });
+    }
 
     const saved = await saveMonitoringSession(db, sessionEvaluationRecord(ticket, session, evaluation, now));
     if (!saved) {
@@ -160,97 +176,18 @@ function summarizeResults(tickets, results, errors) {
 }
 
 /**
- * Inspect and optionally score one ticket without persisting data or applying the normal evaluation wait.
- * @param {Object} options - Options: ticketId, sessionNumber, now, client, evaluate, score.
- * @returns {Promise<Object>} The existing read-only preview and any selected session evaluation.
- */
-export async function previewTicketMonitoring({
-  ticketId,
-  sessionNumber,
-  now = Date.now(),
-  client: suppliedClient,
-  evaluate = evaluateWithClaude,
-  score = true
-} = {}) {
-  if (!/^[1-9]\d*$/.test(String(ticketId ?? ''))) {
-    throw new Error('Provide a positive numeric ticket ID');
-  }
-  if (sessionNumber !== undefined && (!Number.isInteger(sessionNumber) || sessionNumber < 1)) {
-    throw new Error('Session number must be a positive integer');
-  }
-
-  const client = suppliedClient || (await createZendeskClient());
-  const response = await fetchTicket(client, ticketId);
-  const ticket = response.data?.ticket;
-  if (!ticket) {
-    throw new Error(`Ticket ${ticketId} was not returned by Zendesk`);
-  }
-
-  const events = await fetchConversationEvents(client, ticketId);
-  const messages = normalizeConversationEvents(events, ticket.requester_id);
-  const speakerCounts = { Customer: 0, Bot: 0, Agent: 0 };
-  for (const message of messages) {
-    speakerCounts[message.speaker]++;
-  }
-
-  const hasMessagingEvents = events.some(event => event.type === 'Messaging::ConversationMessage');
-  const involvesAi = speakerCounts.Bot > 0 || ticket.support_type === 'ai_agent' || ticket.tags?.includes('escalated_to_agent');
-
-  const preview = {
-    ticket_id: String(ticket.id),
-    persisted: false,
-    detected_speakers: speakerCounts,
-    eligible_for_monitoring: hasMessagingEvents && involvesAi
-  };
-
-  if (!preview.eligible_for_monitoring) {
-    return {
-      ...preview,
-      reason: hasMessagingEvents
-        ? 'No bot message, AI-agent ticket marker, or agent-handoff tag was found'
-        : 'No messaging conversation events were found'
-    };
-  }
-
-  const sessions = detectMonitoringSessions(messages, SESSION_GAP_MS);
-  const session = sessionNumber === undefined ? sessions.at(-1) : sessions.find(candidate => candidate.number === sessionNumber);
-  if (!session) {
-    return {
-      ...preview,
-      detected_sessions: sessions.length,
-      reason: sessionNumber === undefined ? 'No customer session was found' : `Session ${sessionNumber} was not found`
-    };
-  }
-
-  const dueAt = session.lastCustomerAt + SESSION_GAP_MS;
-
-  return {
-    ...preview,
-    detected_sessions: sessions.length,
-    session_number: session.number,
-    session_started_at: toIsoString(session.startedAt),
-    session_last_customer_at: toIsoString(session.lastCustomerAt),
-    evaluation_due_at: toIsoString(dueAt),
-    due_in_normal_monitor: dueAt <= now,
-    session_message_count: session.messages.length,
-    session_speakers: session.messages.map(message => message.speaker),
-    evaluation: score ? await evaluateSession(ticket, session, messages, evaluate) : null
-  };
-}
-
-/**
  * Poll updated tickets, evaluate due sessions, and preserve per-ticket failure isolation.
- * @param {Object} options - Options: now, client, db, evaluate.
  * @returns {Promise<Object>} The existing success flag, summary, results, and errors.
  */
-export async function runReport({ now = Date.now(), client: suppliedClient, db: suppliedDb, evaluate = evaluateWithClaude } = {}) {
-  if (!CLAUDE_CONFIG.apiKey && evaluate === evaluateWithClaude) {
+export async function runReport() {
+  const now = Date.now();
+  if (!CLAUDE_CONFIG.apiKey) {
     return { success: false, error: 'Missing Claude credentials' };
   }
 
   try {
-    const client = suppliedClient || (await createZendeskClient());
-    const db = suppliedDb || getPool();
+    const client = await createZendeskClient();
+    const db = getPool();
 
     const tickets = await fetchUpdatedTickets(client, now);
     const errors = [];
@@ -258,7 +195,7 @@ export async function runReport({ now = Date.now(), client: suppliedClient, db: 
 
     for (const ticket of tickets) {
       try {
-        const ticketResults = await processTicket(client, db, ticket, now, evaluate);
+        const ticketResults = await processTicket(client, db, ticket, now);
         results.push(...ticketResults);
       } catch (error) {
         errors.push({ ticket_id: ticket.id, error: error.message });

@@ -1,4 +1,5 @@
 import { MONITORING_SCORES, monitoringIssueType } from '../validation/index.js';
+import { customerIntentId } from '../intent/index.js';
 
 function iso(value) {
   return value instanceof Date ? value.toISOString() : value || null;
@@ -23,13 +24,17 @@ export function sessionFromRow(row) {
     'session_last_message_at',
     'evaluation_due_at',
     'evaluated_at',
-    'updated_at'
+    'updated_at',
+    'intent_classified_at'
   ]) {
     result[field] = iso(row[field]);
   }
   result.created_at = result.ticket_created_at;
   result.report_date = iso(row.report_date)?.slice(0, 10) || null;
   result.issue_type = monitoringIssueType(row.issue_type);
+  result.intent_id = customerIntentId(row.intent_id);
+  result.intent_name = row.intent_name || null;
+  result.intent_product = row.intent_product || null;
 
   return result;
 }
@@ -65,20 +70,23 @@ export function summarizeSessions(sessions) {
 }
 
 /**
- * Rank SQL issue counts and calculate each category's share of matched sessions.
- * @param {Array<Object>} rows - SQL categories and counts, including legacy nulls.
+ * Rank canonical customer intents and calculate their share of matched sessions.
+ * @param {Array<Object>} rows - SQL intent metadata and counts, including unclassified sessions.
  * @returns {Object} issues in descending frequency and totalSessions.
  */
 export function rankIssueCounts(rows) {
   const issues = rows.map(row => ({
-    issue_type: monitoringIssueType(row.issue_type),
+    intent_id: customerIntentId(row.intent_id),
+    intent_name: row.intent_name || 'Intent not identified',
+    product: row.product || null,
+    description: row.description || null,
     session_count: Number(row.session_count)
   }));
   const totalSessions = issues.reduce((total, issue) => total + issue.session_count, 0);
   for (const issue of issues) {
     issue.percentage = totalSessions ? Math.round((issue.session_count / totalSessions) * 1000) / 10 : 0;
   }
-  issues.sort((first, second) => second.session_count - first.session_count || first.issue_type.localeCompare(second.issue_type));
+  issues.sort((first, second) => second.session_count - first.session_count || first.intent_name.localeCompare(second.intent_name));
 
   return { issues, totalSessions };
 }

@@ -1,4 +1,5 @@
 // js/: session data. This file converts SQL rows and calculates the displayed page totals.
+import { MONITORING_API } from "./monitoringConfig.js";
 const COMPLETED_STATUSES = new Set(["evaluated", "escalated"]);
 export const SATISFACTION_SCORES = [
   "satisfied",
@@ -7,6 +8,49 @@ export const SATISFACTION_SCORES = [
   "escalated",
   "insufficient_data",
 ];
+
+/**
+ * Choose the saved directory page or the selected intent's independent session page.
+ * @param {Object} state - Dashboard state, including the active tab and optional intentView.
+ * @returns {Object} The session page used by the shared table and navigation controls.
+ */
+export function displayedSessionPage(state) {
+  return state.activeTab === "issues" && state.intentView
+    ? state.intentView
+    : state;
+}
+
+/**
+ * Select one page of the cached intent ranking without changing full-search counts.
+ * @param {Object} state - Dashboard state with issues and its saved issuesPage.
+ * @returns {Object} Visible rows, page number, and total pages.
+ */
+export function issuePage(state) {
+  const size = MONITORING_API.pageSize;
+  const pages = Math.max(1, Math.ceil(state.issues.length / size));
+  const page = Math.min(Math.max(1, state.issuesPage || 1), pages);
+  const start = (page - 1) * size;
+  return { page, pages, rows: state.issues.slice(start, start + size) };
+}
+
+/**
+ * Provide one pagination state for the directory, common issues, and an intent's sessions.
+ * @param {Object} state - Dashboard state and the active view.
+ * @returns {Object} Page label, visible row count, readiness, and navigation availability.
+ */
+export function displayedPagination(state) {
+  const isIssues = state.activeTab === "issues" && !state.intentView;
+  const view = isIssues ? issuePage(state) : displayedSessionPage(state);
+  return {
+    isIssues,
+    page: view.page,
+    pages: isIssues ? view.pages : null,
+    count: isIssues ? view.rows.length : view.sessions.length,
+    loaded: isIssues ? state.issuesLoaded : view.loaded,
+    hasPrevious: view.page > 1,
+    hasNext: isIssues ? view.page < view.pages : Boolean(view.nextPagePosition),
+  };
+}
 
 /**
  * Convert a SQL field to trimmed text while preserving exact identifier digits.
@@ -79,7 +123,9 @@ export function sessionFromRecord(record) {
     reason: text(record.reason),
     status: text(record.monitoring_status),
     keyIssue: text(record.key_issue),
-    issueType: text(record.issue_type) || "unknown",
+    intentId: text(record.intent_id),
+    customerIntent: text(record.intent_name),
+    intentProduct: text(record.intent_product),
   };
 }
 

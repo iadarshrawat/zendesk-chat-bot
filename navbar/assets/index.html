@@ -283,6 +283,67 @@
             </button>
           </div>
           <div
+            id="issues-panel"
+            role="tabpanel"
+            aria-labelledby="issues-tab"
+            tabindex="0"
+            hidden
+          >
+            <div class="issues-caption">
+              <button
+                class="button button-secondary"
+                id="back-to-issues"
+                type="button"
+                hidden
+              >
+                ← All common issues
+              </button>
+              <p id="issues-summary" role="status">
+                Search monitoring sessions, then open this tab to see the most
+                common issues.
+              </p>
+              <button
+                class="button button-secondary"
+                id="retry-issues"
+                type="button"
+                hidden
+              >
+                Retry
+              </button>
+            </div>
+            <div id="issues-list">
+              <div class="table-scroll">
+                <table
+                  class="issues-table"
+                  aria-label="Customer intents ranked by number of matching sessions"
+                >
+                  <thead>
+                    <tr>
+                      <th scope="col">Customer intent</th>
+                      <th scope="col">Product</th>
+                      <th scope="col">Sessions</th>
+                      <th scope="col">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody id="issues-body"></tbody>
+                </table>
+              </div>
+              <div class="empty-state" id="issues-empty" hidden>
+                <h3>No identified customer intents</h3>
+                <p>
+                  Sessions with an identified request appear here. View all
+                  matching sessions in the session directory.
+                </p>
+              </div>
+              <p class="issues-note">
+                Similar customer requests share one intent. Product-specific
+                problems are grouped separately. Share covers all matched
+                sessions. Only identified intents are shown; all sessions remain
+                available in the session directory.
+              </p>
+            </div>
+          </div>
+          <div
             id="sessions-panel"
             role="tabpanel"
             aria-labelledby="sessions-tab"
@@ -309,71 +370,31 @@
                 Try changing the filters or refresh the data.
               </p>
             </div>
-            <div class="pagination" id="pagination" hidden>
-              <span id="page-summary"></span>
-              <div>
-                <button
-                  class="button button-secondary"
-                  id="previous-page"
-                  type="button"
-                >
-                  Previous
-                </button>
-                <button
-                  class="button button-secondary"
-                  id="next-page"
-                  type="button"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
           </div>
-          <div
-            id="issues-panel"
-            role="tabpanel"
-            aria-labelledby="issues-tab"
-            tabindex="0"
+          <nav
+            class="pagination"
+            id="pagination"
+            aria-label="Results pagination"
             hidden
           >
-            <div class="issues-caption">
-              <p id="issues-summary" role="status">
-                Search monitoring sessions, then open this tab to see the most
-                common issues.
-              </p>
+            <span id="page-summary" role="status" aria-live="polite"></span>
+            <div>
               <button
                 class="button button-secondary"
-                id="retry-issues"
+                id="previous-page"
                 type="button"
-                hidden
               >
-                Retry
+                Previous
+              </button>
+              <button
+                class="button button-secondary"
+                id="next-page"
+                type="button"
+              >
+                Next
               </button>
             </div>
-            <div class="table-scroll">
-              <table
-                class="issues-table"
-                aria-label="Issues ranked by number of matching sessions"
-              >
-                <thead>
-                  <tr>
-                    <th scope="col">Issue type</th>
-                    <th scope="col">Sessions</th>
-                    <th scope="col">Share</th>
-                  </tr>
-                </thead>
-                <tbody id="issues-body"></tbody>
-              </table>
-            </div>
-            <div class="empty-state" id="issues-empty" hidden>
-              <h3>No matching sessions</h3>
-              <p>Try different dates, search text, or satisfaction filters.</p>
-            </div>
-            <p class="issues-note">
-              Share is the percentage of all matched sessions. Unknown means no
-              category was recorded; older sessions may appear here.
-            </p>
-          </div>
+          </nav>
         </section>
       </main>
     </div>

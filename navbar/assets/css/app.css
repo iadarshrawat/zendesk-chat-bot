@@ -705,9 +705,14 @@ h3 {
 .issue-name {
   font-weight: 700;
 }
+.intent-link {
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .issue-count,
 .issue-share,
-.issues-table th:nth-child(n + 2) {
+.issues-table th:nth-child(n + 3) {
   text-align: right;
 }
 .issues-note {

@@ -1,7 +1,7 @@
 {
   "overrides": [
     {
-      "files": ["src/**/*.js", "scripts/**/*.js", "tests/**/*.js", "index.js"],
+      "files": ["src/**/*.js", "scripts/**/*.js", "index.js"],
       "options": {
         "singleQuote": true,
         "tabWidth": 2,

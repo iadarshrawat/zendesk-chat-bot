@@ -1,4 +1,5 @@
 import { validReportDate } from '../../utils/dates/index.js';
+import { customerIntentId } from '../intent/index.js';
 
 export const SESSION_GAP_MS = 2 * 60 * 60 * 1000;
 export const MONITORING_SCORES = ['satisfied', 'neutral', 'unsatisfied', 'escalated', 'insufficient_data'];
@@ -115,6 +116,11 @@ export function monitoringRecord(record) {
   if (customerAt < startedAt || messageAt < customerAt || dueAt < customerAt || evaluatedAt < dueAt) {
     throw new TypeError('Invalid monitoring session timeline');
   }
+  const intentId = customerIntentId(record.intent_id);
+  const classifiedAt = date(record.intent_classified_at, 'intent_classified_at', true);
+  if (intentId && !classifiedAt) {
+    throw new TypeError('A monitoring intent assignment requires its classification timestamp');
+  }
 
   return {
     session_id: sessionId,
@@ -139,6 +145,8 @@ export function monitoringRecord(record) {
     follow_up_required: boolean(record.follow_up_required),
     key_issue: text(record.key_issue, 1024, 'key_issue', true),
     issue_type: monitoringIssueType(record.issue_type),
+    intent_id: intentId,
+    intent_classified_at: classifiedAt,
     updated_at: date(record.updated_at ?? record.evaluated_at, 'updated_at')
   };
 }

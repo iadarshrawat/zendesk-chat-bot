@@ -5,10 +5,10 @@ const MONITOR_LOCK_NAME = 'zendesk-bot-monitor-v1';
 
 /**
  * Hold the transaction-owned SQL application lock while running one monitoring poll.
- * @param {Object} options - Options: pool, report.
  * @returns {Promise<Object>} The monitoring result, or skipped when another instance owns the lock.
  */
-export async function runExclusiveMonitor({ pool = getPool(), report = runReport } = {}) {
+export async function runExclusiveMonitor() {
+  const pool = getPool();
   // A transaction pins one SQL Server connection while the report uses other
   // pool connections. The application lock is released by the rollback below.
   const transaction = pool.transaction();
@@ -33,7 +33,7 @@ export async function runExclusiveMonitor({ pool = getPool(), report = runReport
       throw new Error(`SQL Server monitor lock failed (${acquired ?? 'unknown'})`);
     }
 
-    const result = await report();
+    const result = await runReport();
     if (!result.success) {
       throw new Error(result.error || 'Monitoring run failed');
     }

@@ -11,7 +11,7 @@ export function fetchIncrementalTicketsPage(client, params) {
 }
 
 /**
- * Read one ticket for the monitoring preview.
+ * Read ticket metadata for historical intent classification.
  * @param {Object} client - Authenticated Zendesk client.
  * @param {string|number} ticketId - Zendesk ticket ID.
  * @returns {Promise<Object>} The Axios response, after the existing 429 retries.

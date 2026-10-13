@@ -35,7 +35,6 @@ src/
   api/                           Zendesk, Sunshine, Anthropic, Voyage and website-key requests
 scripts/<command>/index.js       migration, ingestion and operational commands
 migrations/                      existing SQL Server migration files
-tests/                           regression checks outside production source
 navbar/                          Zendesk navbar monitoring app
 data/seed/                       private knowledge archives (ignored by git)
 docs/                            existing deployment and operations guides
@@ -46,7 +45,7 @@ Each backend module uses a named folder containing `index.js`. Its parent `index
 ## Run locally
 
 1. Use Node 20+ and Microsoft SQL Server with a dedicated database login. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT` (normally `1433`), `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_SCHEMA` (default `dbo`). Never commit `.env` or the private knowledge archives to a public repository.
-2. Run `npm ci` once. Have the client confirm the target database and schema, review `migrations/001_core.sql`, `migrations/002_monitor_evaluations.sql`, and `migrations/003_monitor_issue_type.sql`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"` with the exact configured `DB_NAME.DB_SCHEMA` and permission to create the three application tables or add the monitoring issue-type column and constraint. The command refuses to connect without that match. It can create only `bot_conversation_state`, `bot_monitor_sessions`, and `bot_monitor_evaluations`; it can also add the nullable `issue_type` column and category constraint to existing monitoring evaluations. It will not modify other tables or create a database/schema. Afterwards, `npm start` verifies these tables but never creates or changes them. The normal app login needs access only to its three tables and system-catalog metadata, not DDL permission.
+2. Run `npm ci` once. Review migrations 001 through 004, confirm `DB_NAME.DB_SCHEMA`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"`. The command requires an exact target match before connecting. It creates only the four application tables and adds the nullable monitoring issue/intent fields and their constraints. It preserves existing records and unrelated tables. Normal `npm start` verifies storage without running DDL; the application login needs access to the four tables and system-catalog metadata.
 3. Validate the supplied knowledge packages without API calls:
 
    ```bash
@@ -55,28 +54,18 @@ Each backend module uses a named folder containing `index.js`. Its parent `index
    ```
 
 4. Review package ownership, then ingest each brand separately with the same commands without `--validate-only`. This publishes brand snapshots in Cosmos. The Cosmos vector dimension must match the Voyage embedding output dimension. The supplied default is 1024.
-5. Run `npm start` in one terminal. It verifies the three SQL Server tables, then starts the API, in-memory inbox processor and monitor together. Configure Zendesk's Conversations webhook for `conversation:create` and `conversation:message`, send it to `POST /sunshine/webhook`, and set the webhook shared secret to `SUNSHINE_WEBHOOK_SECRET`.
+5. Run `npm start` in one terminal. It verifies the four SQL Server tables, then starts the API, in-memory inbox processor and monitor together. Configure Zendesk's Conversations webhook for `conversation:create` and `conversation:message`, send it to `POST /sunshine/webhook`, and set the webhook shared secret to `SUNSHINE_WEBHOOK_SECRET`.
 6. Connect the website's logged-in user session to `POST /sunshine/auth` as described below. Set `REPORT_API_KEY` for report consumers. The temporary navbar build hardcodes this key and the ngrok hostname in `navbar/assets/js/monitoringConfig.js`; it reads SQL through the API. The navbar folder guide is included in [its entry page](navbar/assets/index.html).
 
-`GET /health/live` checks the HTTP process; `GET /health/ready` checks SQL Server connectivity with `SELECT 1`. Startup verifies brand mappings, the three SQL Server tables, Cosmos and required bot credentials before starting both loops.
+`GET /health/live` checks the HTTP process; `GET /health/ready` checks SQL Server connectivity with `SELECT 1`. Startup verifies brand mappings, the four SQL Server tables, Cosmos and required bot credentials before starting both loops.
 
-The only relational application tables are `bot_conversation_state`, `bot_monitor_sessions`, and `bot_monitor_evaluations`. Forms and the webhook inbox are held in process memory. A restart loses pending inbox events, deduplication history, and forms; multiple app instances do not share them. For this design, run one app instance unless you accept independent queues. If table setup fails, confirm `DB_NAME`/`DB_SCHEMA` and the migration login's permission to create only those three tables. An incompatible existing table causes a safe failure; it is not altered automatically.
+The only relational application tables are `bot_conversation_state`, `bot_monitor_sessions`, `bot_monitor_evaluations`, and `bot_monitor_intents`. Forms and the webhook inbox are held in process memory. A restart loses pending inbox events, deduplication history, and forms; multiple app instances do not share them. For this design, run one app instance unless you accept independent queues. If table setup fails, confirm `DB_NAME`/`DB_SCHEMA` and the migration login's permission to create only those four tables. An incompatible existing table causes a safe failure; it is not altered automatically.
 
 If the widget receives no reply, keep `npm start` running, send a fresh test message, then run `npm run diagnose` in another terminal on the same host. It calls the report-key-protected `/sunshine/inbox` route on the local process and prints only aggregate queue counts, not customer text or API keys. An empty queue may mean Zendesk has not delivered a supported event: check the public HTTPS webhook URL ending in `/sunshine/webhook`, its `conversation:message` subscription, App ID, and webhook shared secret. `pending` or `processing` counts mean the in-memory worker has work; inspect the `npm start` logs. A `delivery_uncertain` outcome means retrying the send automatically might duplicate a customer-visible reply. This package retains the working `https://api.smooch.io/v2` Sunshine API endpoint from the attached project.
 
-## Test monitoring without waiting or changing client tables
+## Check monitoring connectivity
 
 `ETIMEDOUT` and `ENETUNREACH` during connection setup are network/connectivity failures, not failures of a particular table. Check the configured SQL Server connection with `npm run db:check`. It performs only `SELECT 1` and never creates or reads a table. If it cannot connect, check the SQL Server host/port, firewall or IP allowlist, VPN, and server availability before investigating schema.
-
-For a real Zendesk ticket, run `npm run monitor:preview -- --ticket 5687 --inspect` to see whether customer and bot messages are recognized. Omit `--inspect` to score its latest session immediately with Claude; add `--session 1` to select an earlier session. Preview bypasses the normal two-hour wait and five-hour ticket-export window. It reads the ticket and conversation log but makes **no SQL Server connection and no Zendesk record writes**. Scoring sends ticket conversation text to the configured Claude API and does not save the result; `--inspect` does not call Claude.
-
-For an immediate, database-free regression test of session detection, scoring, and the SQL Server ledger query contract, run:
-
-```bash
-npm run monitor:test
-```
-
-These tests use local Zendesk, Claude, and database fixtures plus a synthetic clock. They do not connect to the client's SQL Server or create tables. A live database integration test still requires an isolated SQL Server database and credentials; do not use the client production database for fixture writes.
 
 ## HTTP contract
 
@@ -85,7 +74,7 @@ These tests use local Zendesk, Claude, and database fixtures plus a synthetic cl
 | `POST /sunshine/webhook` | Sunshine Conversations | `X-API-Key` shared secret; expected `app.id` | In-memory event enqueue, then `200`; malformed `400`, untrusted `401`, queue failure `503` |
 | `POST /sunshine/auth` | Logged-in website | `Authorization: Bearer <website-session-JWT>` | Short-lived Zendesk messaging JWT; body identity ignored |
 | `GET /sunshine/monitoring/sessions?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Paginated SQL session rows; date, text, score and cursor filters |
-| `GET /sunshine/monitoring/issues?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Issue categories ranked by session count across the full date/text/score search; no pagination |
+| `GET /sunshine/monitoring/issues?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Specific customer intents ranked by session count across the full date/text/score search; no pagination |
 | `GET /health/live` / `/health/ready` | Hosting health probe | None | Liveness / SQL Server connectivity |
 | `GET /sunshine/inbox` | Local diagnostic | `Authorization: Bearer <REPORT_API_KEY>` | In-memory inbox counts, no payloads |
 
@@ -97,9 +86,33 @@ The [flowcharts](docs/FLOWS.md) cover welcome, normal and follow-up answers, fal
 
 For Azure App Service deployment, see [the GitHub deployment steps](docs/AZURE_APP_SERVICE.md). Connect the repository to App Service so GitHub pushes deploy automatically. App Service runs `npm start`; no manual deployment ZIP, separate worker command or WebJob is required. If a previous version installed `bot-worker`, stop and remove that old WebJob when upgrading.
 
+## Customer intents in Common issues
+
+Monitoring extracts one specific customer issue/request from the target session, resolving references with earlier messages. The intent includes a concise name, a product/model when known, and a description. Satisfaction reasons do not determine intent. There is no predefined intent list: Claude compares against every saved intent in bounded batches, reuses a confident equivalent, or creates a new canonical intent. Confirmed causes, observed symptoms, and different known products stay separate.
+
+The catalogue lives in `bot_monitor_intents`; evaluations reference it through `intent_id`. Common issues ranks identified intents across the applied date/text/score search, without an "Intent not identified" group. Its percentages still cover all matching sessions. Pending sessions and conversations without a clear request remain available in the session directory. Session details and plain Excel exports also show the intent. Old `issue_type` values remain for compatibility and are not used for grouping.
+
+The session directory, Common issues ranking, and sessions within an intent show up to 15 results per page using shared Previous/Next controls. Each view keeps its page when switching tabs or returning from session details. Excel exports still include all matching sessions across pages.
+
+After applying migration 004, classify existing/pending sessions with:
+
+```bash
+npm run monitor:intents -- --confirm-target "YourDatabase.dbo"
+```
+
+This command reads original Zendesk conversations and sends their evidence to Claude. It changes only intent assignment fields, preserves scores/reasons/report dates, and is safe to resume. Sessions whose original evidence is unavailable remain pending. An intent-matching outage also leaves the session pending while its valid satisfaction evaluation is saved; rerun this command to retry. Matching is model-based and conservative, rather than a guaranteed exact semantic equivalence check.
+
+To explicitly revisit **every existing session**, including previously inspected sessions, use the same maintenance command:
+
+```bash
+npm run monitor:intents -- --confirm-target "YourDatabase.dbo" --all-sessions
+```
+
+It reads sessions saved before the run started, reuses the same extraction/matching logic, and prints progress. Existing valid intents survive missing or unclear evidence. Failures leave original data intact and produce a nonzero exit. History import and intent backfill helpers live beneath their CLI commands in `scripts/`; the application does not load them at startup. Migrations 001 through 004 define the permanent database schema. Full reclassification does not run during `npm start` or `npm run db:migrate`.
+
 ## Checks performed on this package
 
-- `npm test` and JS syntax checks passed locally.
+- Run `npm run check` to verify JavaScript syntax without starting the server or connecting to external services.
 - Both supplied archives passed `--validate-only`: Mr Brand 89 products, 110 manuals, 8 policies; Comfort Zone 41 products, 40 manuals, 7 policies. Nothing was uploaded to Cosmos.
 - API guards were exercised without credentials. Live Zendesk, SQL Server, Cosmos, Voyage, Anthropic, website identity, and end-to-end widget behavior still need validation with your account settings.
 

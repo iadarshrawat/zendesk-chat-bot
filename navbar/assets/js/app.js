@@ -1,6 +1,7 @@
 // js/: dashboard behavior. This entry file connects the form, API, display, and exports.
 import { renderDashboard, setupDashboard } from "./dashboard.js";
 import { formatTimestamp } from "./formatters.js";
+import { displayedPagination, displayedSessionPage } from "./reportData.js";
 import {
   fetchMonitoringPage,
   fetchMonitoringIssues,
@@ -38,6 +39,7 @@ const elements = {
   issuesTab: document.getElementById("issues-tab"),
   directoryTabs: document.getElementById("directory-tabs"),
   retryIssuesButton: document.getElementById("retry-issues"),
+  backToIssuesButton: document.getElementById("back-to-issues"),
 };
 
 // Keep the displayed page and the last successful search separate from form edits.
@@ -52,9 +54,11 @@ const state = {
   activity: null, // null, "search", "issues", "excel", or "pdf"; one operation at a time.
   activeTab: "sessions",
   issues: [],
+  issuesPage: 1,
   issueTotal: 0,
   issuesLoaded: false,
   issuesError: "",
+  intentView: null, // Its session page is separate so the directory keeps its place.
 };
 
 /**
@@ -123,6 +127,8 @@ function updateDateLimit() {
  */
 function updateActionButtons() {
   const busy = state.activity !== null;
+  const view = displayedSessionPage(state);
+  const pagination = displayedPagination(state);
   elements.report.setAttribute("aria-busy", String(busy));
   elements.refreshButton.disabled = busy || !state.loaded;
   elements.searchButton.disabled = busy || !state.client;
@@ -130,12 +136,16 @@ function updateActionButtons() {
   elements.excelButton.disabled = busy || !state.loaded;
   elements.pdfButton.disabled = busy || !state.loaded;
   elements.previousPageButton.disabled =
-    busy || !state.loaded || state.page <= 1;
+    busy || !pagination.loaded || !pagination.hasPrevious;
   elements.nextPageButton.disabled =
-    busy || !state.loaded || !state.nextPagePosition;
+    busy || !pagination.loaded || !pagination.hasNext;
   elements.sessionsTab.disabled = busy && state.activity !== "issues";
   elements.issuesTab.disabled = busy && state.activity !== "issues";
   elements.retryIssuesButton.disabled = busy;
+  elements.backToIssuesButton.disabled = busy;
+  elements.excelButton.title = view.issue
+    ? "Export all matching sessions for this intent"
+    : "Export all results matching your latest search";
   elements.refreshButton.textContent =
     state.activity === "search" ? "Loading…" : "Refresh page";
   elements.excelButtonLabel.textContent =
@@ -175,10 +185,17 @@ async function openTicket(ticketId) {
 }
 
 /**
- * Fetch one results page using the supplied or last successful search filters.
+ * Fetch a directory or intent page through the same API and cursor handling.
+ * @param {number} page - Requested page number.
+ * @param {Object} target - Saved page state to update; defaults to the visible view.
+ * @param {Object} filters - Applied search, defaulting to the target's saved filters.
  * @returns {Promise<void>} Updates the saved page on success; displays an error on failure.
  */
-async function loadPage(page, filters = state.filters) {
+async function loadPage(
+  page,
+  target = displayedSessionPage(state),
+  filters = target.filters || state.filters,
+) {
   if (!state.client || state.activity) return;
   const error = validateDateRange(filters?.from, filters?.to);
   if (error) {
@@ -187,6 +204,8 @@ async function loadPage(page, filters = state.filters) {
   }
 
   setActivity("search");
+  target.error = "";
+  updateDashboard();
   elements.excelStatus.hidden = true;
   elements.pdfStatus.hidden = true;
   elements.syncText.textContent = "Searching monitoring data…";
@@ -196,40 +215,80 @@ async function loadPage(page, filters = state.filters) {
   try {
     // Page one starts a fresh cursor chain. Later pages use their saved cursor.
     let positions = [{ cursor: null }];
-    if (page > 1) positions = state.pagePositions.slice(0, page);
+    if (page > 1) positions = target.pagePositions.slice(0, page);
     const result = await fetchMonitoringPage(
       state.client,
       filters,
       positions[page - 1],
     );
 
-    state.sessions = result.sessions;
-    state.filters = { ...filters };
-    state.pagePositions = positions;
-    state.nextPagePosition = result.next;
-    state.page = page;
-    state.loaded = true;
-    state.issues = [];
-    state.issueTotal = 0;
-    state.issuesLoaded = false;
-    state.issuesError = "";
+    target.sessions = result.sessions;
+    target.filters = { ...filters };
+    target.pagePositions = positions;
+    target.nextPagePosition = result.next;
+    target.page = page;
+    target.loaded = true;
+    if (target === state) {
+      state.intentView = null;
+      state.issues = [];
+      state.issuesPage = 1;
+      state.issueTotal = 0;
+      state.issuesLoaded = false;
+      state.issuesError = "";
+    }
     searchSucceeded = true;
-    if (result.next) state.pagePositions[page] = result.next;
+    if (result.next) target.pagePositions[page] = result.next;
     elements.syncText.textContent = `Updated ${formatTimestamp(Date.now())}`;
-    updateDashboard();
   } catch (error) {
+    target.error = monitoringApiErrorMessage(error);
     elements.syncText.textContent = state.loaded
       ? "Last update failed"
       : "Unable to load";
-    showNotice(monitoringApiErrorMessage(error));
+    showNotice(target.error);
   } finally {
     setActivity(null);
+    updateDashboard();
   }
-  if (searchSucceeded && state.activeTab === "issues") await loadIssues();
+  if (searchSucceeded && target === state && state.activeTab === "issues")
+    await loadIssues();
 }
 
 /**
- * Load category counts for every session matching the last successful search.
+ * Open an intent's matching sessions without changing the saved session directory.
+ * @param {Object} issue - Clicked intent with its ID, name, product, and total session count.
+ * @returns {Promise<void>} Loads page one using the applied dates, text, and score.
+ */
+async function showIntentSessions(issue) {
+  if (!state.loaded || state.activity) return;
+  state.intentView = {
+    issue,
+    filters: { ...state.filters, intent: issue.intent_id },
+    sessions: [],
+    pagePositions: [{ cursor: null }],
+    nextPagePosition: null,
+    page: 1,
+    loaded: false,
+    error: "",
+  };
+  await loadPage(1);
+  elements.backToIssuesButton.focus();
+}
+
+/**
+ * Return to the cached intent ranking and restore focus to the selected intent.
+ * @returns {void} Shows common issues without fetching or resetting the directory page.
+ */
+function backToIssues() {
+  if (state.activity) return;
+  const intent = state.intentView?.filters.intent;
+  state.intentView = null;
+  clearNotice();
+  updateDashboard();
+  document.querySelector(`[data-intent="${intent}"]`)?.focus();
+}
+
+/**
+ * Load customer-intent counts for every session matching the last successful search.
  * @returns {Promise<void>} Stores the full-search ranking or shows a retryable error.
  */
 async function loadIssues() {
@@ -299,31 +358,55 @@ function handleDirectoryTabsKeydown(event) {
  */
 async function searchSessions(event) {
   event.preventDefault();
-  await loadPage(1, readFilters());
+  await loadPage(1, state, readFilters());
 }
 
 /**
- * Fetch the displayed page again with its applied filters.
+ * Refresh the active table with its applied filters, preserving its page when possible.
  * @returns {Promise<void>} Finishes after the refresh request.
  */
 async function refreshPage() {
-  await loadPage(state.page);
+  if (state.activity) return;
+  if (displayedPagination(state).isIssues) {
+    state.issuesLoaded = false;
+    await loadIssues();
+    return;
+  }
+  await loadPage(displayedSessionPage(state).page);
 }
 
 /**
- * Fetch the preceding page with its saved cursor and applied filters.
+ * Move the active view by one page using the shared controls.
+ * @param {number} direction - Negative one for Previous, or one for Next.
+ * @returns {Promise<void>} Updates a cached intent page or loads a session cursor page.
+ */
+async function changePage(direction) {
+  const pagination = displayedPagination(state);
+  if (state.activity || !pagination.loaded) return;
+  if (direction < 0 ? !pagination.hasPrevious : !pagination.hasNext) return;
+  const page = pagination.page + direction;
+  if (pagination.isIssues) {
+    state.issuesPage = page;
+    updateDashboard();
+  } else {
+    await loadPage(page);
+  }
+}
+
+/**
+ * Show the previous page of the active session or intent list.
  * @returns {Promise<void>} Finishes after the previous-page request.
  */
 async function previousPage() {
-  await loadPage(state.page - 1);
+  await changePage(-1);
 }
 
 /**
- * Fetch the following page with its saved cursor and applied filters.
+ * Show the next page of the active session or intent list.
  * @returns {Promise<void>} Finishes after the next-page request.
  */
 async function nextPage() {
-  await loadPage(state.page + 1);
+  await changePage(1);
 }
 
 /**
@@ -341,7 +424,7 @@ function showExportProgress(progress) {
  */
 async function exportExcel() {
   if (!state.loaded || state.activity) return;
-  const filters = { ...state.filters };
+  const filters = { ...displayedSessionPage(state).filters };
   setActivity("excel");
   elements.excelStatus.hidden = false;
   elements.excelStatus.textContent = `Preparing Excel for ${filters.from} to ${filters.to}…`;
@@ -414,6 +497,7 @@ function bindEvents() {
     handleDirectoryTabsKeydown,
   );
   elements.retryIssuesButton.addEventListener("click", loadIssues);
+  elements.backToIssuesButton.addEventListener("click", backToIssues);
 }
 
 /**
@@ -423,7 +507,7 @@ function bindEvents() {
 function initializeApp() {
   state.client = globalThis.ZAFClient?.init() || null;
   resetFilters();
-  setupDashboard(openTicket);
+  setupDashboard(openTicket, showIntentSessions);
   bindEvents();
   updateDashboard();
   if (!state.client) {

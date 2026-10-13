@@ -1,7 +1,13 @@
 // js/: dashboard behavior. This file displays totals, charts, session rows, and the detail dialog.
-import { SATISFACTION_SCORES, summarizeSessions } from "./reportData.js";
 import {
-  formatIssueType,
+  displayedPagination,
+  displayedSessionPage,
+  issuePage,
+  SATISFACTION_SCORES,
+  summarizeSessions,
+} from "./reportData.js";
+import {
+  formatCustomerIntent,
   formatLabel,
   formatTimestamp,
   formatValue,
@@ -15,7 +21,8 @@ const DETAIL_GROUPS = [
       ["Scoring reason", "reason"],
       ["Monitoring status", "status"],
       ["Key issue", "keyIssue"],
-      ["Issue type", "issueType"],
+      ["Customer intent", "customerIntent"],
+      ["Intent product", "intentProduct"],
     ],
   ],
   [
@@ -77,11 +84,14 @@ const elements = {
   issuesPanel: document.getElementById("issues-panel"),
   issuesSummary: document.getElementById("issues-summary"),
   issuesBody: document.getElementById("issues-body"),
+  issuesList: document.getElementById("issues-list"),
   issuesEmpty: document.getElementById("issues-empty"),
   retryIssues: document.getElementById("retry-issues"),
+  backToIssues: document.getElementById("back-to-issues"),
 };
 let focusedBeforeDetail = null;
 let openTicket = null; // Assigned during setup; app.js handles Zendesk navigation.
+let openIntent = null; // Assigned during setup; app.js loads the selected intent's sessions.
 
 /**
  * Create an element using plain text so API values cannot become HTML.
@@ -161,8 +171,8 @@ function openDetail(session) {
     for (const [label, key] of fields) {
       const item = createTextElement("div", "detail-item", "");
       const value =
-        key === "issueType"
-          ? formatIssueType(session[key])
+        key === "customerIntent"
+          ? formatCustomerIntent(session[key])
           : key.endsWith("At")
             ? formatTimestamp(session[key])
             : formatValue(session[key]);
@@ -192,6 +202,24 @@ function closeDetail() {
 }
 
 /**
+ * Create a session button that opens the shared details sidebar.
+ * @param {Object} session - Normalized monitoring session.
+ * @param {string} label - Visible button text.
+ * @param {string} className - Button styling.
+ * @returns {HTMLButtonElement} A keyboard-accessible button with its detail handler.
+ */
+function createDetailButton(session, label, className) {
+  const button = createTextElement("button", className, label);
+  button.type = "button";
+  button.setAttribute(
+    "aria-label",
+    `View ticket ${session.ticketId} session ${session.sessionNumber} details`,
+  );
+  button.addEventListener("click", () => openDetail(session));
+  return button;
+}
+
+/**
  * Build a table row with ticket navigation and details for each displayed session.
  * @returns {void} Replaces the table body with the new rows.
  */
@@ -218,10 +246,10 @@ function renderRows(sessions) {
 
     const sessionCell = createTextElement("td", "", "");
     sessionCell.append(
-      createTextElement(
-        "strong",
-        "session-number",
+      createDetailButton(
+        session,
         `Session ${session.sessionNumber}`,
+        "ticket-link session-number",
       ),
       createTextElement(
         "span",
@@ -237,18 +265,9 @@ function renderRows(sessions) {
       formatTimestamp(session.evaluatedAt),
     );
     const actionCell = createTextElement("td", "action-cell", "");
-    const detailButton = createTextElement(
-      "button",
-      "view-button",
-      "View details",
+    actionCell.append(
+      createDetailButton(session, "View details", "view-button"),
     );
-    detailButton.type = "button";
-    detailButton.setAttribute(
-      "aria-label",
-      `View ticket ${session.ticketId} session ${session.sessionNumber} details`,
-    );
-    detailButton.addEventListener("click", () => openDetail(session));
-    actionCell.append(detailButton);
     row.append(ticketCell, sessionCell, scoreCell, dateCell, actionCell);
     rows.push(row);
   }
@@ -261,6 +280,8 @@ function renderRows(sessions) {
  */
 export function renderDashboard(state) {
   const { sessions, filters, page, loaded } = state;
+  const view = displayedSessionPage(state);
+  const pagination = displayedPagination(state);
   const summary = summarizeSessions(sessions);
   elements.totalTickets.textContent = String(summary.tickets);
   elements.satisfiedTickets.textContent = String(summary.satisfiedTickets);
@@ -284,31 +305,46 @@ export function renderDashboard(state) {
     summary.sessionScores,
     summary.sessions,
   );
-  renderRows(sessions);
-  elements.emptyState.hidden = sessions.length > 0;
-  elements.pagination.hidden = !loaded || (sessions.length === 0 && page === 1);
-  elements.pageSummary.textContent = `Page ${page} · ${sessions.length} sessions`;
+  renderRows(view.sessions);
+  elements.emptyState.hidden =
+    view.sessions.length > 0 || state.activity === "search";
+  elements.pagination.hidden =
+    !pagination.loaded || (pagination.count === 0 && pagination.page === 1);
+  elements.pageSummary.textContent = `Page ${pagination.page}${pagination.pages ? ` of ${pagination.pages}` : ""} · ${pagination.count} ${pagination.isIssues ? "intents" : "sessions"}`;
   elements.recordsSummary.textContent = loaded
     ? `${sessions.length} completed sessions on this page · results are fetched from the monitoring API when you search or change pages`
     : "Select dates and click Search to see monitored sessions.";
-  elements.emptyMessage.textContent = loaded
-    ? "No completed AI sessions match this search. Try different dates or keywords."
-    : "The dashboard has not searched monitoring data yet.";
+  elements.emptyMessage.textContent =
+    view.error ||
+    (view.loaded
+      ? "No completed AI sessions match this search. Try different dates or keywords."
+      : "The dashboard has not searched monitoring data yet.");
   renderCommonIssues(state);
-  showDirectoryTab(state.activeTab);
+  showDirectoryTab(state);
 }
 
 /**
  * Show the selected directory view and update its accessible tab state.
  * @returns {void} Toggles panel visibility and the selected tab's keyboard position.
  */
-function showDirectoryTab(tab) {
-  const showIssues = tab === "issues";
+function showDirectoryTab(state) {
+  const showIssues = state.activeTab === "issues";
+  const showIntent = showIssues && Boolean(state.intentView);
   elements.recordsSummary.hidden = showIssues;
-  elements.recordsHeading.textContent = showIssues
-    ? "Common issues"
-    : "Tickets and sessions";
-  elements.sessionsPanel.hidden = showIssues;
+  elements.recordsHeading.textContent = showIntent
+    ? formatCustomerIntent(state.intentView.issue.intent_name)
+    : showIssues
+      ? "Common issues"
+      : "Tickets and sessions";
+  elements.sessionsPanel.hidden = showIssues && !showIntent;
+  elements.sessionsPanel.setAttribute(
+    "aria-labelledby",
+    showIntent ? "issues-tab" : "sessions-tab",
+  );
+  elements.issuesTab.setAttribute(
+    "aria-controls",
+    showIntent ? "issues-panel sessions-panel" : "issues-panel",
+  );
   elements.issuesPanel.hidden = !showIssues;
   elements.sessionsTab.setAttribute("aria-selected", String(!showIssues));
   elements.issuesTab.setAttribute("aria-selected", String(showIssues));
@@ -317,30 +353,59 @@ function showDirectoryTab(tab) {
 }
 
 /**
- * Display issue categories in descending frequency for the full applied search.
+ * Display specific customer intents in descending session frequency for the full applied search.
  * @returns {void} Updates the issue table, its scope message, and loading or error state.
  */
 function renderCommonIssues(state) {
   const rows = [];
-  for (const issue of state.issues) {
+  for (const issue of issuePage(state).rows) {
     const row = document.createElement("tr");
+    const nameCell = createTextElement("td", "issue-name", "");
+    const intentButton = createTextElement(
+      "button",
+      "ticket-link intent-link",
+      formatCustomerIntent(issue.intent_name),
+    );
+    intentButton.type = "button";
+    intentButton.disabled = state.activity !== null;
+    intentButton.setAttribute("data-intent", issue.intent_id);
+    intentButton.setAttribute(
+      "aria-label",
+      `View ${issue.session_count} sessions for ${issue.intent_name}`,
+    );
+    intentButton.addEventListener("click", () => openIntent(issue));
+    nameCell.append(intentButton);
     row.append(
-      createTextElement("td", "issue-name", formatIssueType(issue.issue_type)),
+      nameCell,
+      createTextElement(
+        "td",
+        "issue-product",
+        issue.product || "Not specified",
+      ),
       createTextElement("td", "issue-count", String(issue.session_count)),
       createTextElement("td", "issue-share", `${issue.percentage}%`),
     );
     rows.push(row);
   }
   elements.issuesBody.replaceChildren(...rows);
+  const view = state.activeTab === "issues" ? state.intentView : null;
+  elements.issuesList.hidden = Boolean(view);
+  elements.backToIssues.hidden = !view;
   elements.issuesEmpty.hidden = !state.issuesLoaded || state.issues.length > 0;
-  elements.retryIssues.hidden = !state.issuesError;
-  if (state.activity === "issues") {
+  elements.retryIssues.hidden = Boolean(view) || !state.issuesError;
+  if (view) {
+    elements.issuesSummary.textContent =
+      state.activity === "search"
+        ? "Loading sessions for this intent…"
+        : view.error ||
+          `${view.issue.product || "Product not specified"} · ${view.filters.from} → ${view.filters.to} · ${view.issue.session_count} matching sessions across all pages · page ${view.page}`;
+  } else if (state.activity === "issues") {
     elements.issuesSummary.textContent =
       "Loading common issues for the applied search…";
   } else if (state.issuesError) {
     elements.issuesSummary.textContent = state.issuesError;
   } else if (state.issuesLoaded) {
-    elements.issuesSummary.textContent = `${state.filters.from} → ${state.filters.to} · ${state.issueTotal} matching sessions across all pages · one primary issue per session`;
+    elements.issuesSummary.textContent = `${state.filters.from} → ${state.filters.to} · ${state.issueTotal} matching sessions across all pages · grouped by specific customer intent`;
   } else {
     elements.issuesSummary.textContent =
       "Search monitoring sessions, then open this tab to see the most common issues.";
@@ -382,11 +447,14 @@ function handleDialogKeydown(event) {
 }
 
 /**
- * Register the ticket-opening handler and the detail dialog's event listeners.
+ * Register navigation handlers and the shared detail dialog's event listeners.
+ * @param {Function} ticketHandler - Opens a ticket in Zendesk.
+ * @param {Function} intentHandler - Loads matching sessions for a clicked intent.
  * @returns {void} Prepares the dialog once when app.js initializes the dashboard.
  */
-export function setupDashboard(ticketHandler) {
+export function setupDashboard(ticketHandler, intentHandler) {
   openTicket = ticketHandler;
+  openIntent = intentHandler;
   elements.closeDetailButton.addEventListener("click", closeDetail);
   elements.detailBackdrop.addEventListener("click", handleBackdropClick);
   document.addEventListener("keydown", handleDialogKeydown);

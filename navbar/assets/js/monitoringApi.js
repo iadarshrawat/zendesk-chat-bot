@@ -70,6 +70,7 @@ function reportParams(filters) {
   const params = new URLSearchParams({ from: filters.from, to: filters.to });
   if (filters.search?.trim()) params.set("search", filters.search.trim());
   if (filters.score) params.set("score", filters.score);
+  if (filters.intent) params.set("intent", filters.intent);
   return params;
 }
 
@@ -111,6 +112,21 @@ export async function fetchMonitoringPage(
   if (response?.success !== true || !Array.isArray(response.sessions)) {
     throw new Error("The monitoring API returned an invalid response.");
   }
+  // The table and Excel export share this check: an older backend must not
+  // silently return the whole directory under a selected intent's heading.
+  if (
+    filters.intent &&
+    (response.applied_filters?.intent !== filters.intent ||
+      response.sessions.some((session) =>
+        filters.intent === "unidentified"
+          ? session.intent_id !== null
+          : session.intent_id !== filters.intent,
+      ))
+  ) {
+    throw new Error(
+      "The backend did not apply the selected intent. Restart the server and reload the app.",
+    );
+  }
   const cursor = response.pagination?.next_cursor;
   if (
     response.pagination?.has_more &&
@@ -125,7 +141,7 @@ export async function fetchMonitoringPage(
 }
 
 /**
- * Request primary issue counts for every session matching the applied search.
+ * Request canonical customer intent counts for every session matching the applied search.
  * @returns {Promise<Object>} Ranked issues and totalSessions for the entire date range.
  */
 export async function fetchMonitoringIssues(client, filters) {
@@ -146,7 +162,14 @@ export async function fetchMonitoringIssues(client, filters) {
   }
   for (const issue of response.issues) {
     if (
-      typeof issue.issue_type !== "string" ||
+      !(
+        issue.intent_id === null ||
+        (typeof issue.intent_id === "string" &&
+          /^[a-f0-9]{64}$/.test(issue.intent_id))
+      ) ||
+      typeof issue.intent_name !== "string" ||
+      !issue.intent_name.trim() ||
+      !(issue.product === null || typeof issue.product === "string") ||
       !Number.isSafeInteger(issue.session_count) ||
       issue.session_count < 1 ||
       !Number.isFinite(issue.percentage) ||
@@ -156,5 +179,8 @@ export async function fetchMonitoringIssues(client, filters) {
       throw new Error("The monitoring API returned invalid issue counts.");
     }
   }
-  return { issues: response.issues, totalSessions: response.total_sessions };
+  return {
+    issues: response.issues.filter((issue) => issue.intent_id !== null),
+    totalSessions: response.total_sessions,
+  };
 }
