@@ -9,6 +9,11 @@ import { handleRequestError } from '../../middlewares/index.js';
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
+  app.use((_req, res, next) => {
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Cache-Control', 'no-store');
+    next();
+  });
   app.use(createRoutes());
   app.use(handleRequestError);
 

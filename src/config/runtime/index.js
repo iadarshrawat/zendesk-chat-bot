@@ -25,4 +25,7 @@ export function assertRuntimeConfiguration() {
   if (missing.length) {
     throw new Error(`Missing configuration: ${missing.join(', ')}`);
   }
+  if (process.env.NODE_ENV === 'production' && !/^\S{32,1024}$/.test(process.env.REPORT_API_KEY || '')) {
+    throw new Error('Production requires REPORT_API_KEY with 32–1024 characters and no whitespace');
+  }
 }

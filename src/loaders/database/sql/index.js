@@ -1,10 +1,8 @@
 import sql from 'mssql';
 import { delay } from '../../../common/utils/delay/index.js';
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import { logStage, measureStage, safeErrorMetadata, startStage } from '../../../common/utils/timingLogger/index.js';
 import { databaseSchema, verifyCoreSchema } from '../../../models/schema/index.js';
-
-dotenv.config();
 
 let pool;
 
@@ -186,7 +184,10 @@ export async function connectDB() {
       if (connected || attempt >= maxAttempts) {
         const failure = connected ? schemaStartupError(error) : error;
         startup.fail(failure);
-        console.error('❌ SQL Server startup error:', failure);
+        console.error('SQL Server startup error', {
+          ...safeErrorMetadata(failure),
+          ...(connected ? { message: failure.message } : {})
+        });
         throw failure;
       }
 

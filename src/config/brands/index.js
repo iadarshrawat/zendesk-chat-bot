@@ -1,7 +1,5 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import { normalizeKnowledgeKey } from '../../common/rag/normalization/index.js';
-
-dotenv.config();
 
 function compactStrings(values) {
   const nonEmptyValues = values.map(value => String(value || '').trim()).filter(Boolean);

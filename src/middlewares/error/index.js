@@ -1,3 +1,5 @@
+import { safeErrorMetadata } from '../../common/utils/timingLogger/index.js';
+
 /**
  * Log an unhandled request failure and preserve existing parser-error responses.
  * @param {Error} error - Original Express request error.
@@ -7,7 +9,7 @@
  * @returns {void} Sends the existing generic error unless headers were already sent.
  */
 export function handleRequestError(error, _req, res, _next) {
-  console.error('HTTP request failed', { message: error.message });
+  console.error('HTTP request failed', safeErrorMetadata(error));
   if (res.headersSent) {
     return;
   }

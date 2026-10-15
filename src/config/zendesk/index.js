@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
+import 'dotenv/config';
 
 export const ZENDESK_CONFIG = {
   subdomain: process.env.ZENDESK_SUBDOMAIN || '',

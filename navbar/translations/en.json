@@ -3,6 +3,16 @@
     "name": "AI Ticket Monitoring",
     "short_description": "Review AI ticket satisfaction and session details.",
     "long_description": "A read-only dashboard for completed AI support monitoring sessions. It shows ticket-level satisfaction, session-level score breakdowns, searchable records, and monitoring details saved by the support platform in SQL Server. Estimated satisfaction is not Zendesk's official CSAT.",
-    "installation_instructions": "This temporary build includes its monitoring backend hostname and report API key in the frontend. No connection settings are required."
+    "installation_instructions": "Enter the HTTPS monitoring backend hostname and its report API key. The key is stored securely by Zendesk and added to requests outside the browser.",
+    "parameters": {
+      "monitoring_api_hostname": {
+        "label": "Monitoring API hostname",
+        "helpText": "Backend hostname only, for example your-app.azurewebsites.net. Do not include https://, a port, or a path."
+      },
+      "monitoring_api_key": {
+        "label": "Monitoring report API key",
+        "helpText": "Enter the backend REPORT_API_KEY. Zendesk stores this value securely; do not add it to app source files."
+      }
+    }
   }
 }

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { processOneInboxJob } from '../../services/messaging/worker/index.js';
 import { runExclusiveMonitor } from '../../services/monitoring/worker/index.js';
 import { MONITORING_CONFIG } from '../../config/monitoring/index.js';
+import { safeErrorMetadata } from '../utils/timingLogger/index.js';
 
 /**
  * Create inbox and monitoring loops with the existing wakeup, polling, and shutdown rules.
@@ -72,7 +73,7 @@ export function createBackgroundRuntime({
         // A webhook may have queued work while the empty claim was in flight.
         await pause(pollMs, { inbox: true, notificationVersion });
       } catch (error) {
-        logger.error('Inbox processing failed', error);
+        logger.error('Inbox processing failed', safeErrorMetadata(error));
         await pause(errorDelayMs);
       }
     }
@@ -89,7 +90,7 @@ export function createBackgroundRuntime({
       try {
         await runMonitor();
       } catch (error) {
-        logger.error('Monitoring failed', error);
+        logger.error('Monitoring failed', safeErrorMetadata(error));
       }
 
       // Count the interval from the previous poll's start, allowing for its duration.

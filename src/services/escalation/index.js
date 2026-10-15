@@ -6,7 +6,7 @@ import { getForm, deleteForm, saveForm } from '../../models/conversationForm/ind
 import { generateClaudeText } from '../rag/replies/index.js';
 import { sendSunshineMessage, sendSunshineForm } from '../messaging/messages/index.js';
 import { customerMessages } from '../../lib/message/index.js';
-import { logStage, measureStage } from '../../common/utils/timingLogger/index.js';
+import { logStage, measureStage, safeErrorMetadata } from '../../common/utils/timingLogger/index.js';
 import { isClearInformationRequest, mightRequestHumanSupport } from '../../common/messaging/intent/index.js';
 import { isWithinBusinessHours } from '../businessHours/index.js';
 
@@ -162,7 +162,7 @@ async function fetchEscalationCategoryOptions() {
 
     return Array.from(categoriesByKey.values());
   } catch (error) {
-    console.error('Failed to fetch escalation category options:', error.response?.data || error.message);
+    console.error('Failed to fetch escalation category options', safeErrorMetadata(error));
 
     return [];
   }
@@ -207,7 +207,7 @@ async function sendDetailCollectionForm(conversationId) {
 
     return await measureStage('sunshine.form_send', () => sendSunshineForm(conversationId, fields));
   } catch (error) {
-    console.error('Failed to send detail collection form:', error.response?.data || error.message);
+    console.error('Failed to send detail collection form', safeErrorMetadata(error));
     throw error;
   }
 }

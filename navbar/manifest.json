@@ -13,7 +13,21 @@
       "nav_bar": "assets/index.html"
     }
   },
-  "version": "1.4.0",
+  "version": "1.5.0",
   "frameworkVersion": "2.0",
-  "domainWhitelist": ["ungestural-bertha-celestial.ngrok-free.dev"]
+  "domainWhitelist": ["{{setting.monitoring_api_hostname}}"],
+  "parameters": [
+    {
+      "name": "monitoring_api_hostname",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "monitoring_api_key",
+      "type": "text",
+      "required": true,
+      "secure": true,
+      "scopes": ["header"]
+    }
+  ]
 }

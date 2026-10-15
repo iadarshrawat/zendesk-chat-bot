@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
+import 'dotenv/config';
 
 function positiveInteger(value, fallback) {
   const parsed = Number.parseInt(value, 10);

@@ -44,7 +44,7 @@ Each backend module uses a named folder containing `index.js`. Its parent `index
 
 ## Run locally
 
-1. Use Node 20+ and Microsoft SQL Server with a dedicated database login. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT` (normally `1433`), `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_SCHEMA` (default `dbo`). Never commit `.env` or the private knowledge archives to a public repository.
+1. Use Node.js 22 or 24 LTS and Microsoft SQL Server with a dedicated database login. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT` (normally `1433`), `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_SCHEMA` (default `dbo`). Never commit `.env` or the private knowledge archives to a repository.
 2. Run `npm ci` once. Review migrations 001 through 004, confirm `DB_NAME.DB_SCHEMA`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"`. The command requires an exact target match before connecting. It creates only the four application tables and adds the nullable monitoring issue/intent fields and their constraints. It preserves existing records and unrelated tables. Normal `npm start` verifies storage without running DDL; the application login needs access to the four tables and system-catalog metadata.
 3. Validate the supplied knowledge packages without API calls:
 
@@ -55,7 +55,17 @@ Each backend module uses a named folder containing `index.js`. Its parent `index
 
 4. Review package ownership, then ingest each brand separately with the same commands without `--validate-only`. This publishes brand snapshots in Cosmos. The Cosmos vector dimension must match the Voyage embedding output dimension. The supplied default is 1024.
 5. Run `npm start` in one terminal. It verifies the four SQL Server tables, then starts the API, in-memory inbox processor and monitor together. Configure Zendesk's Conversations webhook for `conversation:create` and `conversation:message`, send it to `POST /sunshine/webhook`, and set the webhook shared secret to `SUNSHINE_WEBHOOK_SECRET`.
-6. Connect the website's logged-in user session to `POST /sunshine/auth` as described below. Set `REPORT_API_KEY` for report consumers. The temporary navbar build hardcodes this key and the ngrok hostname in `navbar/assets/js/monitoringConfig.js`; it reads SQL through the API. The navbar folder guide is included in [its entry page](navbar/assets/index.html).
+6. Connect the website's logged-in user session to `POST /sunshine/auth` as described below. Set `REPORT_API_KEY` for report consumers. Configure the navbar's backend hostname and secure API key during app installation as described below. The navbar folder guide is included in [its entry page](navbar/assets/index.html).
+
+## Install the monitoring navbar
+
+1. Generate a new report key, for example with `openssl rand -hex 32`, and save it as backend `REPORT_API_KEY`. Replace any key previously shipped in frontend source or ZIPs; removing the source does not revoke old copies or Git history. Production startup requires a 32–1024 character key without whitespace.
+2. Set `NODE_ENV=production` and the backend environment settings on your host, apply the reviewed migrations, and start the single backend process with `npm start`.
+3. Run `zcli apps:validate navbar` and `zcli apps:package navbar`. Upload the resulting app package in Zendesk Admin Center to install or update the private app.
+4. In the app's installation settings, set **Monitoring API hostname** to the HTTPS backend's hostname only, such as `your-app.azurewebsites.net`, and **Monitoring report API key** to the same new `REPORT_API_KEY`. The hostname must not include a scheme, port, or path. Restrict access to this app to the intended agents or roles.
+5. Open the installed app, run a date search, and check the session directory, Common issues, and exports. The browser sends a `{{setting.monitoring_api_key}}` placeholder; Zendesk's proxy inserts the real key outside the browser. The manifest restricts it to HTTP headers and the configured hostname. No API key belongs in `monitoringConfig.js`, translations, or a secure setting's `default`.
+
+[Zendesk secure settings](https://developer.zendesk.com/documentation/apps/app-developer-guide/making-api-requests-from-a-zendesk-app/#using-secure-settings) require an installed app and a publicly trusted HTTPS endpoint. The local `zcli apps:server` does not support secure settings. ZCLI validation and packaging upload the app ZIP to Zendesk's validation API; they do not install or publish it. Verify authentication in the installed private app.
 
 `GET /health/live` checks the HTTP process; `GET /health/ready` checks SQL Server connectivity with `SELECT 1`. Startup verifies brand mappings, the four SQL Server tables, Cosmos and required bot credentials before starting both loops.
 

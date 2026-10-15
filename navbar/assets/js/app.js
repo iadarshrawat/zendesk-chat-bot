@@ -16,6 +16,7 @@ import {
   downloadIntentWorkbook,
 } from "./excelExport.js";
 import { downloadDashboardPdf } from "./pdfExport.js";
+import { configureMonitoringApi } from "./monitoringConfig.js";
 
 const elements = {
   report: document.getElementById("dashboard-report"),
@@ -532,20 +533,29 @@ function bindEvents() {
 
 /**
  * Connect to Zendesk, prepare the default form, and display the empty dashboard.
- * @returns {void} Initializes the app; results are fetched only after Search.
+ * @returns {Promise<void>} Loads connection settings; results are fetched only after Search.
  */
-function initializeApp() {
-  state.client = globalThis.ZAFClient?.init() || null;
+async function initializeApp() {
+  const client = globalThis.ZAFClient?.init() || null;
   resetFilters();
   setupDashboard(openTicket, showIntentSessions);
   bindEvents();
   updateDashboard();
-  if (!state.client) {
+  if (!client) {
     showNotice(
       "Open this app from the Zendesk Support navigation bar to load monitoring data.",
     );
     elements.syncText.textContent = "Zendesk connection unavailable";
+    return;
   }
+  try {
+    await configureMonitoringApi(client);
+    state.client = client;
+  } catch (error) {
+    showNotice(monitoringApiErrorMessage(error));
+    elements.syncText.textContent = "Connection settings required";
+  }
+  updateActionButtons();
 }
 
 initializeApp();

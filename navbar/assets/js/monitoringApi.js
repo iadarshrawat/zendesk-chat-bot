@@ -52,7 +52,7 @@ export function maxRangeDate(from) {
 export function monitoringApiErrorMessage(error) {
   const status = Number(error?.status || error?.responseJSON?.status);
   if (status === 401 || status === 403)
-    return "Report access was denied. Check that the frontend API key matches the backend REPORT_API_KEY.";
+    return "Report access was denied. Ask an administrator to update the app's secure monitoring API key to match the backend REPORT_API_KEY.";
   if (status === 404)
     return "The monitoring endpoint was not found. Restart the backend with the latest code, reload the app, and check the configured backend hostname.";
   if (status === 400)
@@ -76,7 +76,7 @@ function reportParams(filters) {
 }
 
 /**
- * Request a monitoring resource through the Zendesk proxy with the configured key.
+ * Request a monitoring resource; Zendesk inserts the secure key outside the browser.
  * @returns {Promise<Object>} The backend JSON response. Rejects if the request fails.
  */
 function requestMonitoring(client, path, params) {
@@ -87,10 +87,10 @@ function requestMonitoring(client, path, params) {
     cache: false,
     autoRetry: true,
     headers: {
-      Authorization: `Bearer ${MONITORING_API.apiKey}`,
+      Authorization: "Bearer {{setting.monitoring_api_key}}",
       "ngrok-skip-browser-warning": "1",
     },
-    secure: false,
+    secure: true,
     cors: false,
   });
 }
