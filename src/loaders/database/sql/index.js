@@ -2,7 +2,7 @@ import sql from 'mssql';
 import { delay } from '../../../common/utils/delay/index.js';
 import 'dotenv/config';
 import { logStage, measureStage, safeErrorMetadata, startStage } from '../../../common/utils/timingLogger/index.js';
-import { databaseSchema, verifyCoreSchema } from '../../../models/schema/index.js';
+import { databaseSchema, databaseTablePrefix, verifyCoreSchema } from '../../../models/schema/index.js';
 
 let pool;
 
@@ -78,6 +78,7 @@ export function sqlServerConfig(environment = process.env) {
 
   // Validate this alongside the connection settings so invalid names fail at startup.
   databaseSchema(environment.DB_SCHEMA ?? '');
+  databaseTablePrefix(environment.DB_TABLE_PREFIX ?? '');
 
   return {
     server: requiredSetting(environment, 'DB_HOST'),
@@ -121,6 +122,7 @@ export function getPool() {
 function schemaStartupError(error) {
   const failure = new Error(
     `SQL Server schema check failed in DB_NAME=${process.env.DB_NAME || '(unset)'}. ` +
+      `DB_TABLE_PREFIX=${databaseTablePrefix() || '(none)'}. ` +
       'The application requires conversation state, monitoring tables, customer intents and conversation handoffs. ' +
       'Review migrations 001 through 005, then run npm run db:migrate explicitly if any is missing; ' +
       'normal startup never creates or changes tables.',
@@ -167,7 +169,7 @@ export async function connectDB() {
       await measureStage('sqlserver.schema', () => verifyCoreSchema(candidatePool, process.env.DB_SCHEMA));
 
       pool = candidatePool;
-      console.log('✅ Microsoft SQL Server connected');
+      console.log(`✅ Microsoft SQL Server connected${databaseTablePrefix() ? ` (table prefix: ${databaseTablePrefix()})` : ''}`);
       attemptSpan.end();
       startup.end();
 

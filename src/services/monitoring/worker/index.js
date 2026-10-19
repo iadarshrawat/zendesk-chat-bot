@@ -35,7 +35,9 @@ export async function runExclusiveMonitor() {
 
     const result = await runReport();
     if (!result.success) {
-      throw new Error(result.error || 'Monitoring run failed');
+      const error = new Error(result.error || 'Monitoring run failed');
+      error.code = result.summary?.errors ? 'MONITORING_POLL_PARTIAL_FAILURE' : 'MONITORING_POLL_FAILED';
+      throw error;
     }
 
     return result;

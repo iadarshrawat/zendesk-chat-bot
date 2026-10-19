@@ -100,7 +100,7 @@ export async function sendWelcomeMessage(event) {
  * Send a form with the existing timeout and uncertain-delivery marking.
  * @param {string} conversationId - Sunshine conversation ID.
  * @param {Array<Object>} fields - Existing Sunshine form fields.
- * @param {Object} options - Optional timeoutMs for form delivery.
+ * @param {Object} options - Optional timeoutMs and mode-specific prompt for form delivery.
  * @returns {Promise<Object>} The Sunshine response data; rejects on a form-delivery failure.
  */
 export async function sendSunshineForm(conversationId, fields, options = {}) {
@@ -114,7 +114,7 @@ export async function sendSunshineForm(conversationId, fields, options = {}) {
         author: { type: 'business' },
         content: {
           type: 'form',
-          text: customerMessages.formPrompt,
+          text: options.prompt || customerMessages.formPrompt,
           fields
         }
       },

@@ -3,6 +3,7 @@ import { requestMonitoringEvaluation } from '../../../api/anthropic/messages/ind
 import { toIsoString } from '../../../common/utils/dates/index.js';
 import { SESSION_GAP_MS, monitoringIssueType } from '../../../common/monitoring/validation/index.js';
 import { CUSTOMER_INTENT_INSTRUCTIONS, customerIntent } from '../../../common/monitoring/intent/index.js';
+import { logStage, safeErrorMetadata } from '../../../common/utils/timingLogger/index.js';
 import { isEscalatedMonitoringSession, monitoringSessionId } from '../sessions/index.js';
 
 const SATISFACTION_SCORES = ['satisfied', 'neutral', 'unsatisfied'];
@@ -110,7 +111,7 @@ export async function evaluateWithClaude(context) {
 /**
  * Validate the evaluator's satisfaction fields and freely named customer intent.
  * @param {string} raw - Original model response text.
- * @returns {Object} The validated evaluation; throws for malformed or unsupported fields.
+ * @returns {Object} Validated scores and intent; undefined intent requests separate extraction. Invalid scores/JSON throw.
  */
 export function parseMonitoringEvaluation(raw) {
   let result;
@@ -134,6 +135,15 @@ export function parseMonitoringEvaluation(raw) {
     throw new Error('Claude returned invalid monitoring fields');
   }
 
+  let intent;
+  try {
+    intent = customerIntent(result.customer_intent);
+  } catch (error) {
+    if (error.code !== 'MONITORING_INVALID_INTENT') throw error;
+    logStage('monitoring.intent_draft_invalid', { reason: error.field, ...safeErrorMetadata(error) });
+    // The report retries undefined drafts through its existing, isolated intent-extraction step.
+  }
+
   return {
     customer_satisfaction: result.customer_satisfaction,
     human_required: result.human_required,
@@ -141,7 +151,7 @@ export function parseMonitoringEvaluation(raw) {
     confidence: result.confidence,
     reason: result.reason,
     key_issue: result.key_issue ?? null,
-    customer_intent: customerIntent(result.customer_intent)
+    customer_intent: intent
   };
 }
 

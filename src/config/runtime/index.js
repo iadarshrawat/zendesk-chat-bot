@@ -1,4 +1,4 @@
-import { assertBrandRoutingConfigured } from '../brands/index.js';
+import { assertBrandRoutingConfigured, hasLiveSupport } from '../brands/index.js';
 import { assertRagConfigured } from '../rag/index.js';
 
 /**
@@ -17,9 +17,9 @@ export function assertRuntimeConfiguration() {
     'ANTHROPIC_API_KEY',
     'ZENDESK_SUBDOMAIN',
     'ZENDESK_CLIENT_ID',
-    'ZENDESK_CLIENT_SECRET',
-    'ZENDESK_BUSINESS_HOURS_SCHEDULE_ID'
+    'ZENDESK_CLIENT_SECRET'
   ];
+  if (hasLiveSupport()) required.push('ZENDESK_BUSINESS_HOURS_SCHEDULE_ID');
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length) {

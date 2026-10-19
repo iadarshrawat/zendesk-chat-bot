@@ -8,16 +8,49 @@ function compactStrings(values) {
 }
 
 /**
+ * Validate a support mode and its promised follow-up window.
+ * @param {Object} policy - live/follow_up mode and a positive whole number of hours.
+ * @returns {Object} An immutable support policy; invalid settings fail startup.
+ */
+function readSupportPolicy({ mode, followUpHours }) {
+  const normalizedMode = typeof mode === 'string' ? mode.trim().toLowerCase() : '';
+  if (!['live', 'follow_up'].includes(normalizedMode)) {
+    throw new Error('BOT_SUPPORT_MODE / supportMode must be live or follow_up');
+  }
+  const hours =
+    typeof followUpHours === 'number' || (typeof followUpHours === 'string' && followUpHours.trim()) ? Number(followUpHours) : NaN;
+  if (!Number.isSafeInteger(hours) || hours <= 0) {
+    throw new Error('BOT_FOLLOW_UP_HOURS / followUpHours must be a positive whole number');
+  }
+  return Object.freeze({ mode: normalizedMode, followUpHours: hours });
+}
+
+const DEFAULT_SUPPORT_POLICY = readSupportPolicy({
+  mode: process.env.BOT_SUPPORT_MODE?.trim() || 'live',
+  followUpHours: process.env.BOT_FOLLOW_UP_HOURS?.trim() || 24
+});
+
+/**
  * Build an immutable brand definition with unique aliases and widget IDs.
- * @param {Object} options - Brand key, display name, aliases, widget IDs, and environment name.
+ * @param {Object} options - Brand routing, instructions and optional support-policy overrides.
  * @returns {Object} The normalized brand definition.
  */
-function buildBrand({ key, displayName, aliases = [], widgetIds = [], widgetEnvName, instructions = '' }) {
+function buildBrand({
+  key,
+  displayName,
+  aliases = [],
+  widgetIds = [],
+  widgetEnvName,
+  instructions = '',
+  supportMode = DEFAULT_SUPPORT_POLICY.mode,
+  followUpHours = DEFAULT_SUPPORT_POLICY.followUpHours
+}) {
   return Object.freeze({
     key,
     displayName,
     widgetEnvName,
     instructions,
+    supportPolicy: readSupportPolicy({ mode: supportMode, followUpHours }),
     aliases: compactStrings([key, displayName, ...aliases]),
     widgetIds: compactStrings(widgetIds)
   });
@@ -100,6 +133,24 @@ export function resolveSupportBrand(value) {
  */
 export function getSupportContext(brand) {
   return resolveSupportBrand(brand)?.instructions?.trim() || process.env.BOT_CONTEXT?.trim() || '';
+}
+
+/**
+ * Select a widget's support policy, using global defaults when no brand is mapped.
+ * @param {string} widgetId - Zendesk conversation brand ID; knowledge routing remains separate and strict.
+ * @returns {Object} Immutable mode and follow-up hours for a new handoff attempt.
+ */
+export function getSupportPolicy(widgetId) {
+  const id = String(widgetId || '').trim();
+  return SUPPORT_BRANDS.find(brand => brand.widgetIds.includes(id))?.supportPolicy || DEFAULT_SUPPORT_POLICY;
+}
+
+/**
+ * Check whether any configured brand needs the existing live-support schedule.
+ * @returns {boolean} True when at least one brand uses live support.
+ */
+export function hasLiveSupport() {
+  return SUPPORT_BRANDS.some(brand => brand.supportPolicy.mode === 'live');
 }
 
 /**

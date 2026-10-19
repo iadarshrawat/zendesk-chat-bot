@@ -5,13 +5,13 @@ import {
   applyIssueTypeSchema,
   applyIntentSchema,
   applyHandoffSchema,
-  databaseSchema,
+  databaseTarget,
   initializeCoreSchema
 } from '../../src/models/schema/index.js';
 import { safeErrorMetadata } from '../../src/common/utils/timingLogger/index.js';
 
 const config = sqlServerConfig();
-const target = `${config.database}.${databaseSchema()}`;
+const target = databaseTarget(config.database);
 const [flag, confirmedTarget] = process.argv.slice(2);
 if (flag !== '--confirm-target' || confirmedTarget !== target || process.argv.length !== 4) {
   throw new Error(`Migration requires --confirm-target ${target}; no database connection was made`);
@@ -28,7 +28,7 @@ try {
   await applyIssueTypeSchema(pool, process.env.DB_SCHEMA);
   await applyIntentSchema(pool, process.env.DB_SCHEMA);
   await applyHandoffSchema(pool, process.env.DB_SCHEMA);
-  console.log('SQL Server migration complete, including customer intents and durable conversation handoffs');
+  console.log(`SQL Server migration complete for ${target}, including customer intents and durable conversation handoffs`);
 } catch (error) {
   console.error('SQL Server migration failed', safeErrorMetadata(error));
   process.exitCode = 1;

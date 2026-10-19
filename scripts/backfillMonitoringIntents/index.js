@@ -1,13 +1,13 @@
 import 'dotenv/config';
 import sql from 'mssql';
 import { sqlServerConfig } from '../../src/loaders/database/sql/index.js';
-import { databaseSchema, verifyCoreSchema } from '../../src/models/schema/index.js';
+import { databaseTarget, verifyCoreSchema } from '../../src/models/schema/index.js';
 import { createZendeskClient } from '../../src/api/zendesk/client/index.js';
 import { backfillMonitoringIntents } from './backfill/index.js';
 import { safeErrorMetadata } from '../../src/common/utils/timingLogger/index.js';
 
 const config = sqlServerConfig();
-const target = `${config.database}.${databaseSchema()}`;
+const target = databaseTarget(config.database);
 const [flag, confirmedTarget, mode] = process.argv.slice(2);
 const allSessions = mode === '--all-sessions';
 if (flag !== '--confirm-target' || confirmedTarget !== target || process.argv.length !== (allSessions ? 5 : 4)) {

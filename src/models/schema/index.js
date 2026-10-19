@@ -142,7 +142,37 @@ export function databaseSchema(schemaName = process.env.DB_SCHEMA) {
 }
 
 /**
- * Qualify an approved application table with the validated SQL schema.
+ * Validate the optional table prefix used to separate testing storage from production.
+ * @param {string} prefix - DB_TABLE_PREFIX; empty keeps the existing production table names.
+ * @returns {string} A safe prefix of at most 32 characters, such as test_.
+ */
+export function databaseTablePrefix(prefix = process.env.DB_TABLE_PREFIX) {
+  const value = prefix?.trim() || '';
+  if (value && !/^[A-Za-z_][A-Za-z0-9_]{0,31}$/.test(value)) {
+    throw schemaError(
+      'SQLSERVER_INVALID_TABLE_PREFIX',
+      'DB_TABLE_PREFIX must contain only letters, numbers, and underscores, up to 32 characters'
+    );
+  }
+  return value;
+}
+
+function databaseObjectName(name) {
+  return `${databaseTablePrefix()}${name}`;
+}
+
+/**
+ * Identify the database, schema and optional table prefix for explicit maintenance commands.
+ * @param {string} databaseName - Configured SQL database name.
+ * @returns {string} Confirmation target; prefixed tables use Database.schema:test_.
+ */
+export function databaseTarget(databaseName) {
+  const prefix = databaseTablePrefix();
+  return `${databaseName}.${databaseSchema()}${prefix ? `:${prefix}` : ''}`;
+}
+
+/**
+ * Qualify an approved application table with the validated schema and configured table prefix.
  * @param {string} tableName - Application-owned SQL table name.
  * @param {string} schemaName - Validated SQL schema name.
  * @returns {string} The bracketed table name; throws for tables outside the application boundary.
@@ -152,7 +182,7 @@ export function sqlTable(tableName, schemaName = process.env.DB_SCHEMA) {
     throw schemaError('SQLSERVER_TABLE_NOT_ALLOWED', `Table is outside the application schema boundary: ${tableName}`);
   }
 
-  return `[${databaseSchema(schemaName)}].[${tableName}]`;
+  return `[${databaseSchema(schemaName)}].[${databaseObjectName(tableName)}]`;
 }
 
 async function query(db, sql, parameters = {}) {
@@ -187,7 +217,7 @@ async function tableExists(db, schemaName, tableName) {
          ON schemas.schema_id = tables.schema_id
       WHERE schemas.name = @schemaName
         AND tables.name = @tableName;`,
-    { schemaName, tableName }
+    { schemaName, tableName: databaseObjectName(tableName) }
   );
 
   return result.recordset?.length > 0;
@@ -220,7 +250,7 @@ async function readColumns(db, schemaName, tableName) {
       WHERE schemas.name = @schemaName
         AND tables.name = @tableName
       ORDER BY columns.column_id;`,
-    { schemaName, tableName }
+    { schemaName, tableName: databaseObjectName(tableName) }
   );
 
   return result.recordset ?? [];
@@ -259,7 +289,7 @@ async function readIndexes(db, schemaName, tableName) {
         AND tables.name = @tableName
         AND indexes.is_hypothetical = 0
       ORDER BY indexes.index_id, index_columns.key_ordinal;`,
-    { schemaName, tableName }
+    { schemaName, tableName: databaseObjectName(tableName) }
   );
 
   return result.recordset ?? [];
@@ -286,7 +316,7 @@ async function readChecks(db, schemaName, tableName) {
          ON schemas.schema_id = tables.schema_id
       WHERE schemas.name = @schemaName
         AND tables.name = @tableName;`,
-    { schemaName, tableName }
+    { schemaName, tableName: databaseObjectName(tableName) }
   );
 
   return result.recordset ?? [];
@@ -364,7 +394,7 @@ function describeIndexMismatch(tableName, indexes, expected) {
   }
 
   for (const [indexName, expectedColumns] of Object.entries(expected.indexes)) {
-    const matchingRows = indexes.filter(row => row.index_name === indexName);
+    const matchingRows = indexes.filter(row => row.index_name === databaseObjectName(indexName));
     const columns = indexColumns(matchingRows, () => true);
     if (
       !sameColumnList(columns, expectedColumns) ||
@@ -389,7 +419,7 @@ function describeCheckMismatch(tableName, checks, jsonColumn) {
     return undefined;
   }
 
-  const expectedName = `CK_${tableName}_${jsonColumn}`;
+  const expectedName = databaseObjectName(`CK_${tableName}_${jsonColumn}`);
   const jsonCheck = checks.find(check => check.constraint_name === expectedName);
   const definition = String(jsonCheck?.definition ?? '').replace(/\s/g, '');
   const expectedExpression = new RegExp(`^\\(*ISJSON\\(\\[?${jsonColumn}\\]?\\)=\\(?1\\)?\\)*$`, 'i');
@@ -449,13 +479,17 @@ async function verifyTableDefinition(
     describeCheckMismatch(tableName, checks, expected.jsonColumn);
 
   const missingCheck = expected.requiredChecks?.find(
-    name => !checks.some(check => check.constraint_name === name && !booleanValue(check.is_disabled) && !booleanValue(check.is_not_trusted))
+    name =>
+      !checks.some(
+        check =>
+          check.constraint_name === databaseObjectName(name) && !booleanValue(check.is_disabled) && !booleanValue(check.is_not_trusted)
+      )
   );
 
   if (mismatch || missingCheck) {
     throw schemaError(
       'SQLSERVER_INCOMPATIBLE_SCHEMA',
-      `Existing table [${schemaName}].[${tableName}] is incompatible: ${mismatch || `missing trusted check ${missingCheck}`}`
+      `Existing table ${sqlTable(tableName, schemaName)} is incompatible: ${mismatch || `missing trusted check ${missingCheck}`}`
     );
   }
   const foreignKeys = [expected.foreignKey, ...(expected.foreignKeys || [])].filter(Boolean);
@@ -472,10 +506,10 @@ async function verifyTableDefinition(
       INNER JOIN sys.tables AS tables ON tables.object_id = keys.parent_object_id
       INNER JOIN sys.schemas AS schemas ON schemas.schema_id = tables.schema_id
       WHERE schemas.name = @schemaName AND tables.name = @tableName`,
-      { schemaName, tableName }
+      { schemaName, tableName: databaseObjectName(tableName) }
     );
     for (const foreignKey of foreignKeys) {
-      const rows = result.recordset.filter(row => row.constraint_name === foreignKey.name);
+      const rows = result.recordset.filter(row => row.constraint_name === databaseObjectName(foreignKey.name));
       if (allowLegacyIntents && foreignKey.name === 'FK_bot_monitor_evaluations_intent' && !rows.length) {
         continue;
       }
@@ -486,7 +520,7 @@ async function verifyTableDefinition(
         booleanValue(row.is_not_trusted) ||
         row.column_name !== foreignKey.column ||
         row.referenced_schema !== schemaName ||
-        row.referenced_table !== foreignKey.table ||
+        row.referenced_table !== databaseObjectName(foreignKey.table) ||
         row.referenced_column !== (foreignKey.referencedColumn || 'session_id')
       ) {
         throw schemaError('SQLSERVER_INCOMPATIBLE_SCHEMA', `${tableName} requires trusted foreign key ${foreignKey.name}`);
@@ -508,6 +542,7 @@ export async function verifyCoreSchema(
   { allowLegacyIssueType = false, allowLegacyIntents = false, allowLegacyHandoffs = false } = {}
 ) {
   const schemaName = databaseSchema(requestedSchema);
+  databaseTablePrefix();
 
   if (!(await schemaExists(db, schemaName))) {
     throw schemaError(
@@ -554,13 +589,14 @@ export async function verifyCoreSchema(
 }
 
 /**
- * Substitute a validated schema and reject core migration SQL outside the approved table boundary.
+ * Substitute a validated schema/prefix and reject core migration SQL outside the approved table boundary.
  * @param {string} template - Trusted local core migration template.
  * @param {string} schemaName - Validated SQL schema name.
  * @returns {string} Safe core migration SQL; throws before execution for unsupported statements.
  */
 function renderMigration(template, schemaName) {
-  const sql = template.replaceAll('{{schema}}', schemaName);
+  const sql = renderSchemaTemplate(template, schemaName);
+  const physicalCoreTables = coreTableNames.map(databaseObjectName);
   const createdTables = [...sql.matchAll(/\bCREATE\s+TABLE\s+\[[^\]]+]\.\[([^\]]+)]/gi)].map(match => match[1]);
   const tableCreateCount = [...sql.matchAll(/\bCREATE\s+TABLE\b/gi)].length;
   const createdIndexTargets = [...sql.matchAll(/\bCREATE\s+INDEX\s+\[[^\]]+]\s+ON\s+\[[^\]]+]\.\[([^\]]+)]/gi)].map(match => match[1]);
@@ -569,14 +605,14 @@ function renderMigration(template, schemaName) {
   const createKinds = [...sql.matchAll(/\bCREATE\s+([A-Z_]+)/gi)].map(match => match[1].toUpperCase());
 
   const createsOnlyCoreTables =
-    tableCreateCount === coreTableNames.length &&
+    tableCreateCount === physicalCoreTables.length &&
     createdTables.length === tableCreateCount &&
-    coreTableNames.every(tableName => createdTables.includes(tableName));
+    physicalCoreTables.every(tableName => createdTables.includes(tableName));
   const indexesOnlyCoreTables =
-    indexCreateCount === coreTableNames.length &&
+    indexCreateCount === physicalCoreTables.length &&
     createdIndexTargets.length === indexCreateCount &&
-    coreTableNames.every(tableName => createdIndexTargets.includes(tableName));
-  const referencesOnlyCoreTables = qualifiedObjects.every(({ schema, name }) => schema === schemaName && coreTableNames.includes(name));
+    physicalCoreTables.every(tableName => createdIndexTargets.includes(tableName));
+  const referencesOnlyCoreTables = qualifiedObjects.every(({ schema, name }) => schema === schemaName && physicalCoreTables.includes(name));
   const createsOnlyTablesAndIndexes = createKinds.every(kind => kind === 'TABLE' || kind === 'INDEX');
 
   if (
@@ -593,6 +629,16 @@ function renderMigration(template, schemaName) {
   }
 
   return sql;
+}
+
+/**
+ * Apply the same validated namespace to migration tables, indexes and constraints.
+ * @param {string} template - Trusted migration SQL with schema/prefix placeholders.
+ * @param {string} schemaName - Requested SQL schema.
+ * @returns {string} Migration SQL for the selected production or testing tables.
+ */
+function renderSchemaTemplate(template, schemaName) {
+  return template.replaceAll('{{schema}}', databaseSchema(schemaName)).replaceAll('{{prefix}}', databaseTablePrefix());
 }
 
 /**
@@ -642,7 +688,7 @@ export async function applyIssueTypeSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
   await verifyCoreSchema(db, schemaName, { allowLegacyIssueType: true, allowLegacyIntents: true, allowLegacyHandoffs: true });
   const template = await readFile(new URL('../../../migrations/003_monitor_issue_type.sql', import.meta.url), 'utf8');
-  await db.request().batch(template.replaceAll('{{schema}}', schemaName));
+  await db.request().batch(renderSchemaTemplate(template, schemaName));
   await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true, allowLegacyHandoffs: true });
 }
 
@@ -659,7 +705,7 @@ export async function applyIntentSchema(db, requestedSchema) {
     await verifyTableDefinition(db, schemaName, 'bot_monitor_intents', monitoringIntents);
   }
   const template = await readFile(new URL('../../../migrations/004_monitor_customer_intents.sql', import.meta.url), 'utf8');
-  await db.request().batch(template.replaceAll('{{schema}}', schemaName));
+  await db.request().batch(renderSchemaTemplate(template, schemaName));
   await verifyCoreSchema(db, schemaName, { allowLegacyHandoffs: true });
 }
 
@@ -676,6 +722,6 @@ export async function applyHandoffSchema(db, requestedSchema) {
     await verifyTableDefinition(db, schemaName, 'bot_conversation_handoffs', conversationHandoffs);
   }
   const template = await readFile(new URL('../../../migrations/005_conversation_handoffs.sql', import.meta.url), 'utf8');
-  await db.request().batch(template.replaceAll('{{schema}}', schemaName));
+  await db.request().batch(renderSchemaTemplate(template, schemaName));
   await verifyCoreSchema(db, schemaName);
 }

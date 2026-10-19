@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { getSupportPolicy } from '../../config/brands/index.js';
 import { loadHandoff, saveHandoff } from '../../models/handoff/index.js';
 import { createSunshineClient } from '../../api/sunshine/client/index.js';
 import { passConversationControl, fetchSunshineConversation } from '../../api/sunshine/conversations/index.js';
@@ -25,6 +26,31 @@ export * from './intent/index.js';
 const TRANSFER_STATES = new Set(['transferring', 'transfer_unknown', 'transferred']);
 const RETRY_REQUEST = /^(?:try again|retry|please retry|dobara|phir se)[.!\s]*$/i;
 const TRANSFER_SETTLE_MS = 30_000;
+const LEGACY_SUPPORT_POLICY = Object.freeze({ mode: 'live', followUpHours: 24 });
+
+/**
+ * Keep an active attempt's saved policy; older requests retain their original live flow.
+ * @param {Object} event - Customer event and optional persisted handoff state.
+ * @returns {Object} Saved support policy, or current widget configuration for a new request.
+ */
+function supportPolicyFor(event) {
+  const state = event._handoff;
+  if (state && state.status !== 'cancelled') return state.data.supportPolicy || LEGACY_SUPPORT_POLICY;
+  return getSupportPolicy(event.payload.conversation.brandId);
+}
+
+/**
+ * Select consistent offer wording and buttons for the current support mode.
+ * @param {Object} event - Customer event with its saved handoff policy.
+ * @returns {Object} Backend-owned offer text and quick-reply labels.
+ */
+function handoffOffer(event) {
+  const followUp = supportPolicyFor(event).mode === 'follow_up';
+  return {
+    text: followUp ? customerMessages.followUpAgentOffer : customerMessages.agentOffer,
+    quickReplies: followUp ? customerMessages.followUpConfirmationButtons : customerMessages.confirmationButtons
+  };
+}
 
 function eventId(event) {
   const id = event.id || event.payload.message.id;
@@ -84,15 +110,17 @@ async function sendHandoffMessage(event, text) {
  * @returns {Promise<void>} Resolves after a confirmed form message ID has been saved.
  */
 async function startIntake(event) {
+  const supportPolicy = supportPolicyFor(event);
   const categories = await getHandoffCategories();
   await transition(event, {
     attemptId: randomUUID(),
     status: 'form_sending',
     offerMessageId: null,
     formMessageId: null,
-    data: { categories, lastEventId: eventId(event) }
+    data: { categories, supportPolicy, lastEventId: eventId(event) }
   });
-  const response = await sendHandoffForm(event.payload.conversation.id, categories);
+  const prompt = supportPolicy.mode === 'follow_up' ? customerMessages.followUpFormPrompt : customerMessages.formPrompt;
+  const response = await sendHandoffForm(event.payload.conversation.id, categories, { prompt });
   await transition(event, { status: 'form_pending', formMessageId: deliveredMessageId(response) });
 }
 
@@ -120,12 +148,18 @@ function handoffMetadata(data) {
  */
 async function confirmTransfer(event) {
   const state = event._handoff;
+  const policy = supportPolicyFor(event);
   const tracking = { ...state.data };
   delete tracking.formData;
   delete tracking.categories;
   // Submitted identity details are no longer needed locally after confirmed transfer.
   await transition(event, { status: 'transferred', data: { ...tracking, confirmedAt: new Date().toISOString() } });
-  const text = state.data.withinHours === false ? customerMessages.afterHoursHandoff : customerMessages.handoff;
+  const text =
+    policy.mode === 'follow_up'
+      ? customerMessages.followUpHandoff(policy.followUpHours)
+      : state.data.withinHours === false
+        ? customerMessages.afterHoursHandoff
+        : customerMessages.handoff;
   await sendHandoffMessage(event, text);
   return true;
 }
@@ -171,15 +205,17 @@ async function reconcileTransfer(event) {
 async function transferToAgent(event) {
   const formData = event._handoff.data.formData;
   if (!formData) throw new Error('Validated form details are required for transfer');
-  const hours = await isWithinBusinessHours(new Date(), { includeMessage: false });
+  const supportPolicy = supportPolicyFor(event);
+  const hours = supportPolicy.mode === 'live' ? await isWithinBusinessHours(new Date(), { includeMessage: false }) : null;
   const state = await transition(event, {
     status: 'transferring',
     data: {
       ...event._handoff.data,
+      supportPolicy,
       lastEventId: eventId(event),
       transferStartedAt: new Date().toISOString(),
       previousOwnerId: ownerId(event.payload.conversation.activeSwitchboardIntegration),
-      withinHours: hours.verified ? hours.withinHours : null
+      withinHours: hours?.verified ? hours.withinHours : null
     }
   });
   try {
@@ -263,7 +299,7 @@ export async function handleHandoffEvent(event) {
     await submitForm(event);
     return true;
   }
-  if (!text) return true;
+  if (!text && !explicitAcceptance) return true;
   if (state?.status === 'offer_pending' && (explicitAcceptance || acceptsAgentOffer(text))) {
     await startIntake(event);
     return true;
@@ -325,12 +361,13 @@ export async function handleHandoffEvent(event) {
  * @returns {Promise<void>} Marks the outgoing reply as an offer awaiting confirmed delivery.
  */
 async function prepareOffer(event) {
+  const supportPolicy = supportPolicyFor(event);
   await transition(event, {
     attemptId: randomUUID(),
     status: 'offer_sending',
     offerMessageId: null,
     formMessageId: null,
-    data: { lastEventId: eventId(event) }
+    data: { supportPolicy, lastEventId: eventId(event) }
   });
   event._outgoingAgentOffer = true;
 }
@@ -342,10 +379,7 @@ async function prepareOffer(event) {
  */
 async function sendBackendOffer(event) {
   await prepareOffer(event);
-  const response = await sendSunshineMessage(event.payload.conversation.id, {
-    text: customerMessages.agentOffer,
-    quickReplies: customerMessages.confirmationButtons
-  });
+  const response = await sendSunshineMessage(event.payload.conversation.id, handoffOffer(event));
   await confirmHandoffReply(event, response);
 }
 
@@ -374,13 +408,11 @@ export async function prepareHandoffReply(event, result) {
   }
   if (offer) {
     await prepareOffer(event);
+    const offerMessage = handoffOffer(event);
     // Old providers may put an offer in prose. Replace that wording so the final question is authoritative.
-    result.reply =
-      hasClaim || requestsAgentOffer({ reply: result.reply })
-        ? customerMessages.agentOffer
-        : `${result.reply}\n\n${customerMessages.agentOffer}`;
-    result.pendingQuestion = customerMessages.agentOffer;
-    return { text: result.reply, quickReplies: customerMessages.confirmationButtons };
+    result.reply = hasClaim || requestsAgentOffer({ reply: result.reply }) ? offerMessage.text : `${result.reply}\n\n${offerMessage.text}`;
+    result.pendingQuestion = offerMessage.text;
+    return { text: result.reply, quickReplies: offerMessage.quickReplies };
   }
   // A product answer supersedes an earlier agent offer; a later Yes must answer the newest question.
   if (state?.status === 'offer_pending' || state?.status === 'offer_sending') {

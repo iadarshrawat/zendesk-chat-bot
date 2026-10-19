@@ -6,7 +6,10 @@ export const customerMessages = Object.freeze({
   timeout: "I couldn't confirm a reliable answer in time. Please try again, or ask to connect to an agent.",
   answerUnavailable: "I'm having trouble preparing a response. Please try again, or ask to connect to an agent.",
   agentOffer: 'Would you like help from a human agent? If you agree, I will ask for the details needed to request support.',
+  followUpAgentOffer: 'Would you like a human agent to follow up? If you agree, I will ask for the details needed to request support.',
   formPrompt: 'To request help from an agent, complete and submit the form below. Sending a chat message does not submit the form.',
+  followUpFormPrompt:
+    'To request follow-up from an agent, complete and submit the form below. Sending a chat message does not submit the form.',
   formReminder:
     'I have not recorded a completed form for this agent request. Please complete and submit the latest form above. If you cannot see it, say “show the form again”. You can also cancel the request or continue asking product questions.',
   formInvalid:
@@ -17,6 +20,8 @@ export const customerMessages = Object.freeze({
     'Your conversation has been transferred to the support team. Please wait for an agent’s reply here; I do not have a wait-time estimate.',
   afterHoursHandoff:
     'Your conversation has been transferred to the support team outside scheduled business hours. An agent’s reply may wait until business hours; I do not have a wait-time estimate.',
+  followUpHandoff: hours =>
+    `Your support request has been sent to the support team. An agent will contact you within ${hours} ${hours === 1 ? 'hour' : 'hours'}. You do not need to wait in this chat.`,
   handoffFailed: 'The transfer did not complete. Your submitted details are saved. Say “try again” to retry, or cancel the agent request.',
   handoffUnknown:
     'I cannot confirm the transfer status right now. I have not confirmed that an agent has joined. Please ask for a status update rather than submitting another request.',
@@ -28,5 +33,6 @@ export const customerMessages = Object.freeze({
     "I couldn't confirm that detail from the available information. Could you clarify what you'd like to confirm, or ask to connect to an agent?",
   invalidAnswer: "I'm having trouble preparing a reliable response. Please try again, or ask to connect to an agent.",
   knowledgeUnavailable: "I can't access the information needed to confirm that right now. Please try again, or ask to connect to an agent.",
-  confirmationButtons: ['✅ Yes, Connect me to Agent', '❌ No, Cancel']
+  confirmationButtons: ['✅ Yes, Connect me to Agent', '❌ No, Cancel'],
+  followUpConfirmationButtons: ['✅ Yes, Request agent follow-up', '❌ No, Cancel']
 });

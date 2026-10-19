@@ -38,7 +38,14 @@ export function asksHandoffStatus(text) {
 
 export function confirmsAgentRequest(text, payload) {
   return [text, payload].some(value =>
-    ['ESCALATE_TO_AGENT', '_YES_CONNECT_ME_TO_AGENT', '✅ Yes, Connect me to Agent', 'CONNECT_TO_AGENT'].includes(value)
+    [
+      'ESCALATE_TO_AGENT',
+      '_YES_CONNECT_ME_TO_AGENT',
+      '_YES_REQUEST_AGENT_FOLLOW_UP',
+      '✅ Yes, Connect me to Agent',
+      '✅ Yes, Request agent follow-up',
+      'CONNECT_TO_AGENT'
+    ].includes(value)
   );
 }
 

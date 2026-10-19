@@ -37,23 +37,28 @@ export async function getHandoffCategories() {
  * Send visible instructions followed by the required customer-details form.
  * @param {string} conversationId - Sunshine conversation ID.
  * @param {Array<Object>} categories - Backend-approved category choices.
+ * @param {Object} options - Optional mode-specific instruction text.
  * @returns {Promise<Object>} The delivered form response, including its message ID.
  */
-export async function sendHandoffForm(conversationId, categories) {
-  await sendSunshineMessage(conversationId, customerMessages.formPrompt);
+export async function sendHandoffForm(conversationId, categories, { prompt = customerMessages.formPrompt } = {}) {
+  await sendSunshineMessage(conversationId, prompt);
   return measureStage('sunshine.form_send', () =>
-    sendSunshineForm(conversationId, [
-      { type: 'text', name: 'name', label: 'Your Name', required: true },
-      { type: 'email', name: 'email', label: 'Email Address', required: true },
-      {
-        type: 'select',
-        name: 'category',
-        label: 'Issue Category',
-        required: true,
-        options: categories.map(({ name, label }) => ({ name, label }))
-      },
-      { type: 'text', name: 'description', label: 'Describe Your Issue', required: true }
-    ])
+    sendSunshineForm(
+      conversationId,
+      [
+        { type: 'text', name: 'name', label: 'Your Name', required: true },
+        { type: 'email', name: 'email', label: 'Email Address', required: true },
+        {
+          type: 'select',
+          name: 'category',
+          label: 'Issue Category',
+          required: true,
+          options: categories.map(({ name, label }) => ({ name, label }))
+        },
+        { type: 'text', name: 'description', label: 'Describe Your Issue', required: true }
+      ],
+      { prompt }
+    )
   );
 }
 
