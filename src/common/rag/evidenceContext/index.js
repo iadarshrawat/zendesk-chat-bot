@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto';
+import { stableStringify } from '../../utils/json/index.js';
+
 const PRODUCT_FIELDS = [
   'productId',
   'alternateProductIds',
@@ -218,6 +221,33 @@ export function renderProductEvidence(products, { compact = true, plan } = {}) {
     fieldsSavedChars,
     sharedValues: usedReferences.size
   };
+}
+
+/**
+ * Identify answer-relevant evidence independently of ranking, source numbering and retrieval distances.
+ * @param {Object} rag - Retrieved items, source content, request constraints and completeness metadata.
+ * @returns {string} A fingerprint; changed facts, scope or filters always change the fingerprint.
+ */
+export function evidenceFingerprint(rag) {
+  const sorted = rows => rows.map(stableStringify).sort();
+  const products = (rag.products || []).map(product => ({
+    values: productEvidence(product, { plan: rag.plan }),
+    documentId: product.documentId,
+    sourceName: product.sourceName,
+    sourcePath: product.sourcePath
+  }));
+  const chunks = (rag.chunks || []).map(({ distance: _distance, ...chunk }) => chunk);
+  const evidence = {
+    brandKey: rag.brandKey,
+    products: sorted(products),
+    chunks: sorted(chunks),
+    productsTruncated: rag.productsTruncated === true,
+    structuredAppliedFilters: rag.structuredAppliedFilters || {},
+    productIdentity: rag.productIdentity,
+    catalogSummary: rag.plan?.intent === 'catalog' ? rag.catalogSummary : null,
+    plan: rag.plan
+  };
+  return createHash('sha256').update(stableStringify(evidence)).digest('hex');
 }
 
 /**

@@ -110,7 +110,7 @@ async function isWithinScheduleIntervals(schedule, date) {
   const currentMinutes = getMinutesSinceWeekStart(date, ianaTimeZone);
 
   if (currentMinutes === null) {
-    return false;
+    throw new Error('Business-hours time zone could not be resolved');
   }
 
   return schedule.intervals.some(({ start_time, end_time }) => currentMinutes >= start_time && currentMinutes < end_time);
@@ -142,20 +142,21 @@ async function getUnavailableMessageFromDynamicContent() {
 /**
  * Check agent availability and preserve the existing outside-hours fallback on API failures.
  * @param {Date} date - Time to compare with the configured schedule.
+ * @param {Object} options - includeMessage controls the optional dynamic-content request.
  * @returns {Promise<Object>} withinHours and the unavailable message when applicable.
  */
-export async function isWithinBusinessHours(date = new Date()) {
+export async function isWithinBusinessHours(date = new Date(), { includeMessage = true } = {}) {
   try {
     const schedule = await getBusinessHoursSchedule();
     const withinHours = await isWithinScheduleIntervals(schedule, date);
-    const message = withinHours ? null : await getBusinessHoursUnavailableMessage();
+    const message = withinHours || !includeMessage ? null : await getBusinessHoursUnavailableMessage();
 
-    return { withinHours, message };
+    return { withinHours, message, verified: true };
   } catch (error) {
     console.error('Unable to check agent availability from Business Hours:', error.message);
-    const message = await getBusinessHoursUnavailableMessage();
+    const message = includeMessage ? await getBusinessHoursUnavailableMessage() : null;
 
-    return { withinHours: false, message };
+    return { withinHours: false, message, verified: false };
   }
 }
 

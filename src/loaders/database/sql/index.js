@@ -121,8 +121,8 @@ export function getPool() {
 function schemaStartupError(error) {
   const failure = new Error(
     `SQL Server schema check failed in DB_NAME=${process.env.DB_NAME || '(unset)'}. ` +
-      'Only bot_conversation_state, bot_monitor_sessions, bot_monitor_evaluations and bot_monitor_intents are supported. ' +
-      'Review migrations 001 through 004, then run npm run db:migrate explicitly if any is missing; ' +
+      'The application requires conversation state, monitoring tables, customer intents and conversation handoffs. ' +
+      'Review migrations 001 through 005, then run npm run db:migrate explicitly if any is missing; ' +
       'normal startup never creates or changes tables.',
     { cause: error }
   );

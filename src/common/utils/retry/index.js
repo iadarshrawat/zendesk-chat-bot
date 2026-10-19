@@ -1,5 +1,5 @@
 import { logStage, startStage, safeErrorMetadata } from '../timingLogger/index.js';
-import { checkResponseBudget, waitWithinBudget } from '../responseBudget/index.js';
+import { checkResponseBudget, getResponseBudget, waitWithinBudget } from '../responseBudget/index.js';
 
 const DEFAULT_RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 const RETRYABLE_NETWORK_CODES = new Set(['ECONNABORTED', 'ECONNRESET', 'EHOSTUNREACH', 'ENETUNREACH', 'ETIMEDOUT']);
@@ -64,7 +64,7 @@ function isRetryableError(error, retryableStatusCodes = DEFAULT_RETRYABLE_STATUS
 /**
  * Repeat an operation using the existing backoff, Retry-After, and response-budget rules.
  * @param {Function} operation - Work to execute without changing its result.
- * @param {Object} options - Retry count, base/max delays, stage name, and optional retry callback.
+ * @param {Object} options - Retry count, delays, logging callback, and optional minimum time needed for the next attempt.
  * @returns {Promise<*>} The successful operation result; propagates the original final failure.
  */
 export async function withRetry(operation, options = {}) {
@@ -91,6 +91,19 @@ export async function withRetry(operation, options = {}) {
       const retryAfterMs = getRetryAfterMs(error);
       const exponentialDelay = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt);
       const delayMs = Math.min(maxDelayMs, retryAfterMs == null ? exponentialDelay : Math.max(exponentialDelay, retryAfterMs));
+      const minAttemptMs = Math.max(0, Number(options.minAttemptMs) || 0);
+      const budget = getResponseBudget();
+      // Leave room for an actual request, including any provider-mandated cooldown.
+      if (budget && minAttemptMs > 0 && Math.max(delayMs, retryAfterMs || 0) + minAttemptMs >= budget.remaining()) {
+        logStage('retry.budget_insufficient', {
+          operation: options.operationName,
+          attempt: attempt + 1,
+          delayMs,
+          remainingMs: budget.remaining(),
+          ...safeErrorMetadata(error)
+        });
+        throw error;
+      }
       options.onRetry?.({ error, attempt: attempt + 1, delayMs, maxRetries });
       const backoff = startStage('retry.backoff', {
         operation: options.operationName,

@@ -7,6 +7,7 @@ import { buildHeuristicQueryPlan, buildPlannerMessages, normalizeQueryPlan } fro
 import { logStage, measureStage, measureSyncStage, logModelUsage } from '../../../common/utils/timingLogger/index.js';
 import { runBudgetedIO, getResponseBudget, checkResponseBudget } from '../../../common/utils/responseBudget/index.js';
 import { claudeOutputOptions } from '../../../api/anthropic/outputOptions/index.js';
+import { getSupportContext } from '../../../config/brands/index.js';
 
 let client;
 
@@ -44,7 +45,7 @@ export async function createQueryPlan(question, options = {}) {
   try {
     client ||= createAnthropicClient();
     const model = CLAUDE_CONFIG.plannerModel || CLAUDE_CONFIG.model;
-    const messages = buildPlannerMessages(question, options);
+    const messages = buildPlannerMessages(question, { ...options, businessContext: getSupportContext(options.brand) });
     const timeoutMs = plannerTimeoutMs();
     const response = await measureStage(
       'claude.planner',

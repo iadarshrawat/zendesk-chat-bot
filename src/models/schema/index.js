@@ -91,12 +91,33 @@ const monitoringIntents = {
   primaryKey: ['intent_id'],
   indexes: {}
 };
+const conversationHandoffs = {
+  columns: {
+    conversation_id: { type: 'nvarchar', maxLength: 256, nullable: false },
+    web_user_id: { type: 'nvarchar', maxLength: 256, nullable: false },
+    attempt_id: { type: 'char', maxLength: 36, nullable: false },
+    status: { type: 'varchar', maxLength: 24, nullable: false },
+    offer_message_id: { type: 'nvarchar', maxLength: 256, nullable: true },
+    form_message_id: { type: 'nvarchar', maxLength: 256, nullable: true },
+    data_json: { type: 'nvarchar', maxLength: -1, nullable: false },
+    revision: { type: 'int', nullable: false },
+    created_at: { type: 'datetime2', scale: 3, nullable: false },
+    updated_at: { type: 'datetime2', scale: 3, nullable: false }
+  },
+  primaryKey: ['conversation_id', 'web_user_id'],
+  indexes: { idx_bot_handoff_updated: ['updated_at'] },
+  jsonColumn: 'data_json',
+  requiredChecks: ['CK_bot_conversation_handoffs_status', 'CK_bot_conversation_handoffs_revision']
+};
 const tableDefinitions = Object.freeze({
   ...coreTables,
   bot_monitor_evaluations: monitoringEvaluations,
-  bot_monitor_intents: monitoringIntents
+  bot_monitor_intents: monitoringIntents,
+  bot_conversation_handoffs: conversationHandoffs
 });
-const coreTableNames = Object.freeze(Object.keys(tableDefinitions).filter(name => name !== 'bot_monitor_intents'));
+const coreTableNames = Object.freeze(
+  Object.keys(tableDefinitions).filter(name => !['bot_monitor_intents', 'bot_conversation_handoffs'].includes(name))
+);
 
 function schemaError(code, message) {
   const error = new Error(message);
@@ -368,7 +389,7 @@ function describeCheckMismatch(tableName, checks, jsonColumn) {
     return undefined;
   }
 
-  const expectedName = 'CK_bot_conversation_state_state_json';
+  const expectedName = `CK_${tableName}_${jsonColumn}`;
   const jsonCheck = checks.find(check => check.constraint_name === expectedName);
   const definition = String(jsonCheck?.definition ?? '').replace(/\s/g, '');
   const expectedExpression = new RegExp(`^\\(*ISJSON\\(\\[?${jsonColumn}\\]?\\)=\\(?1\\)?\\)*$`, 'i');
@@ -481,7 +502,11 @@ async function verifyTableDefinition(
  * @param {Object} options - Allow missing additive fields only while explicitly migrating.
  * @returns {Promise<void>} Resolves for the expected contract; otherwise throws a schema error.
  */
-export async function verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType = false, allowLegacyIntents = false } = {}) {
+export async function verifyCoreSchema(
+  db,
+  requestedSchema,
+  { allowLegacyIssueType = false, allowLegacyIntents = false, allowLegacyHandoffs = false } = {}
+) {
   const schemaName = databaseSchema(requestedSchema);
 
   if (!(await schemaExists(db, schemaName))) {
@@ -516,6 +541,15 @@ export async function verifyCoreSchema(db, requestedSchema, { allowLegacyIssueTy
       );
     }
     await verifyTableDefinition(db, schemaName, 'bot_monitor_intents', monitoringIntents);
+  }
+  if (!allowLegacyHandoffs) {
+    if (!(await tableExists(db, schemaName, 'bot_conversation_handoffs'))) {
+      throw schemaError(
+        'SQLSERVER_MISSING_TABLE',
+        `Missing SQL Server table ${sqlTable('bot_conversation_handoffs', schemaName)}; run db:migrate`
+      );
+    }
+    await verifyTableDefinition(db, schemaName, 'bot_conversation_handoffs', conversationHandoffs);
   }
 }
 
@@ -583,7 +617,7 @@ async function applyCoreSchema(db, requestedSchema) {
  */
 export async function initializeCoreSchema(db, requestedSchema) {
   try {
-    await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true, allowLegacyIntents: true });
+    await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true, allowLegacyIntents: true, allowLegacyHandoffs: true });
 
     return false;
   } catch (error) {
@@ -593,7 +627,7 @@ export async function initializeCoreSchema(db, requestedSchema) {
   }
 
   await applyCoreSchema(db, requestedSchema);
-  await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true, allowLegacyIntents: true });
+  await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true, allowLegacyIntents: true, allowLegacyHandoffs: true });
 
   return true;
 }
@@ -606,10 +640,10 @@ export async function initializeCoreSchema(db, requestedSchema) {
  */
 export async function applyIssueTypeSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
-  await verifyCoreSchema(db, schemaName, { allowLegacyIssueType: true, allowLegacyIntents: true });
+  await verifyCoreSchema(db, schemaName, { allowLegacyIssueType: true, allowLegacyIntents: true, allowLegacyHandoffs: true });
   const template = await readFile(new URL('../../../migrations/003_monitor_issue_type.sql', import.meta.url), 'utf8');
   await db.request().batch(template.replaceAll('{{schema}}', schemaName));
-  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true });
+  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true, allowLegacyHandoffs: true });
 }
 
 /**
@@ -620,11 +654,28 @@ export async function applyIssueTypeSchema(db, requestedSchema) {
  */
 export async function applyIntentSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
-  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true });
+  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true, allowLegacyHandoffs: true });
   if (await tableExists(db, schemaName, 'bot_monitor_intents')) {
     await verifyTableDefinition(db, schemaName, 'bot_monitor_intents', monitoringIntents);
   }
   const template = await readFile(new URL('../../../migrations/004_monitor_customer_intents.sql', import.meta.url), 'utf8');
+  await db.request().batch(template.replaceAll('{{schema}}', schemaName));
+  await verifyCoreSchema(db, schemaName, { allowLegacyHandoffs: true });
+}
+
+/**
+ * Create durable handoff storage after checking existing application tables and any prior handoff table.
+ * @param {Object} db - Explicit migration SQL connection pool.
+ * @param {string} requestedSchema - Configured SQL schema name.
+ * @returns {Promise<void>} Completes a rerunnable upgrade without changing saved monitoring records.
+ */
+export async function applyHandoffSchema(db, requestedSchema) {
+  const schemaName = databaseSchema(requestedSchema);
+  await verifyCoreSchema(db, schemaName, { allowLegacyHandoffs: true });
+  if (await tableExists(db, schemaName, 'bot_conversation_handoffs')) {
+    await verifyTableDefinition(db, schemaName, 'bot_conversation_handoffs', conversationHandoffs);
+  }
+  const template = await readFile(new URL('../../../migrations/005_conversation_handoffs.sql', import.meta.url), 'utf8');
   await db.request().batch(template.replaceAll('{{schema}}', schemaName));
   await verifyCoreSchema(db, schemaName);
 }

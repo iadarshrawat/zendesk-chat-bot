@@ -2,9 +2,10 @@ import { normalizeFilterValue, normalizeKnowledgeKey } from '../../../common/rag
 import { hasStructuredFilters, uniqueQueries } from '../../../common/rag/queryPlan/index.js';
 import { resolveProductReference, productIdentifiers, isConflictingProductChunk } from '../../../common/rag/productIdentity/index.js';
 import { contextualFallbackQuery } from '../../../common/messaging/context/index.js';
-import { renderProductEvidence } from '../../../common/rag/evidenceContext/index.js';
-import { logStage, measureStage, measureSyncStage } from '../../../common/utils/timingLogger/index.js';
+import { renderProductEvidence, evidenceFingerprint } from '../../../common/rag/evidenceContext/index.js';
+import { logStage, measureStage, measureSyncStage, safeErrorMetadata } from '../../../common/utils/timingLogger/index.js';
 import { checkResponseBudget, isResponseTimeout } from '../../../common/utils/responseBudget/index.js';
+import { resolveSupportBrand } from '../../../config/brands/index.js';
 
 /**
  * Select evidence chunks under the existing total, per-section, and per-product diversity limits.
@@ -198,6 +199,7 @@ function finish(state, config) {
         dynamicEvidenceText,
         hasResults: products.length > 0 || chunks.length > 0 || hasCatalogEvidence
       };
+      result.evidenceFingerprint = evidenceFingerprint(result);
       logStage('rag.context_size', {
         brandKey: state.brandKey,
         products: products.length,
@@ -308,9 +310,10 @@ export function createRetrievalPipeline({
    */
   async function recoverKnowledge(previous) {
     checkResponseBudget();
-    if (!config.recoveryEnabled || previous.recoveryAttempted) {
+    const embeddingUnavailable = previous.errors.includes('embedding_unavailable');
+    if (!config.recoveryEnabled || previous.recoveryAttempted || embeddingUnavailable) {
       logStage('rag.recovery_skipped', {
-        reason: !config.recoveryEnabled ? 'disabled' : 'already_attempted'
+        reason: !config.recoveryEnabled ? 'disabled' : embeddingUnavailable ? 'embedding_unavailable' : 'already_attempted'
       });
 
       return previous;
@@ -325,6 +328,7 @@ export function createRetrievalPipeline({
     const results = await Promise.allSettled(
       queries.map(query => searchVector(previous.brandKey, query, previous.productIdentity, errors))
     );
+    checkResponseBudget();
     const candidates = [...(previous.candidates || previous.chunks)];
     let candidateCount = previous.candidateCount;
 
@@ -339,7 +343,7 @@ export function createRetrievalPipeline({
         throw result.reason;
       }
       errors.push('recovery_vector_search');
-      console.warn('RAG recovery search failed:', result.reason?.message);
+      console.warn('RAG recovery search failed:', safeErrorMetadata(result.reason));
     }
 
     let catalog = {};
@@ -394,7 +398,7 @@ export function createRetrievalPipeline({
    */
   async function retrieveKnowledge({ brand, question, history = '', conversationState = {} }) {
     checkResponseBudget();
-    const brandKey = normalizeKnowledgeKey(brand);
+    const brandKey = resolveSupportBrand(brand)?.key || normalizeKnowledgeKey(brand);
     const errors = [];
     let catalogSummary = null;
     try {
@@ -444,18 +448,36 @@ export function createRetrievalPipeline({
     const needsCatalog =
       plan.intent === 'catalog' || plan.intent === 'product_search' || plan.requiresProductIdentity || hasStructuredFilters(plan.filters);
     let catalogResult = { products: [], hasMore: false };
+    let referenceCatalog = null;
     let structuredAppliedFilters = needsCatalog ? plan.filters : {};
     let structuredBroadened = false;
     if (needsCatalog && plan.turnType !== 'conversation') {
       try {
-        catalogResult = await measureStage(
-          'rag.catalog_search',
-          () =>
-            searchStructuredProducts(brandKey, plan.filters, {
-              withMetadata: true
-            }),
-          { brandKey, broadened: false }
-        );
+        const reference = plan.filters.productName;
+        const otherFilters = Object.entries(plan.filters).some(([key, value]) => key !== 'productName' && value != null && value !== '');
+        const searchCatalog = () =>
+          measureStage('rag.catalog_search', () => searchStructuredProducts(brandKey, plan.filters, { withMetadata: true }), {
+            brandKey,
+            broadened: false
+          });
+        const [exact, filtered] = await Promise.allSettled([
+          reference
+            ? measureStage(
+                'rag.reference_lookup',
+                () => searchStructuredProducts(brandKey, { productName: reference }, { withMetadata: true, exactReference: true }),
+                { brandKey }
+              )
+            : Promise.resolve(null),
+          !reference || otherFilters ? searchCatalog() : Promise.resolve(null)
+        ]);
+        if (exact.status === 'fulfilled') referenceCatalog = exact.value;
+        else {
+          if (isResponseTimeout(exact.reason)) throw exact.reason;
+          errors.push('reference_lookup');
+          logStage('rag.reference_lookup_failed', safeErrorMetadata(exact.reason));
+        }
+        if (filtered.status === 'rejected') throw filtered.reason;
+        catalogResult = filtered.value || (referenceCatalog?.products.length ? referenceCatalog : await searchCatalog());
         if (!catalogResult.products.length && hasStructuredFilters(plan.filters)) {
           catalogResult = await measureStage('rag.catalog_search', () => searchStructuredProducts(brandKey, {}, { withMetadata: true }), {
             brandKey,
@@ -476,8 +498,8 @@ export function createRetrievalPipeline({
     const productIdentity = measureSyncStage(
       'rag.product_identity',
       () =>
-        resolveProductReference(identityReference, catalogResult.products, {
-          truncated: catalogResult.hasMore
+        resolveProductReference(identityReference, referenceCatalog?.products.length ? referenceCatalog.products : catalogResult.products, {
+          truncated: referenceCatalog?.products.length ? referenceCatalog.hasMore : catalogResult.hasMore
         }),
       { brandKey }
     );
@@ -505,7 +527,10 @@ export function createRetrievalPipeline({
           throw error;
         }
         errors.push('vector_search');
-        console.warn('Vector search failed:', error.message);
+        if (error.code === 'EMBEDDING_TIMEOUT' || Number(error.response?.status ?? error.status) === 429) {
+          errors.push('embedding_unavailable');
+        }
+        console.warn('Vector search failed:', safeErrorMetadata(error));
       }
     }
 

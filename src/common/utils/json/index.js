@@ -22,3 +22,19 @@ export function parseJsonObject(text) {
 
   return value;
 }
+/**
+ * Serialize JSON data with stable object keys; array order and original values stay intact.
+ * @param {*} value - JSON-compatible data used by evidence fingerprints and cache keys.
+ * @returns {string} Deterministic JSON text.
+ */
+export function stableStringify(value) {
+  return JSON.stringify(value, (_key, item) =>
+    item && typeof item === 'object' && !Array.isArray(item)
+      ? Object.fromEntries(
+          Object.keys(item)
+            .sort()
+            .map(key => [key, item[key]])
+        )
+      : item
+  );
+}

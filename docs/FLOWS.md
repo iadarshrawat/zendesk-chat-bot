@@ -39,7 +39,7 @@ The brand ID must match `WIDGET_ID_MR_BRAND` or `WIDGET_ID_COMFORT_ZONE`. Unknow
 flowchart TD
     A[Customer message] --> B{Agent already in control?}
     B -- Yes --> C[Ignore bot turn]
-    B -- No --> D{Explicit agent request?}
+    B -- No --> D{Saved handoff or explicit agent request?}
     D -- Yes --> E[Escalation flow]
     D -- No --> F[Load history and case state]
     F --> G[Plan query and retrieve brand evidence]
@@ -71,23 +71,7 @@ A follow-up such as “that did not work” can refer to a prior bot answer. Cas
 
 ## 5. Agent handoff and after-hours form
 
-```mermaid
-flowchart TD
-    A[Agent request] --> B[Fetch categories and office hours]
-    B --> C[Send detail form]
-    C --> D[Save form with expiry in process memory]
-    D --> E[Customer submits name, email, category, issue]
-    E --> F{Within business hours?}
-    F -- Yes --> G[Ask for handoff confirmation]
-    G --> H{Customer confirms?}
-    H -- No --> I[Delete form and continue bot]
-    H -- Yes --> J[passControl to Agent Workspace]
-    F -- No --> J
-    J --> K[Send handoff message and delete form]
-```
-
-The category maps to a Zendesk group ID only when it is numeric. When no category object is configured, the form offers general support. The handoff `passControl` uses an explicit integration name and is idempotent at Zendesk; it precedes the final confirmation message. Agent-authored messages and agent-owned conversations are not answered by the bot.
-Form data expires after 30 minutes and is lost if the app restarts; it is not shared between app instances.
+Durable state, context-aware acceptance, form validation, transfer reconciliation and latency are described in the single [Hinglish handoff guide](HANDOFF_FLOW.md).
 
 ## 6. Authenticated widget user
 

@@ -10,11 +10,47 @@ import { withRetry } from '../../../common/utils/retry/index.js';
 import { delay } from '../../../common/utils/delay/index.js';
 import { logStage, measureStage, startStage } from '../../../common/utils/timingLogger/index.js';
 import { runBudgetedIO, checkResponseBudget } from '../../../common/utils/responseBudget/index.js';
+import { createHash } from 'node:crypto';
+import { stableStringify } from '../../../common/utils/json/index.js';
 
 const catalogSummaryCache = new Map();
 const activeRevisionCache = new Map();
+const knowledgeReadCache = new Map();
+const MAX_KNOWLEDGE_CACHE_ENTRIES = 256;
 const ACTIVE_REVISION_CACHE_MS = Number.isFinite(RAG_CONFIG.retrieval.revisionCacheMs) ? RAG_CONFIG.retrieval.revisionCacheMs : 30_000;
 const REVISION_RECORD_ID = 'active-knowledge-revision';
+
+/**
+ * Cache completed knowledge reads by tenant, published revision, query and options; never cache failures or customer state.
+ * @param {string} brandKey - Knowledge partition owning the result.
+ * @param {Array} identity - Query kind, active revision and all result-affecting inputs.
+ * @param {Function} read - Scoped database read to execute on a miss.
+ * @returns {Promise<Object>} Independent result rows and request charge; cached reads report zero charge.
+ */
+async function readCachedKnowledge(brandKey, identity, read) {
+  const ttlMs = RAG_CONFIG.retrieval.readCacheMs ?? 30_000;
+  if (!ttlMs) return read();
+  const key = createHash('sha256')
+    .update(stableStringify([brandKey, ...identity]))
+    .digest('hex');
+  const entry = knowledgeReadCache.get(key);
+  if (entry && entry.expiresAt > Date.now()) {
+    checkResponseBudget();
+    knowledgeReadCache.delete(key);
+    knowledgeReadCache.set(key, entry);
+    logStage('cosmos.read_cache', { brandKey, outcome: 'hit', keyHash: key.slice(0, 12) });
+    return { ...structuredClone(entry.value), requestCharge: 0 };
+  }
+  knowledgeReadCache.delete(key);
+  logStage('cosmos.read_cache', { brandKey, outcome: 'miss', keyHash: key.slice(0, 12) });
+  const response = await read();
+  if (!Array.isArray(response.resources)) throw new Error('Knowledge read returned invalid rows');
+  const value = { resources: response.resources, requestCharge: response.requestCharge };
+  checkResponseBudget();
+  knowledgeReadCache.set(key, { brandKey, value: structuredClone(value), expiresAt: Date.now() + ttlMs });
+  while (knowledgeReadCache.size > MAX_KNOWLEDGE_CACHE_ENTRIES) knowledgeReadCache.delete(knowledgeReadCache.keys().next().value);
+  return value;
+}
 
 function isNotFound(error) {
   return error?.code === 404 || error?.statusCode === 404;
@@ -115,6 +151,9 @@ async function upsertItems(container, items) {
 
 function clearBrandCaches(brandKey) {
   activeRevisionCache.delete(brandKey);
+  for (const [key, entry] of knowledgeReadCache) {
+    if (entry.brandKey === brandKey) knowledgeReadCache.delete(key);
+  }
   for (const key of catalogSummaryCache.keys()) {
     if (key === brandKey || key.startsWith(`${brandKey}:`)) {
       catalogSummaryCache.delete(key);
@@ -310,24 +349,32 @@ export async function publishKnowledgeSnapshot(brandKey, ingestionId, items, met
  * Search the active brand catalog and preserve the existing truncation metadata option.
  * @param {string} brandKey - Canonical support-brand key and knowledge partition.
  * @param {Object} filters - Existing search filters.
- * @param {Object} options - Options: withMetadata.
+ * @param {Object} options - Optional truncation metadata and exact-reference matching.
  * @returns {Promise<Array<Object>|Object>} Matching products, or products and truncation metadata when requested.
  */
-export async function searchStructuredProducts(brandKey, filters = {}, { withMetadata = false } = {}) {
+export async function searchStructuredProducts(brandKey, filters = {}, { withMetadata = false, exactReference = false } = {}) {
   const span = startStage('cosmos.catalog_search', { brandKey });
   try {
     const limit = Math.min(RAG_CONFIG.retrieval.maxStructuredResults, 10000);
     const container = await ensureKnowledgeContainer();
     const revision = await getActiveKnowledgeRevision(brandKey);
-    const response = await runCosmosOperation(
-      (_attempt, signal) =>
-        container.items
-          .query(buildProductQuery(brandKey, filters, limit + (withMetadata ? 1 : 0), revision?.ingestionId || null), {
-            partitionKey: brandKey,
-            ...(signal ? { abortSignal: signal } : {})
-          })
-          .fetchAll(),
-      'structured search'
+    const response = await readCachedKnowledge(
+      brandKey,
+      ['catalog', revision?.ingestionId, filters, limit, withMetadata, exactReference],
+      () =>
+        runCosmosOperation(
+          (_attempt, signal) =>
+            container.items
+              .query(
+                buildProductQuery(brandKey, filters, limit + (withMetadata ? 1 : 0), revision?.ingestionId || null, { exactReference }),
+                {
+                  partitionKey: brandKey,
+                  ...(signal ? { abortSignal: signal } : {})
+                }
+              )
+              .fetchAll(),
+          'structured search'
+        )
     );
     span.end({
       products: Math.min(response.resources.length, withMetadata ? limit : response.resources.length),
@@ -429,15 +476,20 @@ export async function searchKnowledgeChunks(brandKey, queryVector, filters) {
   try {
     const container = await ensureKnowledgeContainer();
     const revision = await getActiveKnowledgeRevision(brandKey);
-    const response = await runCosmosOperation(
-      (_attempt, signal) =>
-        container.items
-          .query(buildVectorQuery(brandKey, queryVector, filters, RAG_CONFIG.retrieval.candidateCount, revision?.ingestionId || null), {
-            partitionKey: brandKey,
-            ...(signal ? { abortSignal: signal } : {})
-          })
-          .fetchAll(),
-      'vector search'
+    const response = await readCachedKnowledge(
+      brandKey,
+      ['vector', revision?.ingestionId, queryVector, filters, RAG_CONFIG.retrieval.candidateCount],
+      () =>
+        runCosmosOperation(
+          (_attempt, signal) =>
+            container.items
+              .query(buildVectorQuery(brandKey, queryVector, filters, RAG_CONFIG.retrieval.candidateCount, revision?.ingestionId || null), {
+                partitionKey: brandKey,
+                ...(signal ? { abortSignal: signal } : {})
+              })
+              .fetchAll(),
+          'vector search'
+        )
     );
     span.end({
       candidates: response.resources.length,

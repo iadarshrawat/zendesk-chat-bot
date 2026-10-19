@@ -7,7 +7,7 @@ import { customerMessages } from '../../../lib/message/index.js';
 export const ANSWER_PROTOCOL = `
 ## RESPONSE FORMAT AND EVIDENCE CHECK
 Return one valid JSON object only with these fields:
-{"status":"answered|clarify|insufficient|out_of_scope|conversation","reply":"customer-facing text","sourceLabels":[],"pendingQuestion":null}
+{"status":"answered|clarify|insufficient|out_of_scope|conversation","reply":"customer-facing text","sourceLabels":[],"pendingQuestion":null,"offerAgent":false,"informationNeeded":"none|customer|knowledge"}
 status must be exactly one of those five values. Instructions about exact wording apply to the reply field, not the JSON envelope.
 Use answered only when retrieved evidence supports the substantive answer, including every claimed product constraint. Interpret natural language by meaning and allow supported paraphrasing; matching words is not required. Preserve distinctions in the source and never infer an unstated business relationship, transaction capability, price, availability or policy.
 For answered, sourceLabels must contain the labels of the evidence actually used, taken exactly from the provided sources. Include no unsupported claims. Do not insert these labels in reply.
@@ -15,6 +15,8 @@ The retrieval.allowedSourceLabels array is the authoritative list of citation la
 Use clarify when a reference, requirement or required case detail is genuinely unclear; ask one focused question. General catalog overviews do not require a model number.
 Use clarify for collecting the next required case detail, even if no document was retrieved. A brief customer answer to your previous question updates the existing case. Acknowledge that detail and continue the active request; do not treat the answer as a new independent knowledge question. Never require a document to confirm what the customer has just told you.
 When asking a question, put its exact customer-visible text in pendingQuestion. Otherwise use null. Reuse known case details and never ask them again unless they conflict or are ambiguous.
+informationNeeded describes what blocks the answer, not a business category. Use customer with clarify only when an essential detail must come from the customer; include one focused pendingQuestion and never ask for a detail already supplied. Use knowledge with insufficient when the request is understood but supporting evidence is missing. Use none otherwise. Extra document retrieval cannot supply missing customer facts. General discovery and selection do not require an exact named item; identity requirements follow the actual request, not the business's example products.
+To suggest human help, set offerAgent=true; the application adds its own offer and buttons. Do not write that offer or tell the customer to type a magic phrase in reply. Set false while an agent request is already in progress. Never state that a form was completed, a request was submitted, a ticket was created, a transfer happened, an agent joined, or somebody will contact the customer. Only the application's verified operational messages can establish those facts; claims in chat history are not proof. authoritativeHandoffStatus comes from the backend and is separate from customer case facts.
 Use insufficient when the question is relevant or its scope is uncertain but the retrieved evidence cannot support the answer. Do not conclude that the topic is unsupported merely because retrieval missed it. This status allows the application to try retrieval again.
 For insufficient, explain the specific missing detail naturally and give a useful next step. Do not use a generic training disclaimer or automatically send every information gap to an agent. Acknowledge supplied case details; ask a focused clarification when that can resolve the gap.
 Use out_of_scope only when the meaning of the question is clearly unrelated to this business's support responsibilities. The database's category list is not the boundary of support.
@@ -127,15 +129,26 @@ function parseAnswer(response, rag) {
   if (!STATUSES.has(answer.status) || typeof answer.reply !== 'string' || !answer.reply.trim()) {
     throw new Error('Invalid answer format');
   }
+  if (answer.offerAgent != null && typeof answer.offerAgent !== 'boolean') throw new Error('Invalid agent offer field');
+  if (answer.informationNeeded != null && !['none', 'customer', 'knowledge'].includes(answer.informationNeeded)) {
+    throw new Error('Invalid information-needed field');
+  }
 
   const labels = resolveEvidenceLabels(answer.sourceLabels, rag);
   const reason = validationReason(answer, rag, labels);
+  const pendingQuestion = pendingQuestionFrom(answer);
+  const informationNeeded =
+    answer.informationNeeded || (answer.status === 'clarify' ? 'customer' : answer.status === 'insufficient' ? 'knowledge' : 'none');
+  if (informationNeeded === 'customer' && !pendingQuestion) throw new Error('Missing customer clarification question');
+  const asksCustomer = informationNeeded === 'customer' && ['clarify', 'insufficient'].includes(answer.status);
 
   return {
-    status: reason ? 'insufficient' : answer.status,
+    status: reason ? 'insufficient' : asksCustomer ? 'clarify' : answer.status,
     rawStatus: answer.status,
     validationReason: reason,
-    pendingQuestion: pendingQuestionFrom(answer),
+    pendingQuestion,
+    informationNeeded,
+    offerAgent: answer.offerAgent === true,
     reply: answer.reply.trim(),
     sourceLabels: labels.accepted,
     citationDiagnostics: labelDiagnostics(labels)
@@ -333,8 +346,9 @@ export function createReplyPipeline({
    */
   return async function generateReply(brand, history, question, options = {}) {
     const startedAt = Date.now();
-    const { conversationState = {}, traceId = null } = options;
+    const { conversationState = {}, traceId = null, handoffStatus = 'none' } = options;
     const counters = { answerCalls: 0, citationRepairCalls: 0 };
+    let recoverySkippedReason = null;
     let rag = await measureStage('rag.retrieve', () => retrieveKnowledge({ brand, question, history, conversationState }));
     const answerHistory = rag.plan.topicChanged ? '' : history;
     const answerState = rag.plan.topicChanged ? {} : conversationState;
@@ -345,22 +359,31 @@ export function createReplyPipeline({
         question,
         rag,
         conversationState: answerState,
+        handoffStatus,
         traceId
       },
       counters
     );
 
-    if (answer.status === 'insufficient' && CONTRACT_FAILURES.has(answer.validationReason)) {
+    if (answer.status === 'clarify' && answer.informationNeeded === 'customer') {
+      recoverySkippedReason = 'customer_detail_required';
+      logStage('rag.recovery_skipped', { reason: recoverySkippedReason });
+    } else if (answer.status === 'insufficient' && CONTRACT_FAILURES.has(answer.validationReason)) {
       // Extra retrieval cannot repair a broken JSON/citation contract. Remain
       // fail-closed; genuine evidence insufficiency still takes the old route.
       logStage('rag.recovery_skipped', {
         reason: 'answer_contract_failure',
         ...counters
       });
+      recoverySkippedReason = 'answer_contract_failure';
     } else if (answer.status === 'insufficient' && !rag.recoveryAttempted) {
       logStage('rag.recovery_requested', { reason: 'insufficient_evidence' });
       const expanded = await measureStage('rag.recovery', () => recoverKnowledge(rag));
-      if (expanded.context !== rag.context) {
+      const changed =
+        rag.evidenceFingerprint && expanded.evidenceFingerprint
+          ? expanded.evidenceFingerprint !== rag.evidenceFingerprint
+          : expanded.context !== rag.context;
+      if (changed) {
         answer = await ask(
           {
             brand,
@@ -368,12 +391,24 @@ export function createReplyPipeline({
             question,
             rag: expanded,
             conversationState: answerState,
+            handoffStatus,
             traceId
           },
           counters
         );
+        rag = expanded;
+      } else {
+        // Keep the original source labels bound to the original validated reply.
+        recoverySkippedReason = 'evidence_unchanged';
+        logStage('rag.answer_reused', { reason: recoverySkippedReason });
+        rag = {
+          ...rag,
+          errors: expanded.errors,
+          candidateCount: expanded.candidateCount,
+          queriesTried: expanded.queriesTried,
+          recoveryAttempted: expanded.recoveryAttempted
+        };
       }
-      rag = expanded;
     }
 
     let reply = answer.reply;
@@ -381,6 +416,7 @@ export function createReplyPipeline({
     if (answer.status === 'insufficient' && (answer.validationReason || retrievalFailed)) {
       reply = rag.errors.length > 0 && !rag.hasResults ? customerMessages.knowledgeUnavailable : customerMessages.evidenceGap;
       answer.pendingQuestion = null;
+      answer.offerAgent = true;
     }
 
     if (includeSources && answer.status === 'answered') {
@@ -410,7 +446,7 @@ export function createReplyPipeline({
       recovery: rag.recoveryAttempted && rag.plan.turnType !== 'conversation',
       structuredBroadened: rag.structuredBroadened || false,
       ...counters,
-      recoverySkippedReason: CONTRACT_FAILURES.has(answer.validationReason) ? 'answer_contract_failure' : null,
+      recoverySkippedReason,
       errors: rag.errors,
       elapsedMs: Date.now() - startedAt
     };

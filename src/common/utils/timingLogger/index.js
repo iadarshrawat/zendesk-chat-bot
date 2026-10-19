@@ -116,7 +116,7 @@ const SAFE_ERROR_CODE = /^[A-Z0-9_]{1,64}$/;
 const SAFE_ERROR_NAME = /^[A-Za-z]{1,64}$/;
 const SAFE_TIMEOUT_STAGE = new RegExp(
   '^(response\\.hard_deadline|operation|mssql\\.(operation|state_load|state_save|monitor_save|monitor_report)' +
-    '|claude\\.(planner|classifier|answer|citation_repair))$'
+    '|claude\\.(planner|classifier|answer|citation_repair)|embedding\\.query)$'
 );
 const SAFE_CANCELLATION_REASONS = new Set(['generation_completed', 'generation_failed', 'disposed', 'external_abort']);
 
@@ -160,7 +160,11 @@ export function safeErrorMetadata(error) {
     if (code) {
       metadata.errorCode = code;
     }
-    if (error?.name === 'ResponseDeadlineError' && typeof error.timeoutStage === 'string' && SAFE_TIMEOUT_STAGE.test(error.timeoutStage)) {
+    if (
+      ['ResponseDeadlineError', 'OperationDeadlineError'].includes(error?.name) &&
+      typeof error.timeoutStage === 'string' &&
+      SAFE_TIMEOUT_STAGE.test(error.timeoutStage)
+    ) {
       metadata.timeoutStage = error.timeoutStage;
     }
     if (error?.name === 'ResponseCancelledError' && SAFE_CANCELLATION_REASONS.has(error.cancellationReason)) {

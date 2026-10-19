@@ -1,69 +1,84 @@
-import { handleEscalateToAgent, handleCancelEscalation, handleEscalationCheck } from '../../escalation/index.js';
-import { handleFormResponse, isEscalationRequest, isEscalationCancellation, processCustomerMessage } from '../events/index.js';
+import { handleHandoffEvent } from '../../escalation/index.js';
+import { processCustomerMessage, loadCustomerContext } from '../events/index.js';
+import { sendSunshineMessage } from '../messages/index.js';
+import { customerMessages } from '../../../lib/message/index.js';
 import { isAgentActive, shouldSkipMessage } from '../../../common/messaging/ownership/index.js';
-import { runWithTrace, measureStage } from '../../../common/utils/timingLogger/index.js';
+import { runWithTrace, measureStage, safeErrorMetadata } from '../../../common/utils/timingLogger/index.js';
+import { RAG_CONFIG } from '../../../config/rag/index.js';
+import { createResponseBudget, runWithResponseBudget } from '../../../common/utils/responseBudget/index.js';
+import {
+  acceptsAgentOffer,
+  cancelsAgentRequest,
+  confirmsAgentRequest,
+  needsFormHelp,
+  asksHandoffStatus
+} from '../../../common/messaging/handoff/index.js';
+import { mightRequestHumanSupport } from '../../../common/messaging/intent/index.js';
 
 /**
- * Dispatch eligible customer events through form, escalation, and normal-reply processing.
- * @param {Object} event - Sunshine webhook event.
- * @returns {Promise<void>} Resolves after processing; ignores unsupported authors and agent-owned conversations.
+ * Allow speculative read-only context loading for ordinary text, avoiding obvious handoff-control turns.
+ * @param {Object} message - Customer message with content and optional quick-reply payload.
+ * @returns {boolean} Whether history/case reads can overlap the authoritative handoff check.
+ */
+function canPrefetchContext(message) {
+  const text = message.content?.text || message.content?.markdownText || '';
+  return (
+    Boolean(text) &&
+    message.content?.type !== 'formResponse' &&
+    !acceptsAgentOffer(text) &&
+    !cancelsAgentRequest(text, message.content?.payload) &&
+    !confirmsAgentRequest(text, message.content?.payload) &&
+    !needsFormHelp(text) &&
+    !asksHandoffStatus(text) &&
+    !mightRequestHumanSupport(text)
+  );
+}
+
+/**
+ * Route durable handoff state before normal answers and keep agent-owned conversations out of the bot.
+ * @param {Object} event - Authenticated Sunshine customer event.
+ * @returns {Promise<void>} Resolves after processing or a truthful status-unavailable reply.
  */
 export async function processMessageEvent(event) {
   const conversation = event.payload?.conversation;
   const message = event.payload?.message;
-
-  const shouldIgnoreEvent =
-    !conversation?.id || !message || shouldSkipMessage(message.author) || isAgentActive(conversation.activeSwitchboardIntegration);
-
-  if (shouldIgnoreEvent) {
+  if (!conversation?.id || !message || shouldSkipMessage(message.author) || isAgentActive(conversation.activeSwitchboardIntegration))
     return;
-  }
-
-  const conversationId = conversation.id;
-  const text = message.content?.text || message.content?.markdownText;
-  const webUserId = message.author?.userId || null;
-  event._webUserId = webUserId;
-
-  const trace = {
-    route: 'inbox',
-    fresh: true,
-    traceId: message.id,
-    messageId: message.id,
-    conversationId
-  };
-
-  return runWithTrace(trace, () =>
+  return runWithTrace({ route: 'inbox', fresh: true, traceId: message.id, messageId: message.id, conversationId: conversation.id }, () =>
     measureStage('turn.total', async () => {
-      if (message.content?.type === 'formResponse' && message.content.fields) {
-        return handleFormResponse(event, conversationId, message.author?.displayName || 'Customer');
-      }
-      if (!text) {
-        return;
-      }
-      if (isEscalationRequest(text)) {
-        return handleEscalateToAgent(conversationId, webUserId);
-      }
-      if (isEscalationCancellation(text)) {
-        return handleCancelEscalation(conversationId, webUserId);
-      }
-
-      let escalationHandled = false;
+      const budget = createResponseBudget({
+        receivedAt: event._receivedAt || Date.now(),
+        timeoutMs: RAG_CONFIG.conversation.responseHardTimeoutMs,
+        targetMs: RAG_CONFIG.conversation.responseTargetMs,
+        reserveMs: RAG_CONFIG.conversation.deliveryReserveMs
+      });
       try {
-        escalationHandled = await handleEscalationCheck({
-          conversationId,
-          messageBody: text,
-          userName: message.author?.displayName || 'Customer',
-          webUserId
+        return await runWithResponseBudget(budget, async () => {
+          // Observe speculative failures immediately; they only affect a turn that actually needs RAG.
+          const preparedContext = canPrefetchContext(message)
+            ? loadCustomerContext(event, conversation.id).then(
+                value => ({ value }),
+                error => ({ error })
+              )
+            : null;
+          try {
+            if (await handleHandoffEvent(event)) return;
+          } catch (error) {
+            if (error.deliveryUncertain) throw error;
+            console.error('Handoff state unavailable', safeErrorMetadata(error));
+            if (error.code === 'HANDOFF_CONFLICT') return;
+            // An in-flight external transfer must be reconciled before any further customer-visible send.
+            if (['transferring', 'transfer_unknown', 'transferred'].includes(event._handoff?.status)) throw error;
+            await sendSunshineMessage(conversation.id, customerMessages.handoffUnavailable);
+            return;
+          }
+          await processCustomerMessage(event, conversation.id, conversation.activeSwitchboardIntegration, {
+            responseBudget: budget,
+            preparedContext
+          });
         });
-      } catch (error) {
-        if (error.deliveryUncertain) {
-          throw error;
-        }
-        console.warn('Escalation classification unavailable', error.message);
-      }
-
-      if (!escalationHandled) {
-        await processCustomerMessage(event, conversationId, null, conversation.activeSwitchboardIntegration);
+      } finally {
+        budget.dispose();
       }
     })
   );

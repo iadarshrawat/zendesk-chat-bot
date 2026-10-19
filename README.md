@@ -4,17 +4,17 @@ A Node.js service for the supplied Mr Brand and Comfort Zone support bot. It rec
 
 ## What changed from the supplied archive
 
-| Area | Before | In this project |
-| --- | --- | --- |
-| Webhook | HTTP 200 before work started in process memory | Authenticate, validate and queue in bounded process memory before HTTP 200 |
-| Background work | Per-web-process callback and cron | In-memory inbox and monitor loops run inside `npm start`; a queued webhook wakes the inbox immediately |
-| Conversation form | Process-local `Map` | Process-local form store with 30-minute expiry |
-| Customer messages | Strings and Sunshine POSTs spread over modules | Wording in `src/lib/message/`, message/form/activity delivery in `src/services/messaging/messages/index.js` |
-| Widget JWT | Signed arbitrary request-body identity | Verify website session JWT against JWKS; sign only verified claims |
-| Report | Public endpoint | Bearer API key required |
-| Monitoring | Old export cursors revisited previous tickets | Check recently updated tickets at a configurable interval; configurable lookback and customer inactivity gap; completed sessions tracked in SQL Server |
-| Structure | Generic controllers, methods, utilities | Controllers, services, models, middlewares, loaders and common helpers, following the reference layout |
-| Dead paths | Old search pagination, per-process queue, quick-reply LLM, unused upload test file | Removed |
+| Area              | Before                                                                             | In this project                                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Webhook           | HTTP 200 before work started in process memory                                     | Authenticate, validate and queue in bounded process memory before HTTP 200                                                                             |
+| Background work   | Per-web-process callback and cron                                                  | In-memory inbox and monitor loops run inside `npm start`; a queued webhook wakes the inbox immediately                                                 |
+| Conversation form | Process-local `Map`                                                                | SQL-backed handoff state, validated forms and transfer recovery                                                                                        |
+| Customer messages | Strings and Sunshine POSTs spread over modules                                     | Wording in `src/lib/message/`, message/form/activity delivery in `src/services/messaging/messages/index.js`                                            |
+| Widget JWT        | Signed arbitrary request-body identity                                             | Verify website session JWT against JWKS; sign only verified claims                                                                                     |
+| Report            | Public endpoint                                                                    | Bearer API key required                                                                                                                                |
+| Monitoring        | Old export cursors revisited previous tickets                                      | Check recently updated tickets at a configurable interval; configurable lookback and customer inactivity gap; completed sessions tracked in SQL Server |
+| Structure         | Generic controllers, methods, utilities                                            | Controllers, services, models, middlewares, loaders and common helpers, following the reference layout                                                 |
+| Dead paths        | Old search pagination, per-process queue, quick-reply LLM, unused upload test file | Removed                                                                                                                                                |
 
 The archive already used **Cosmos DB + Voyage + Claude**, not the earlier Pinecone + Gemini design. This refactor preserves the archive's provider combination and its evidence validation behavior.
 
@@ -45,7 +45,7 @@ Each backend module uses a named folder containing `index.js`. Its parent `index
 ## Run locally
 
 1. Use Node.js 22 or 24 LTS and Microsoft SQL Server with a dedicated database login. Copy `.env.example` to `.env` and set `DB_HOST`, `DB_PORT` (normally `1433`), `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_SCHEMA` (default `dbo`). Never commit `.env` or the private knowledge archives to a repository.
-2. Run `npm ci` once. Review migrations 001 through 004, confirm `DB_NAME.DB_SCHEMA`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"`. The command requires an exact target match before connecting. It creates only the four application tables and adds the nullable monitoring issue/intent fields and their constraints. It preserves existing records and unrelated tables. Normal `npm start` verifies storage without running DDL; the application login needs access to the four tables and system-catalog metadata.
+2. Run `npm ci` once. Review migrations 001 through 005, confirm `DB_NAME.DB_SCHEMA`, then run `npm run db:migrate -- --confirm-target "YourDatabase.dbo"`. The command requires an exact target match before connecting. It creates only the five application tables and adds the nullable monitoring issue/intent fields and their constraints. It preserves existing records and unrelated tables. Normal `npm start` verifies storage without running DDL; the application login needs access to the five tables and system-catalog metadata.
 3. Validate the supplied knowledge packages without API calls:
 
    ```bash
@@ -54,7 +54,7 @@ Each backend module uses a named folder containing `index.js`. Its parent `index
    ```
 
 4. Review package ownership, then ingest each brand separately with the same commands without `--validate-only`. This publishes brand snapshots in Cosmos. The Cosmos vector dimension must match the Voyage embedding output dimension. The supplied default is 1024.
-5. Run `npm start` in one terminal. It verifies the four SQL Server tables, then starts the API, in-memory inbox processor and monitor together. Configure Zendesk's Conversations webhook for `conversation:create` and `conversation:message`, send it to `POST /sunshine/webhook`, and set the webhook shared secret to `SUNSHINE_WEBHOOK_SECRET`.
+5. Run `npm start` in one terminal. It verifies the five SQL Server tables, then starts the API, in-memory inbox processor and monitor together. Configure Zendesk's Conversations webhook for `conversation:create` and `conversation:message`, send it to `POST /sunshine/webhook`, and set the webhook shared secret to `SUNSHINE_WEBHOOK_SECRET`.
 6. Connect the website's logged-in user session to `POST /sunshine/auth` as described below. Set `REPORT_API_KEY` for report consumers. Configure the navbar's backend hostname and secure API key during app installation as described below. The navbar folder guide is included in [its entry page](navbar/assets/index.html).
 
 ## Install the monitoring navbar
@@ -67,9 +67,9 @@ Each backend module uses a named folder containing `index.js`. Its parent `index
 
 [Zendesk secure settings](https://developer.zendesk.com/documentation/apps/app-developer-guide/making-api-requests-from-a-zendesk-app/#using-secure-settings) require an installed app and a publicly trusted HTTPS endpoint. The local `zcli apps:server` does not support secure settings. ZCLI validation and packaging upload the app ZIP to Zendesk's validation API; they do not install or publish it. Verify authentication in the installed private app.
 
-`GET /health/live` checks the HTTP process; `GET /health/ready` checks SQL Server connectivity with `SELECT 1`. Startup verifies brand mappings, the four SQL Server tables, Cosmos and required bot credentials before starting both loops.
+`GET /health/live` checks the HTTP process; `GET /health/ready` checks SQL Server connectivity with `SELECT 1`. Startup verifies brand mappings, the five SQL Server tables, Cosmos and required bot credentials before starting both loops.
 
-The only relational application tables are `bot_conversation_state`, `bot_monitor_sessions`, `bot_monitor_evaluations`, and `bot_monitor_intents`. Forms and the webhook inbox are held in process memory. A restart loses pending inbox events, deduplication history, and forms; multiple app instances do not share them. For this design, run one app instance unless you accept independent queues. If table setup fails, confirm `DB_NAME`/`DB_SCHEMA` and the migration login's permission to create only those four tables. An incompatible existing table causes a safe failure; it is not altered automatically.
+The only relational application tables are `bot_conversation_state`, `bot_monitor_sessions`, `bot_monitor_evaluations`, `bot_monitor_intents`, and `bot_conversation_handoffs`. Handoff state and validated forms persist in SQL; the webhook inbox remains in process memory. A restart loses unprocessed inbox events and its deduplication history; multiple app instances do not share that queue. For this design, run one app instance unless you accept independent queues. If table setup fails, confirm `DB_NAME`/`DB_SCHEMA` and the migration login's permission to create only those five tables. An incompatible existing table causes a safe failure; it is not altered automatically.
 
 If the widget receives no reply, keep `npm start` running, send a fresh test message, then run `npm run diagnose` in another terminal on the same host. It calls the report-key-protected `/sunshine/inbox` route on the local process and prints only aggregate queue counts, not customer text or API keys. An empty queue may mean Zendesk has not delivered a supported event: check the public HTTPS webhook URL ending in `/sunshine/webhook`, its `conversation:message` subscription, App ID, and webhook shared secret. `pending` or `processing` counts mean the in-memory worker has work; inspect the `npm start` logs. A `delivery_uncertain` outcome means retrying the send automatically might duplicate a customer-visible reply. This package retains the working `https://api.smooch.io/v2` Sunshine API endpoint from the attached project.
 
@@ -79,17 +79,19 @@ If the widget receives no reply, keep `npm start` running, send a fresh test mes
 
 Configure monitoring in `.env` with `MONITOR_LOOKBACK_HOURS=5`, `MONITOR_SESSION_IDLE_HOURS=2`, and `MONITOR_POLL_INTERVAL_MINUTES=5`. The hour settings accept positive fractions (`0.5` means 30 minutes); polling uses minutes (`0.5` means 30 seconds), with a one-second minimum. Monitoring runs immediately at startup, then counts each interval from the previous run's start without overlapping runs. Lookback filters ticket `updated_at`, not ticket creation or chat date; selected tickets contribute their full conversation. A customer return after at least the configured gap starts another session, and evaluation becomes due after that gap without a customer reply. Lookback must exceed the gap; leave enough extra time for the configured poll and export delay. Restart after changing settings. Saved evaluations are not rewritten, but a different gap can regroup older chats when their ticket is fetched again. Historical intent backfills use each saved session's original gap.
 
+Handoff changes, setup, recovery, latency and verification are explained in one [Hinglish handoff guide](docs/HANDOFF_FLOW.md).
+
 ## HTTP contract
 
-| Endpoint | Caller | Authentication | Result |
-| --- | --- | --- | --- |
-| `POST /sunshine/webhook` | Sunshine Conversations | `X-API-Key` shared secret; expected `app.id` | In-memory event enqueue, then `200`; malformed `400`, untrusted `401`, queue failure `503` |
-| `POST /sunshine/auth` | Logged-in website | `Authorization: Bearer <website-session-JWT>` | Short-lived Zendesk messaging JWT; body identity ignored |
-| `GET /sunshine/monitoring/sessions?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Paginated SQL session rows; date, text, score and cursor filters |
-| `GET /sunshine/monitoring/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Full-search ticket/session totals and both satisfaction breakdowns; date, text and score filters |
-| `GET /sunshine/monitoring/issues?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>` | Specific customer intents ranked by session count across the full date/text/score search; no pagination |
-| `GET /health/live` / `/health/ready` | Hosting health probe | None | Liveness / SQL Server connectivity |
-| `GET /sunshine/inbox` | Local diagnostic | `Authorization: Bearer <REPORT_API_KEY>` | In-memory inbox counts, no payloads |
+| Endpoint                                                          | Caller                    | Authentication                                | Result                                                                                                  |
+| ----------------------------------------------------------------- | ------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `POST /sunshine/webhook`                                          | Sunshine Conversations    | `X-API-Key` shared secret; expected `app.id`  | In-memory event enqueue, then `200`; malformed `400`, untrusted `401`, queue failure `503`              |
+| `POST /sunshine/auth`                                             | Logged-in website         | `Authorization: Bearer <website-session-JWT>` | Short-lived Zendesk messaging JWT; body identity ignored                                                |
+| `GET /sunshine/monitoring/sessions?from=YYYY-MM-DD&to=YYYY-MM-DD` | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>`      | Paginated SQL session rows; date, text, score and cursor filters                                        |
+| `GET /sunshine/monitoring/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`  | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>`      | Full-search ticket/session totals and both satisfaction breakdowns; date, text and score filters        |
+| `GET /sunshine/monitoring/issues?from=YYYY-MM-DD&to=YYYY-MM-DD`   | Private dashboard/backend | `Authorization: Bearer <REPORT_API_KEY>`      | Specific customer intents ranked by session count across the full date/text/score search; no pagination |
+| `GET /health/live` / `/health/ready`                              | Hosting health probe      | None                                          | Liveness / SQL Server connectivity                                                                      |
+| `GET /sunshine/inbox`                                             | Local diagnostic          | `Authorization: Bearer <REPORT_API_KEY>`      | In-memory inbox counts, no payloads                                                                     |
 
 The website's JWT must be signed with RS256 and contain `sub`, `iss`, `aud`, and expiration. The optional `name`, `email`, and `email_verified` claims come from the website's verified identity system. Configure its JWKS URL, issuer and audience. `ZENDESK_WIDGET_KEY_ID` and `ZENDESK_WIDGET_JWT_SECRET` are a **different** signing key from Zendesk Admin Center. If your website uses a cookie session or a different token format, adapt `src/middlewares/auth/siteIdentity/index.js` to verify that existing session on the server before issuing the Zendesk token. Do not send user identity in a client-controlled JSON body.
 
@@ -123,7 +125,7 @@ To explicitly revisit **every existing session**, including previously inspected
 npm run monitor:intents -- --confirm-target "YourDatabase.dbo" --all-sessions
 ```
 
-It reads sessions saved before the run started, reuses the same extraction/matching logic, and prints progress. Existing valid intents survive missing or unclear evidence. Failures leave original data intact and produce a nonzero exit. History import and intent backfill helpers live beneath their CLI commands in `scripts/`; the application does not load them at startup. Migrations 001 through 004 define the permanent database schema. Full reclassification does not run during `npm start` or `npm run db:migrate`.
+It reads sessions saved before the run started, reuses the same extraction/matching logic, and prints progress. Existing valid intents survive missing or unclear evidence. Failures leave original data intact and produce a nonzero exit. History import and intent backfill helpers live beneath their CLI commands in `scripts/`; the application does not load them at startup. Migrations 001 through 005 define the permanent database schema. Full reclassification does not run during `npm start` or `npm run db:migrate`.
 
 ## Checks performed on this package
 

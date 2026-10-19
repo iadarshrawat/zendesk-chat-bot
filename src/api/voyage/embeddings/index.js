@@ -10,10 +10,15 @@ import {
   createResponseBudget,
   getResponseBudget,
   runBudgetedIO,
+  runWithDeadline,
   runWithResponseBudget
 } from '../../../common/utils/responseBudget/index.js';
 
 let voyageClient;
+const QUERY_TIMEOUT_MS = 30_000;
+const ANSWER_RESERVE_MS = 8_000;
+const pendingQueries = [];
+let queryFlushScheduled = false;
 const scheduleRequest = createRequestScheduler({
   concurrency: RAG_CONFIG.voyage.requestConcurrency,
   minIntervalMs: RAG_CONFIG.voyage.requestDelayMs
@@ -145,6 +150,7 @@ async function requestEmbeddingsInternal(texts, inputType) {
       maxRetries: RAG_CONFIG.voyage.maxRetries,
       baseDelayMs: RAG_CONFIG.voyage.retryBaseDelayMs,
       maxDelayMs: RAG_CONFIG.voyage.retryMaxDelayMs,
+      minAttemptMs: inputType === 'query' ? Math.max(1000, RAG_CONFIG.voyage.requestDelayMs) : 0,
       onRetry: ({ error, attempt, delayMs, maxRetries }) => {
         pauseAfterRateLimit(error, delayMs, 'retry_after');
         console.warn(`Voyage request rate-limited or unavailable; retry ${attempt}/${maxRetries} in ${delayMs}ms.`);
@@ -164,7 +170,7 @@ async function requestEmbeddingsInternal(texts, inputType) {
           embedding.some(value => !Number.isFinite(value))
       );
 
-      if (embeddings.length !== texts.length || hasInvalidEmbedding) {
+      if (embeddings.length !== texts.length || hasInvalidEmbedding || ordered.some((item, index) => item.index !== index)) {
         throw new Error('Voyage returned an unexpected embedding response');
       }
 
@@ -175,6 +181,51 @@ async function requestEmbeddingsInternal(texts, inputType) {
       dimensions: RAG_CONFIG.cosmos.vectorDimensions
     }
   );
+}
+
+/**
+ * Batch live cache misses queued together, using a deadline independent of any one customer.
+ * @returns {void} Resolves or rejects each queued query with its own vector or the batch failure.
+ */
+function flushQueryBatch() {
+  queryFlushScheduled = false;
+  const pending = pendingQueries.splice(0);
+  for (let index = 0; index < pending.length; index += RAG_CONFIG.voyage.batchSize) {
+    const batch = pending.slice(index, index + RAG_CONFIG.voyage.batchSize);
+    const budget = createResponseBudget({
+      timeoutMs: QUERY_TIMEOUT_MS,
+      reserveMs: 0,
+      timeoutStage: 'embedding.query',
+      timeoutCode: 'EMBEDDING_TIMEOUT'
+    });
+    runWithResponseBudget(budget, () =>
+      requestEmbeddings(
+        batch.map(item => item.text),
+        'query'
+      )
+    )
+      .then(
+        vectors => batch.forEach((item, position) => item.resolve(vectors[position])),
+        error => batch.forEach(item => item.reject(error))
+      )
+      .finally(() => budget.dispose());
+  }
+}
+
+/**
+ * Queue one live query for batching; offline callers keep the existing provider retry policy.
+ * @param {string} text - Non-empty query text missing from the shared cache.
+ * @returns {Promise<Array<number>>} This query's validated embedding vector.
+ */
+function requestQueryEmbedding(text) {
+  if (!getResponseBudget()) return requestEmbeddings([text], 'query').then(vectors => vectors[0]);
+  return new Promise((resolve, reject) => {
+    pendingQueries.push({ text, resolve, reject });
+    if (!queryFlushScheduled) {
+      queryFlushScheduled = true;
+      queueMicrotask(flushQueryBatch);
+    }
+  });
 }
 
 /**
@@ -201,7 +252,7 @@ export async function embedDocuments(texts) {
 }
 
 /**
- * Embed a query through the shared cache without tying its loader to one customer deadline.
+ * Embed a cached query within the caller's budget, leaving time for answer generation.
  * @param {string} text - Text to normalize or inspect.
  * @returns {Promise<Array<number>>} A validated query vector, returned as a copy from the cache.
  */
@@ -223,35 +274,31 @@ export async function embedQuery(text) {
     });
     let outcome;
     const live = getResponseBudget();
-    const embedding = await runBudgetedIO(() =>
-      queryCache.getOrCreate(
-        key,
-        async () => {
-          // A shared cache miss is not owned by its first customer. Cancellation
-          // detaches that waiter; another customer's same-key request can still
-          // finish. The shared loader itself has a short, independent live limit.
-          const shared = live ? createResponseBudget({ timeoutMs: 5000, reserveMs: 0 }) : null;
-          try {
-            return await runWithResponseBudget(shared, async () => {
-              const [vector] = await requestEmbeddings([text], 'query');
-
-              return vector;
+    live?.check();
+    const timeoutMs = live ? Math.max(0, Math.min(QUERY_TIMEOUT_MS, live.remaining() - ANSWER_RESERVE_MS)) : undefined;
+    if (live) logStage('embedding.response_policy', { timeoutMs, remainingMs: live.remaining() });
+    const embedding = await runWithDeadline(
+      () =>
+        queryCache.getOrCreate(
+          key,
+          () => requestQueryEmbedding(text),
+          result => {
+            outcome = result;
+            logStage('embedding.cache', {
+              outcome: result,
+              keyHash: key.slice(0, 12),
+              ttlMs: RAG_CONFIG.voyage.queryCacheTtlMs,
+              maxEntries: RAG_CONFIG.voyage.queryCacheMaxEntries,
+              ...queryCache.getStats()
             });
-          } finally {
-            shared?.dispose();
           }
-        },
-        result => {
-          outcome = result;
-          logStage('embedding.cache', {
-            outcome: result,
-            keyHash: key.slice(0, 12),
-            ttlMs: RAG_CONFIG.voyage.queryCacheTtlMs,
-            maxEntries: RAG_CONFIG.voyage.queryCacheMaxEntries,
-            ...queryCache.getStats()
-          });
-        }
-      )
+        ),
+      {
+        timeoutMs,
+        signal: live?.signal,
+        stage: 'embedding.query',
+        timeoutCode: 'EMBEDDING_TIMEOUT'
+      }
     );
 
     span.end({ outcome, keyHash: key.slice(0, 12), ...queryCache.getStats() });

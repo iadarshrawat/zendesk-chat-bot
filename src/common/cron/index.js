@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { processOneInboxJob } from '../../services/messaging/worker/index.js';
 import { runExclusiveMonitor } from '../../services/monitoring/worker/index.js';
 import { MONITORING_CONFIG } from '../../config/monitoring/index.js';
+import { RAG_CONFIG } from '../../config/rag/index.js';
 import { safeErrorMetadata } from '../utils/timingLogger/index.js';
 
 /**
  * Create inbox and monitoring loops with the existing wakeup, polling, and shutdown rules.
- * @param {Object} options - Options: processJob, runMonitor, pollMs, errorDelayMs, monitorMs, logger.
+ * @param {Object} options - Worker concurrency, job/monitor operations, polling intervals and logger.
  * @returns {Object} start, notify, and stop operations for one background runtime.
  */
 export function createBackgroundRuntime({
@@ -15,15 +16,19 @@ export function createBackgroundRuntime({
   pollMs = 750,
   errorDelayMs = 5_000,
   monitorMs = MONITORING_CONFIG.pollIntervalMs,
+  inboxConcurrency = RAG_CONFIG.conversation.inboxConcurrency,
   logger = console
 } = {}) {
   let running = false;
   let started = false;
   let inboxNotificationVersion = 0;
-  let inboxWaiter;
+  if (!Number.isInteger(inboxConcurrency) || inboxConcurrency < 1 || inboxConcurrency > 8) {
+    throw new RangeError('Inbox concurrency must be an integer between 1 and 8');
+  }
+  const inboxWaiters = new Set();
   let backgroundTasks;
   const wakeSleepingTasks = new Set();
-  const workerId = randomUUID();
+  const workerIds = Array.from({ length: inboxConcurrency }, () => randomUUID());
 
   /**
    * Wait between background iterations while allowing inbox notifications or shutdown to wake the loop.
@@ -43,15 +48,13 @@ export function createBackgroundRuntime({
       const wake = () => {
         clearTimeout(timer);
         wakeSleepingTasks.delete(wake);
-        if (inboxWaiter === wake) {
-          inboxWaiter = undefined;
-        }
+        inboxWaiters.delete(wake);
         resolve();
       };
 
       wakeSleepingTasks.add(wake);
       if (inbox) {
-        inboxWaiter = wake;
+        inboxWaiters.add(wake);
       }
       timer = setTimeout(wake, milliseconds);
     });
@@ -59,9 +62,10 @@ export function createBackgroundRuntime({
 
   /**
    * Process queued jobs and retain the existing empty-queue and failure delays.
+   * @param {string} workerId - Unique lease owner; the inbox enforces per-conversation ordering.
    * @returns {Promise<void>} Resolves when background processing stops.
    */
-  async function inboxLoop() {
+  async function inboxLoop(workerId) {
     while (running) {
       const notificationVersion = inboxNotificationVersion;
 
@@ -107,7 +111,7 @@ export function createBackgroundRuntime({
       }
       started = true;
       running = true;
-      backgroundTasks = Promise.all([inboxLoop(), monitorLoop()]);
+      backgroundTasks = Promise.all([...workerIds.map(inboxLoop), monitorLoop()]);
       logger.log('Background processing ready: Sunshine inbox and session monitor');
 
       return this;
@@ -117,7 +121,7 @@ export function createBackgroundRuntime({
         return;
       }
       inboxNotificationVersion += 1;
-      inboxWaiter?.();
+      for (const wake of [...inboxWaiters]) wake();
     },
     async stop() {
       if (!running) {

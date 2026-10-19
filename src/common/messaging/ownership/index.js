@@ -23,9 +23,9 @@ export function isAgentActive(integration) {
   const integrationName = typeof integration === 'string' ? integration : integration?.name;
   const configuredAgentId = process.env.SUNSHINE_AGENT_WORKSPACE_INTEGRATION_ID;
 
-  if (configuredAgentId && integrationId === configuredAgentId) {
+  if (configuredAgentId && (integrationId === configuredAgentId || integration?.integrationId === configuredAgentId)) {
     return true;
   }
 
-  return AGENT_WORKSPACE_NAME.test(integrationName || '');
+  return integration?.integrationType === 'zd:agentWorkspace' || AGENT_WORKSPACE_NAME.test(integrationName || '');
 }

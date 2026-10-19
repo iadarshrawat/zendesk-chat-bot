@@ -26,9 +26,16 @@ function applyIngestionFilter(conditions, parameters, ingestionId) {
  * @param {Object} filters - Existing search filters.
  * @param {number} requestedLimit - Maximum requested result count, bounded by the query builder.
  * @param {string} ingestionId - Knowledge revision identity.
+ * @param {Object} options - exactReference uses equality and stored aliases instead of substring matching.
  * @returns {Object} Cosmos query text and parameters.
  */
-export function buildStructuredProductQuery(brandKey, filters = {}, requestedLimit = 100, ingestionId = null) {
+export function buildStructuredProductQuery(
+  brandKey,
+  filters = {},
+  requestedLimit = 100,
+  ingestionId = null,
+  { exactReference = false } = {}
+) {
   const limit = boundedLimit(requestedLimit, 100);
   const conditions = ['c.brandKey = @brandKey', 'c.recordType = "product"', 'c.status = "active"'];
   const parameters = [{ name: '@brandKey', value: brandKey }];
@@ -36,8 +43,8 @@ export function buildStructuredProductQuery(brandKey, filters = {}, requestedLim
 
   if (filters.productName) {
     conditions.push(`(
-      CONTAINS(c.normalizedProductName, @productName)
-      OR CONTAINS(LOWER(c.productId), @productName)
+      ${exactReference ? 'c.normalizedProductName = @productName' : 'CONTAINS(c.normalizedProductName, @productName)'}
+      OR ${exactReference ? 'LOWER(c.productId) = @productName' : 'CONTAINS(LOWER(c.productId), @productName)'}
       OR ARRAY_CONTAINS(c.normalizedAlternateProductIds, @productName)
       OR ARRAY_CONTAINS(c.normalizedModelIds, @productName)
     )`);

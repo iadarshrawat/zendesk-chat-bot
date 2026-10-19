@@ -23,7 +23,7 @@ const anthropic = createAnthropicClient();
 export async function generateClaudeText(prompt, maxTokens = 20) {
   const responseBudget = getResponseBudget();
   const model = CLAUDE_CONFIG.classifierModel || CLAUDE_CONFIG.model;
-  const timeoutMs = responseBudget ? (RAG_CONFIG.conversation?.classifierTimeoutMs ?? 2500) : 10_000;
+  const timeoutMs = RAG_CONFIG.conversation?.classifierTimeoutMs ?? 2500;
   const response = await measureStage(
     'claude.classifier',
     () =>
@@ -154,13 +154,14 @@ async function auditReplyCitations({ brand, history, question, rag, conversation
  * @param {Object} conversationState - Retained customer case facts and pending question.
  * @returns {Object} systemPrompt, serializedContext, and optional stableEvidence.
  */
-function buildAnswerContext(brand, history, question, rag, conversationState) {
+function buildAnswerContext(brand, history, question, rag, conversationState, handoffStatus) {
   const systemPrompt = `${buildSupportSystemPrompt(brand)}\n\n${ANSWER_PROTOCOL}`;
   const context = {
     currentDate: new Date().toISOString().slice(0, 10),
     customerQuestion: question,
     recentConversation: history,
     customerCase: conversationState || {},
+    authoritativeHandoffStatus: handoffStatus || 'none',
     retrieval: {
       intent: rag.plan.intent,
       supportGoal: rag.plan.supportGoal,
@@ -203,13 +204,14 @@ async function generateAnswer({
   question,
   rag,
   conversationState,
+  handoffStatus,
   repairFormat,
   repairReason,
   previousResponse,
   answerAttempt
 }) {
   const { systemPrompt, serializedContext, stableEvidence } = measureSyncStage('claude.answer_context', () =>
-    buildAnswerContext(brand, history, question, rag, conversationState)
+    buildAnswerContext(brand, history, question, rag, conversationState, handoffStatus)
   );
   const requestChars = serializedContext.length + (stableEvidence?.length || 0);
 

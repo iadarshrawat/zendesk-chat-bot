@@ -4,10 +4,10 @@ const storage = new AsyncLocalStorage();
 const INTERNAL_CANCELLATION_REASONS = new Set(['generation_completed', 'generation_failed', 'disposed']);
 
 class ResponseDeadlineError extends Error {
-  constructor(timeoutStage = 'response.hard_deadline') {
-    super('Response processing exceeded its time budget');
-    this.name = 'ResponseDeadlineError';
-    this.code = 'BOT_RESPONSE_TIMEOUT';
+  constructor(timeoutStage = 'response.hard_deadline', timeoutCode = 'BOT_RESPONSE_TIMEOUT') {
+    super(timeoutCode === 'BOT_RESPONSE_TIMEOUT' ? 'Response processing exceeded its time budget' : 'Operation exceeded its time budget');
+    this.name = timeoutCode === 'BOT_RESPONSE_TIMEOUT' ? 'ResponseDeadlineError' : 'OperationDeadlineError';
+    this.code = timeoutCode;
     this.timeoutStage = timeoutStage;
   }
 }
@@ -43,7 +43,7 @@ export function isResponseTimeout(error) {
 
 /**
  * Create the existing cancellable customer-turn deadline and delivery-reserve budget.
- * @param {Object} options - Options: receivedAt, timeoutMs, targetMs, reserveMs, now.
+ * @param {Object} options - Timing, delivery reserve, clock, and optional operation-specific timeout stage/code.
  * @returns {Object} The budget, remaining-time checks, signal, and cleanup operation.
  */
 export function createResponseBudget({
@@ -51,7 +51,9 @@ export function createResponseBudget({
   timeoutMs = 15_000,
   targetMs = timeoutMs,
   reserveMs = 2_500,
-  now = Date.now
+  now = Date.now,
+  timeoutStage = 'response.hard_deadline',
+  timeoutCode = 'BOT_RESPONSE_TIMEOUT'
 } = {}) {
   const controller = new AbortController();
   const responseDeadline = receivedAt + timeoutMs;
@@ -75,7 +77,7 @@ export function createResponseBudget({
         throw controller.signal.reason;
       }
       if (now() >= deadline) {
-        throw new ResponseDeadlineError();
+        throw new ResponseDeadlineError(timeoutStage, timeoutCode);
       }
     },
     cancel(reason = 'generation_completed') {
@@ -88,7 +90,7 @@ export function createResponseBudget({
   };
 
   const timeUntilDeadline = Math.max(0, deadline - now());
-  const timer = setTimeout(() => controller.abort(new ResponseDeadlineError()), timeUntilDeadline);
+  const timer = setTimeout(() => controller.abort(new ResponseDeadlineError(timeoutStage, timeoutCode)), timeUntilDeadline);
 
   return budget;
 }
@@ -100,10 +102,10 @@ export function checkResponseBudget() {
 /**
  * Bound one operation by its timeout and caller cancellation without changing its result.
  * @param {Function} operation - Work to execute without changing its result.
- * @param {Object} options - Options: timeoutMs, signal, stage.
+ * @param {Object} options - Timeout, caller signal, stage, and optional operation-specific timeout code.
  * @returns {Promise<*>} The original operation result; rejects on the existing deadline or cancellation.
  */
-export function runWithDeadline(operation, { timeoutMs, signal, stage = 'operation' } = {}) {
+export function runWithDeadline(operation, { timeoutMs, signal, stage = 'operation', timeoutCode = 'BOT_RESPONSE_TIMEOUT' } = {}) {
   if (!signal && !Number.isFinite(timeoutMs)) {
     return Promise.resolve().then(() => operation({}));
   }
@@ -135,7 +137,7 @@ export function runWithDeadline(operation, { timeoutMs, signal, stage = 'operati
     const abort = () => {
       let error;
       if (!signal?.aborted) {
-        error = new ResponseDeadlineError(stage);
+        error = new ResponseDeadlineError(stage, timeoutCode);
       } else if (signal.reason instanceof ResponseDeadlineError || signal.reason instanceof ResponseCancelledError) {
         error = signal.reason;
       } else {

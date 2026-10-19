@@ -40,6 +40,16 @@ export function fetchConversationMessages(client, conversationId, { signal, time
 }
 
 /**
+ * Read current switchboard ownership when a transfer result is uncertain or ownership changed.
+ * @param {Object} client - Authenticated Sunshine client.
+ * @param {string} conversationId - Conversation ID.
+ * @returns {Promise<Object>} The conversation response; never changes ownership.
+ */
+export function fetchSunshineConversation(client, conversationId) {
+  return client.get(`/apps/${process.env.SUNSHINE_APP_ID}/conversations/${conversationId}`, { timeout: 5000 });
+}
+
+/**
  * Hand a conversation to Zendesk Agent Workspace with the captured form details.
  * @param {Object} client - Authenticated Sunshine client.
  * @param {string} conversationId - Conversation ID.

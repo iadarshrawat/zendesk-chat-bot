@@ -1,13 +1,11 @@
 import { getConversationHistory, sendSunshineMessage, sendTypingIndicator } from '../messages/index.js';
 import { generateReplyWithClaude, getBrandFromWidgetId } from '../../rag/replies/index.js';
 import { customerMessages } from '../../../lib/message/index.js';
-import { saveForm, deleteForm } from '../../../models/conversationForm/index.js';
-import { isWithinBusinessHours } from '../../businessHours/index.js';
 import { RAG_CONFIG } from '../../../config/rag/index.js';
 import { loadConversationState, saveConversationState } from '../../../models/conversationState/index.js';
 import { updateConversationState } from '../../../common/messaging/context/index.js';
 import { isAgentActive } from '../../../common/messaging/ownership/index.js';
-import { escalateToAgent } from '../../escalation/index.js';
+import { prepareHandoffReply, confirmHandoffReply } from '../../escalation/index.js';
 import { logStage, measureStage, measureSyncStage, safeErrorMetadata } from '../../../common/utils/timingLogger/index.js';
 import {
   createResponseBudget,
@@ -18,6 +16,22 @@ import {
 import { formatCustomerReply } from '../../../common/messaging/replyFormat/index.js';
 
 const ignoreBestEffortFailure = () => undefined;
+
+/**
+ * Start independent history and case reads only after validating the conversation's brand mapping.
+ * @param {Object} event - Current authenticated customer event.
+ * @param {string} conversationId - Conversation owning both reads.
+ * @returns {Promise<Array>} Earlier conversation text and saved case state.
+ */
+export async function loadCustomerContext(event, conversationId) {
+  getBrandFromWidgetId(event.payload.conversation.brandId);
+  return measureStage('turn.history_and_state', () =>
+    Promise.all([
+      getConversationHistory(conversationId, { beforeMessageId: event.payload.message.id }),
+      loadConversationState(conversationId)
+    ])
+  );
+}
 
 /**
  * Choose the existing safe customer reply for a deadline, unavailable generation, or missing evidence.
@@ -31,6 +45,7 @@ function generationFallback(error) {
       timeoutStage: undefined,
       result: {
         status: 'insufficient',
+        offerAgent: true,
         reply: customerMessages.brandUnknown
       }
     };
@@ -42,6 +57,7 @@ function generationFallback(error) {
       timeoutStage: error.timeoutStage || 'operation',
       result: {
         status: 'insufficient',
+        offerAgent: true,
         reply: customerMessages.timeout
       }
     };
@@ -52,174 +68,21 @@ function generationFallback(error) {
     timeoutStage: undefined,
     result: {
       status: 'insufficient',
+      offerAgent: true,
       reply: customerMessages.answerUnavailable
     }
   };
-}
-
-function findFormField(fields, fieldName) {
-  return fields.find(field => field.name === fieldName) || null;
-}
-
-// Sunshine form fields have different value shapes for text, email, and select inputs.
-/**
- * Read a submitted field value from the supported Sunshine form response shapes.
- * @param {Object} field - Submitted Sunshine text, email, or select field.
- * @returns {*} The supplied field value or its existing empty fallback.
- */
-function extractFormFieldValue(field) {
-  if (!field) {
-    return null;
-  }
-
-  const selectedOption = field.select && field.select[0];
-
-  return (
-    field.email ||
-    field.text ||
-    field.value ||
-    (selectedOption && (selectedOption.value || selectedOption.email || selectedOption.name)) ||
-    null
-  );
-}
-
-/**
- * Read the selected category from the supported Sunshine form response shapes.
- * @param {Object} categoryField - Submitted Sunshine escalation-category field.
- * @returns {Object|string|null} The selected option or value, or null when absent.
- */
-function extractSelectedCategory(categoryField) {
-  if (!categoryField) {
-    return null;
-  }
-  if (Array.isArray(categoryField.select) && categoryField.select.length > 0) {
-    return categoryField.select[0];
-  }
-  if (categoryField.value != null) {
-    return categoryField.value;
-  }
-  if (categoryField.text != null) {
-    return categoryField.text;
-  }
-
-  return categoryField;
-}
-
-/**
- * Save customer form details and follow the existing confirmation or after-hours handoff flow.
- * @param {Object} event - Sunshine webhook event.
- * @param {string} conversationId - Sunshine conversation ID.
- * @param {string} userName - Customer display name used by the escalation form.
- * @returns {Promise<void>} Resolves after processing; preserves the existing customer error response.
- */
-export async function handleFormResponse(event, conversationId, userName) {
-  try {
-    const fields = event.payload.message.content?.fields || [];
-    logStage('escalation.form_fields', { fieldCount: fields.length });
-    const author = event.payload.message.author;
-
-    const customerName = extractFormFieldValue(findFormField(fields, 'name')) || userName || 'Customer';
-    const customerEmail = extractFormFieldValue(findFormField(fields, 'email'));
-    if (!customerEmail) {
-      throw new TypeError('Escalation form is missing an email address');
-    }
-
-    const selectedCategory = extractSelectedCategory(findFormField(fields, 'category'));
-    const issueCategoryId =
-      selectedCategory?.value ||
-      selectedCategory?.id ||
-      selectedCategory?.group_id ||
-      selectedCategory?.groupId ||
-      selectedCategory?.name ||
-      (typeof selectedCategory === 'string' ? selectedCategory : null);
-    const issueCategoryName =
-      selectedCategory?.label ||
-      selectedCategory?.name ||
-      (typeof selectedCategory === 'string' ? selectedCategory : issueCategoryId) ||
-      'general';
-    const issueDescription = findFormField(fields, 'description')?.text || 'No description provided';
-    const webUserId = author.userId || event._webUserId || null;
-
-    console.log('Received escalation form submission');
-
-    const formData = {
-      name: customerName,
-      email: customerEmail,
-      category: issueCategoryName,
-      category_id: issueCategoryId,
-      description: issueDescription,
-      webUserId
-    };
-
-    const { withinHours } = await measureStage('escalation.business_hours', () => isWithinBusinessHours());
-    logStage('escalation.business_hours_result', { withinHours });
-
-    if (!withinHours) {
-      console.log('Form submitted outside office hours - directly escalating and creating ticket');
-      await measureStage('escalation.handoff', () => escalateToAgent(conversationId, formData));
-      await deleteForm(conversationId, webUserId ? { webUserId } : {});
-
-      return;
-    }
-
-    // Keep the form in process memory for office-hours confirmation.
-    await saveForm(conversationId, {
-      entryId: undefined,
-      status: 'form_submitted',
-      data: formData,
-      submittedAt: Date.now(),
-      processing: false
-    });
-
-    try {
-      await sendSunshineMessage(conversationId, {
-        text: customerMessages.formSubmitted(customerName, issueCategoryName),
-        quickReplies: customerMessages.confirmationButtons
-      });
-    } catch (error) {
-      console.error('Failed to send form response message:', error.message);
-      throw error;
-    }
-  } catch (error) {
-    console.error('Error handling form response:', error.message);
-    throw error;
-  }
-}
-
-/**
- * Recognize the escalation button payload or its visible label.
- * @param {string} messageBody - Incoming customer message text.
- * @returns {boolean} Whether the customer confirmed escalation.
- */
-export function isEscalationRequest(messageBody) {
-  return messageBody === 'ESCALATE_TO_AGENT' || messageBody === customerMessages.confirmationButtons[0];
-}
-
-/**
- * Recognize the cancellation button payload or its visible label.
- * @param {string} messageBody - Incoming customer message text.
- * @returns {boolean} Whether the customer cancelled escalation.
- */
-export function isEscalationCancellation(messageBody) {
-  return messageBody === 'CANCEL_ESCALATION' || messageBody === customerMessages.confirmationButtons[1];
 }
 
 /**
  * Process one customer turn with saved context, grounded generation, delivery, and state persistence.
  * @param {Object} event - Sunshine webhook event.
  * @param {string} conversationId - Sunshine conversation ID.
- * @param {Object} _conversationFormData - Unused form data retained in the processor signature.
  * @param {Object|string} activeSwitchboardIntegration - Integration currently owning the conversation.
- * @param {Object} queueContext - Inbox job timing used to enforce the response deadline.
+ * @param {Object} queueContext - Optional shared response budget and observed prefetched context result.
  * @returns {Promise<void>} Resolves after processing; propagates failures according to the existing inbox policy.
  */
-export async function processCustomerMessage(
-  event,
-  conversationId,
-  _conversationFormData,
-  activeSwitchboardIntegration,
-  queueContext = {}
-) {
+export async function processCustomerMessage(event, conversationId, activeSwitchboardIntegration, queueContext = {}) {
   if (isAgentActive(activeSwitchboardIntegration)) {
     logStage('turn.skipped', { reason: 'agent_active' });
 
@@ -269,9 +132,9 @@ export async function processCustomerMessage(
           }).catch(ignoreBestEffortFailure);
 
           // These reads are independent, so run them while the typing request is in flight.
-          const [history, previousState] = await measureStage('turn.history_and_state', () =>
-            Promise.all([getConversationHistory(conversationId, { beforeMessageId: message.id }), loadConversationState(conversationId)])
-          );
+          const prefetched = queueContext.preparedContext ? await queueContext.preparedContext : null;
+          if (prefetched?.error) throw prefetched.error;
+          const [history, previousState] = prefetched ? prefetched.value : await loadCustomerContext(event, conversationId);
 
           budget.check();
           logStage('turn.history_loaded', { historyChars: history.length });
@@ -279,6 +142,7 @@ export async function processCustomerMessage(
           result = await measureStage('rag.total', () =>
             generateReplyWithClaude(brand, history, messageBody, {
               conversationState: state,
+              handoffStatus: event._handoff?.status || 'none',
               traceId: message.id,
               detailed: true
             })
@@ -310,14 +174,16 @@ export async function processCustomerMessage(
 
   // Do not blindly retry an ambiguous POST failure: it may already be delivered.
   try {
+    const outgoing = await prepareHandoffReply(event, result);
     const displayReply = measureSyncStage('turn.reply_format', () => formatCustomerReply(result.reply));
-    await sendSunshineMessage(
+    const delivered = await sendSunshineMessage(
       conversationId,
-      { text: displayReply },
+      { ...outgoing, text: displayReply },
       {
         timeoutMs: deliveryTimeout(RAG_CONFIG.conversation.sendTimeoutMs ?? 3000)
       }
     );
+    await confirmHandoffReply(event, delivered);
     logStage('turn.answer_sent', {
       outcome: result.status,
       replyChars: displayReply.length
@@ -329,6 +195,7 @@ export async function processCustomerMessage(
       durationMs: Date.now() - budget.receivedAt,
       targetExceeded: budget.targetExceeded(),
       processingMs: Date.now() - (event._receivedAt || budget.receivedAt),
+      sinceWebhookMs: Date.now() - budget.receivedAt + (event._queueDelayMs || 0),
       queueDelayMs: event._queueDelayMs,
       responseTargetMs: budget.responseTargetMs,
       responseHardTimeoutMs: budget.responseHardTimeoutMs,
@@ -374,7 +241,7 @@ export async function processCustomerMessage(
         stateSave
       ]);
     } finally {
-      budget.dispose();
+      if (!queueContext.responseBudget) budget.dispose();
     }
   }
 }

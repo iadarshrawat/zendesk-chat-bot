@@ -79,6 +79,7 @@ export const RAG_CONFIG = {
     maxRecoveryQueries: Math.min(3, positiveInteger(process.env.RAG_MAX_RECOVERY_QUERIES, 3)),
     catalogCacheMs: nonNegativeInteger(process.env.RAG_CATALOG_CACHE_MS, 60_000),
     revisionCacheMs: nonNegativeInteger(process.env.RAG_REVISION_CACHE_MS, 30_000),
+    readCacheMs: nonNegativeInteger(process.env.RAG_READ_CACHE_MS, 30_000),
     snapshotCleanupGraceMs: nonNegativeInteger(process.env.RAG_SNAPSHOT_CLEANUP_GRACE_MS, 35_000),
     includeSources: booleanValue(process.env.RAG_INCLUDE_SOURCES, false),
     compactContext: booleanValue(process.env.RAG_COMPACT_CONTEXT, true),
@@ -101,7 +102,8 @@ export const RAG_CONFIG = {
     answerEffort: effortLevel(process.env.BOT_ANSWER_EFFORT, 'medium'),
     plannerEffort: effortLevel(process.env.BOT_PLANNER_EFFORT, 'low'),
     structuredAnswers: booleanValue(process.env.BOT_STRUCTURED_ANSWERS, true),
-    historyMessages: Math.min(60, positiveInteger(process.env.BOT_HISTORY_MESSAGES, 10))
+    historyMessages: Math.min(60, positiveInteger(process.env.BOT_HISTORY_MESSAGES, 10)),
+    inboxConcurrency: Math.min(8, positiveInteger(process.env.BOT_INBOX_CONCURRENCY, 2))
   },
   chunking: {
     wordsPerChunk: positiveInteger(process.env.RAG_CHUNK_WORDS, 380),

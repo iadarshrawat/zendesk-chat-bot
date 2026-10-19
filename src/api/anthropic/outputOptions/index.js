@@ -16,9 +16,11 @@ const ANSWER_SCHEMA = {
         pattern: '^((PRODUCT|SOURCE) [1-9][0-9]*|CATALOG SUMMARY)$'
       }
     },
-    pendingQuestion: { anyOf: [{ type: 'string' }, { type: 'null' }] }
+    pendingQuestion: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+    offerAgent: { type: 'boolean' },
+    informationNeeded: { type: 'string', enum: ['none', 'customer', 'knowledge'] }
   },
-  required: ['status', 'reply', 'sourceLabels', 'pendingQuestion']
+  required: ['status', 'reply', 'sourceLabels', 'pendingQuestion', 'offerAgent', 'informationNeeded']
 };
 
 /**
