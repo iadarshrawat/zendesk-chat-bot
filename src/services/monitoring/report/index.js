@@ -4,10 +4,18 @@ import { fetchIncrementalTicketsPage } from '../../../api/zendesk/tickets/index.
 import { fetchConversationEvents } from '../../../api/zendesk/conversations/index.js';
 import { createZendeskClient } from '../../../api/zendesk/client/index.js';
 import { getPool } from '../../../loaders/database/sql/index.js';
-import { completedSessionIds, saveMonitoringSession } from '../../../models/monitoring/index.js';
+import { completedSessionIds, saveMonitoringSession, correctMonitoringEscalation } from '../../../models/monitoring/index.js';
+import { listConfirmedHandoffTransfers } from '../../../models/handoff/index.js';
 import { SESSION_GAP_MS } from '../../../common/monitoring/validation/index.js';
 import { evaluateSession, sessionEvaluationRecord } from '../evaluation/index.js';
-import { detectMonitoringSessions, monitoringSessionId, normalizeConversationEvents } from '../sessions/index.js';
+import {
+  detectMonitoringSessions,
+  monitoringSessionId,
+  normalizeConversationEvents,
+  conversationMessageIds,
+  attachConfirmedHandoffs,
+  isEscalatedMonitoringSession
+} from '../sessions/index.js';
 import { resolveMonitoringIntent } from '../intents/index.js';
 import { safeErrorMetadata } from '../../../common/utils/timingLogger/index.js';
 
@@ -65,7 +73,7 @@ async function fetchUpdatedTickets(client, now) {
 }
 
 /**
- * Detect due AI sessions and save only sessions not already completed in SQL.
+ * Save due AI sessions and correct completed outcomes only when session-specific escalation evidence exists.
  * @param {Object} client - Authenticated provider client.
  * @param {Object} db - SQL connection pool.
  * @param {Object} ticket - Zendesk ticket metadata.
@@ -89,27 +97,31 @@ async function processTicket(client, db, ticket, now) {
     return [];
   }
 
-  const sessions = detectMonitoringSessions(messages, SESSION_GAP_MS);
-  if (!sessions.length) {
+  const detected = detectMonitoringSessions(messages, SESSION_GAP_MS);
+  if (!detected.length) {
     return [];
   }
 
+  if (!detected.some(session => session.lastCustomerAt + SESSION_GAP_MS <= now)) {
+    return [];
+  }
+
+  const transfers = await listConfirmedHandoffTransfers(db, conversationMessageIds(events));
+  const sessions = attachConfirmedHandoffs(detected, events, transfers, SESSION_GAP_MS);
   const dueSessions = sessions.filter(session => session.lastCustomerAt + SESSION_GAP_MS <= now);
-  if (!dueSessions.length) {
-    return [];
-  }
-
   const completedIds = await completedSessionIds(db, ticket.id);
-  const allDueSessionsAreComplete = dueSessions.every(session => completedIds.has(monitoringSessionId(ticket.id, session)));
-  if (allDueSessionsAreComplete) {
-    return [];
-  }
 
   const results = [];
   for (const session of dueSessions) {
     const sessionId = monitoringSessionId(ticket.id, session);
 
     if (completedIds.has(sessionId)) {
+      if (isEscalatedMonitoringSession(session, ticket.tags || [])) {
+        const evaluation = await evaluateSession(ticket, session, messages);
+        if (await correctMonitoringEscalation(db, sessionEvaluationRecord(ticket, session, evaluation, now))) {
+          console.log('Monitoring escalation corrected', { ticketId: String(ticket.id), session: session.number });
+        }
+      }
       continue;
     }
 

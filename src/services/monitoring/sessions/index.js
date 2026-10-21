@@ -5,6 +5,25 @@ const DUPLICATE_MESSAGE_WINDOW_MS = 10_000;
 const DUPLICATE_MESSAGE_LOOKBACK = 3;
 
 /**
+ * Read the Sunshine message identity from Zendesk's namespaced conversation-log reference.
+ * @param {Object} event - Raw ticket conversation event.
+ * @returns {string|null} Messaging identity, without confusing it with the separate log event ID.
+ */
+function sunshineMessageId(event) {
+  if (event.type !== 'Messaging::ConversationMessage' || typeof event.reference !== 'string') return null;
+  return /^zen:sunco:conversation_message:([^:\s]{1,128})$/.exec(event.reference)?.[1] || null;
+}
+
+/**
+ * Collect message anchors for one bounded SQL lookup of this ticket's confirmed transfers.
+ * @param {Array<Object>} events - Raw ticket conversation events.
+ * @returns {Array<string>} Unique Sunshine message IDs.
+ */
+export function conversationMessageIds(events) {
+  return [...new Set(events.map(sunshineMessageId).filter(Boolean))];
+}
+
+/**
  * Extract readable text from the supported Zendesk conversation content shapes.
  * @param {Object} event - Sunshine webhook event.
  * @returns {string} Message text used for session evidence.
@@ -206,12 +225,52 @@ export function monitoringSessionId(ticketId, session) {
 }
 
 /**
- * Detect a human handoff using the session events and existing ticket-tag rules.
+ * Attach verified transfers only to the session containing their request and transfer time.
+ * @param {Array<Object>} sessions - Chronological customer-led sessions.
+ * @param {Array<Object>} events - Raw events, including forms without readable text.
+ * @param {Array<Object>} transfers - Confirmed SQL history matched to this ticket's message IDs.
+ * @param {number} idleMs - The configured session idle gap.
+ * @returns {Array<Object>} Sessions with a confirmedHandoff flag; original identities and dates stay unchanged.
+ */
+export function attachConfirmedHandoffs(sessions, events, transfers, idleMs) {
+  const eventTimes = new Map();
+  for (const event of events) {
+    const id = sunshineMessageId(event);
+    if (id) eventTimes.set(id, Date.parse(event.created_at || event.received_at));
+  }
+  const confirmed = new Set();
+  for (const transfer of transfers) {
+    if (!transfer.transfer_started_at || !transfer.confirmed_at) continue;
+    const startedAt = new Date(transfer.transfer_started_at).getTime();
+    const confirmedAt = new Date(transfer.confirmed_at).getTime();
+    if (!Number.isFinite(startedAt) || !Number.isFinite(confirmedAt) || confirmedAt < startedAt) continue;
+    const sourceAt = eventTimes.get(transfer.source_message_id);
+    const formAt = eventTimes.get(transfer.form_message_id);
+    const anchorAt = Number.isFinite(sourceAt) ? sourceAt : formAt;
+    if (!Number.isFinite(anchorAt)) continue;
+    // Zendesk's log creation time can lag the original Sunshine receipt; identity is the primary link.
+    const handoffAt = Math.max(startedAt, anchorAt);
+    const index = sessions.findIndex((session, i) => {
+      const end = Math.min(sessions[i + 1]?.startedAt ?? Infinity, Math.max(session.lastMessageAt, session.lastCustomerAt + idleMs));
+      return (
+        handoffAt >= session.startedAt &&
+        handoffAt < end &&
+        (!Number.isFinite(sourceAt) || (sourceAt >= session.startedAt && sourceAt < end))
+      );
+    });
+    if (index !== -1) confirmed.add(index);
+  }
+  return sessions.map((session, index) => ({ ...session, confirmedHandoff: confirmed.has(index) }));
+}
+
+/**
+ * Prefer verified session-specific transfer evidence, retaining agent replies and legacy wording as compatibility fallbacks.
  * @param {Object} session - The target detected session.
  * @param {Array<string>} ticketTags - Existing tags on the ticket.
  * @returns {boolean} Whether automated scoring should be skipped for this session.
  */
 export function isEscalatedMonitoringSession(session, ticketTags = []) {
+  if (session.confirmedHandoff === true) return true;
   return session.messages.some(message => {
     if (message.speaker === 'Agent') {
       return true;

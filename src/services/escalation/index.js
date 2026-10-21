@@ -216,6 +216,7 @@ async function transferToAgent(event) {
       ...event._handoff.data,
       supportPolicy,
       lastEventId: eventId(event),
+      transferMessageId: event.payload.message.id,
       transferStartedAt: new Date().toISOString(),
       previousOwnerId: ownerId(event.payload.conversation.activeSwitchboardIntegration),
       withinHours: hours?.verified ? hours.withinHours : null

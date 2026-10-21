@@ -123,8 +123,8 @@ function schemaStartupError(error) {
   const failure = new Error(
     `SQL Server schema check failed in DB_NAME=${process.env.DB_NAME || '(unset)'}. ` +
       `DB_TABLE_PREFIX=${databaseTablePrefix() || '(none)'}. ` +
-      'The application requires conversation state, monitoring tables, customer intents and conversation handoffs. ' +
-      'Review migrations 001 through 005, then run npm run db:migrate explicitly if any is missing; ' +
+      'The application requires conversation state, monitoring tables, customer intents, conversation handoffs and transfer history. ' +
+      'Review migrations 001 through 006, then run npm run db:migrate explicitly if any is missing; ' +
       'normal startup never creates or changes tables.',
     { cause: error }
   );

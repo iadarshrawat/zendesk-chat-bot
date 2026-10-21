@@ -5,6 +5,7 @@ import {
   applyIssueTypeSchema,
   applyIntentSchema,
   applyHandoffSchema,
+  applyHandoffTransferSchema,
   databaseTarget,
   initializeCoreSchema
 } from '../../src/models/schema/index.js';
@@ -28,6 +29,7 @@ try {
   await applyIssueTypeSchema(pool, process.env.DB_SCHEMA);
   await applyIntentSchema(pool, process.env.DB_SCHEMA);
   await applyHandoffSchema(pool, process.env.DB_SCHEMA);
+  await applyHandoffTransferSchema(pool, process.env.DB_SCHEMA);
   console.log(`SQL Server migration complete for ${target}, including customer intents and durable conversation handoffs`);
 } catch (error) {
   console.error('SQL Server migration failed', safeErrorMetadata(error));

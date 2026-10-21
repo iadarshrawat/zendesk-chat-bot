@@ -109,15 +109,29 @@ const conversationHandoffs = {
   jsonColumn: 'data_json',
   requiredChecks: ['CK_bot_conversation_handoffs_status', 'CK_bot_conversation_handoffs_revision']
 };
+const handoffTransfers = {
+  columns: {
+    attempt_id: { type: 'char', maxLength: 36, nullable: false },
+    conversation_id: { type: 'nvarchar', maxLength: 256, nullable: false },
+    web_user_id: { type: 'nvarchar', maxLength: 256, nullable: false },
+    source_message_id: { type: 'nvarchar', maxLength: 256, nullable: true },
+    form_message_id: { type: 'nvarchar', maxLength: 256, nullable: true },
+    transfer_started_at: { type: 'datetime2', scale: 3, nullable: false },
+    confirmed_at: { type: 'datetime2', scale: 3, nullable: false },
+    support_mode: { type: 'varchar', maxLength: 16, nullable: false }
+  },
+  primaryKey: ['attempt_id'],
+  indexes: { idx_bot_handoff_source: ['source_message_id'], idx_bot_handoff_form: ['form_message_id'] },
+  requiredChecks: ['CK_bot_handoff_transfers_mode', 'CK_bot_handoff_transfers_message']
+};
 const tableDefinitions = Object.freeze({
   ...coreTables,
   bot_monitor_evaluations: monitoringEvaluations,
   bot_monitor_intents: monitoringIntents,
-  bot_conversation_handoffs: conversationHandoffs
+  bot_conversation_handoffs: conversationHandoffs,
+  bot_handoff_transfers: handoffTransfers
 });
-const coreTableNames = Object.freeze(
-  Object.keys(tableDefinitions).filter(name => !['bot_monitor_intents', 'bot_conversation_handoffs'].includes(name))
-);
+const coreTableNames = Object.freeze([...Object.keys(coreTables), 'bot_monitor_evaluations']);
 
 function schemaError(code, message) {
   const error = new Error(message);
@@ -539,7 +553,7 @@ async function verifyTableDefinition(
 export async function verifyCoreSchema(
   db,
   requestedSchema,
-  { allowLegacyIssueType = false, allowLegacyIntents = false, allowLegacyHandoffs = false } = {}
+  { allowLegacyIssueType = false, allowLegacyIntents = false, allowLegacyHandoffs = false, allowLegacyTransfers = false } = {}
 ) {
   const schemaName = databaseSchema(requestedSchema);
   databaseTablePrefix();
@@ -585,6 +599,15 @@ export async function verifyCoreSchema(
       );
     }
     await verifyTableDefinition(db, schemaName, 'bot_conversation_handoffs', conversationHandoffs);
+  }
+  if (!allowLegacyTransfers) {
+    if (!(await tableExists(db, schemaName, 'bot_handoff_transfers'))) {
+      throw schemaError(
+        'SQLSERVER_MISSING_TABLE',
+        `Missing SQL Server table ${sqlTable('bot_handoff_transfers', schemaName)}; run db:migrate`
+      );
+    }
+    await verifyTableDefinition(db, schemaName, 'bot_handoff_transfers', handoffTransfers);
   }
 }
 
@@ -663,7 +686,12 @@ async function applyCoreSchema(db, requestedSchema) {
  */
 export async function initializeCoreSchema(db, requestedSchema) {
   try {
-    await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true, allowLegacyIntents: true, allowLegacyHandoffs: true });
+    await verifyCoreSchema(db, requestedSchema, {
+      allowLegacyIssueType: true,
+      allowLegacyIntents: true,
+      allowLegacyHandoffs: true,
+      allowLegacyTransfers: true
+    });
 
     return false;
   } catch (error) {
@@ -673,7 +701,12 @@ export async function initializeCoreSchema(db, requestedSchema) {
   }
 
   await applyCoreSchema(db, requestedSchema);
-  await verifyCoreSchema(db, requestedSchema, { allowLegacyIssueType: true, allowLegacyIntents: true, allowLegacyHandoffs: true });
+  await verifyCoreSchema(db, requestedSchema, {
+    allowLegacyIssueType: true,
+    allowLegacyIntents: true,
+    allowLegacyHandoffs: true,
+    allowLegacyTransfers: true
+  });
 
   return true;
 }
@@ -686,10 +719,15 @@ export async function initializeCoreSchema(db, requestedSchema) {
  */
 export async function applyIssueTypeSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
-  await verifyCoreSchema(db, schemaName, { allowLegacyIssueType: true, allowLegacyIntents: true, allowLegacyHandoffs: true });
+  await verifyCoreSchema(db, schemaName, {
+    allowLegacyIssueType: true,
+    allowLegacyIntents: true,
+    allowLegacyHandoffs: true,
+    allowLegacyTransfers: true
+  });
   const template = await readFile(new URL('../../../migrations/003_monitor_issue_type.sql', import.meta.url), 'utf8');
   await db.request().batch(renderSchemaTemplate(template, schemaName));
-  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true, allowLegacyHandoffs: true });
+  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true, allowLegacyHandoffs: true, allowLegacyTransfers: true });
 }
 
 /**
@@ -700,13 +738,13 @@ export async function applyIssueTypeSchema(db, requestedSchema) {
  */
 export async function applyIntentSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
-  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true, allowLegacyHandoffs: true });
+  await verifyCoreSchema(db, schemaName, { allowLegacyIntents: true, allowLegacyHandoffs: true, allowLegacyTransfers: true });
   if (await tableExists(db, schemaName, 'bot_monitor_intents')) {
     await verifyTableDefinition(db, schemaName, 'bot_monitor_intents', monitoringIntents);
   }
   const template = await readFile(new URL('../../../migrations/004_monitor_customer_intents.sql', import.meta.url), 'utf8');
   await db.request().batch(renderSchemaTemplate(template, schemaName));
-  await verifyCoreSchema(db, schemaName, { allowLegacyHandoffs: true });
+  await verifyCoreSchema(db, schemaName, { allowLegacyHandoffs: true, allowLegacyTransfers: true });
 }
 
 /**
@@ -717,11 +755,28 @@ export async function applyIntentSchema(db, requestedSchema) {
  */
 export async function applyHandoffSchema(db, requestedSchema) {
   const schemaName = databaseSchema(requestedSchema);
-  await verifyCoreSchema(db, schemaName, { allowLegacyHandoffs: true });
+  await verifyCoreSchema(db, schemaName, { allowLegacyHandoffs: true, allowLegacyTransfers: true });
   if (await tableExists(db, schemaName, 'bot_conversation_handoffs')) {
     await verifyTableDefinition(db, schemaName, 'bot_conversation_handoffs', conversationHandoffs);
   }
   const template = await readFile(new URL('../../../migrations/005_conversation_handoffs.sql', import.meta.url), 'utf8');
+  await db.request().batch(renderSchemaTemplate(template, schemaName));
+  await verifyCoreSchema(db, schemaName, { allowLegacyTransfers: true });
+}
+
+/**
+ * Add indexed, immutable transfer history without rewriting existing monitoring results.
+ * @param {Object} db - Explicit migration SQL connection pool.
+ * @param {string} requestedSchema - Configured SQL schema name.
+ * @returns {Promise<void>} Creates missing history storage and verifies all application tables.
+ */
+export async function applyHandoffTransferSchema(db, requestedSchema) {
+  const schemaName = databaseSchema(requestedSchema);
+  await verifyCoreSchema(db, schemaName, { allowLegacyTransfers: true });
+  if (await tableExists(db, schemaName, 'bot_handoff_transfers')) {
+    await verifyTableDefinition(db, schemaName, 'bot_handoff_transfers', handoffTransfers);
+  }
+  const template = await readFile(new URL('../../../migrations/006_handoff_transfers.sql', import.meta.url), 'utf8');
   await db.request().batch(renderSchemaTemplate(template, schemaName));
   await verifyCoreSchema(db, schemaName);
 }

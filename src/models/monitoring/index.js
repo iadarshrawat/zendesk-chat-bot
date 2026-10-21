@@ -83,6 +83,27 @@ export async function completedSessionIds(db, ticketId) {
 }
 
 /**
+ * Correct a proven handoff's outcome without rescoring or moving its original reporting dates and intent.
+ * @param {Object} db - SQL connection pool.
+ * @param {Object} record - Validated session record with the fixed escalated outcome.
+ * @returns {Promise<boolean>} True only when a previously non-escalated saved outcome changed.
+ */
+export async function correctMonitoringEscalation(db, record) {
+  const value = monitoringRecord(record);
+  if (value.csat_score !== 'escalated' || value.monitoring_status !== 'escalated') throw new TypeError('Escalated outcome required');
+  const result = await executeBoundedSql(
+    db,
+    `UPDATE ${sqlTable('bot_monitor_evaluations')} SET csat_score = 'escalated', monitoring_status = 'escalated',
+      human_required = 1, follow_up_required = 1, confidence = @confidence, reason = @reason, updated_at = @updated_at
+      WHERE session_id = @session_id AND (csat_score <> 'escalated' OR monitoring_status <> 'escalated');
+      SELECT @@ROWCOUNT AS written;`,
+    { session_id: value.session_id, confidence: value.confidence, reason: value.reason, updated_at: value.updated_at },
+    { timeoutMs: 10_000, parameterTypes: EVALUATION_TYPES }
+  );
+  return Boolean(result.recordset?.[0]?.written);
+}
+
+/**
  * Validate and transactionally commit session metadata and evaluation data together.
  * @param {Object} db - SQL connection pool.
  * @param {Object} record - Monitoring data to validate.
