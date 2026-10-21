@@ -21,7 +21,7 @@ export const customerMessages = Object.freeze({
   afterHoursHandoff:
     'Your conversation has been transferred to the support team outside scheduled business hours. An agent’s reply may wait until business hours; I do not have a wait-time estimate.',
   followUpHandoff: hours =>
-    `Your support request has been sent to the support team. An agent will contact you within ${hours} ${hours === 1 ? 'hour' : 'hours'}. You do not need to wait in this chat.`,
+    `Your request has been sent to our support team. An agent will contact you by email within ${hours} ${hours === 1 ? 'hour' : 'hours'}. You do not need to wait in this chat.`,
   handoffFailed: 'The transfer did not complete. Your submitted details are saved. Say “try again” to retry, or cancel the agent request.',
   handoffUnknown:
     'I cannot confirm the transfer status right now. I have not confirmed that an agent has joined. Please ask for a status update rather than submitting another request.',

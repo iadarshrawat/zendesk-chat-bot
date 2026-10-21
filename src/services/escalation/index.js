@@ -127,13 +127,16 @@ async function startIntake(event) {
 /**
  * Build routing metadata from validated form data, never from arbitrary customer-supplied group IDs.
  * @param {Object} data - Persisted and validated customer details.
+ * @param {string} supportMode - Saved live or follow_up mode for this handoff attempt.
  * @returns {Object} Zendesk data-capture metadata for the existing passControl contract.
  */
-function handoffMetadata(data) {
+function handoffMetadata(data, supportMode) {
   const categoryTag = data.category.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  const tags = ['escalated_to_agent', categoryTag];
+  if (['live', 'follow_up'].includes(supportMode)) tags.push(supportMode);
   const metadata = {
     reason: 'user_requested_agent',
-    'dataCapture.systemField.tags': ['escalated_to_agent', categoryTag].filter(Boolean).join(', '),
+    'dataCapture.systemField.tags': [...new Set(tags.filter(Boolean))].join(', '),
     'dataCapture.systemField.requester.email': data.email,
     'dataCapture.systemField.requester.name': data.name
   };
@@ -220,7 +223,7 @@ async function transferToAgent(event) {
   });
   try {
     await measureStage('sunshine.pass_control', () =>
-      passConversationControl(createSunshineClient(), state.conversationId, handoffMetadata(formData))
+      passConversationControl(createSunshineClient(), state.conversationId, handoffMetadata(formData, supportPolicy.mode))
     );
   } catch (error) {
     const definitelyRejected = error.response?.status >= 400 && error.response.status < 500 && error.response.status !== 408;
