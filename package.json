@@ -15,7 +15,11 @@
     "ingest": "node scripts/ingestKnowledge/index.js",
     "monitor:import": "node scripts/importMonitoringHistory/index.js",
     "monitor:intents": "node scripts/backfillMonitoringIntents/index.js",
-    "check": "node --check index.js && node --check src/common/cron/index.js && node --check src/loaders/database/sql/index.js && node --check src/models/schema/index.js && node --check src/services/monitoring/report/index.js && node --check src/models/monitoring/index.js && node --check src/services/monitoring/worker/index.js && node --check src/models/inbox/index.js && node --check src/models/conversationState/index.js && node --check scripts/checkSqlServerConnection/index.js"
+    "check": "node --check index.js && node --check src/common/cron/index.js && node --check src/loaders/database/sql/index.js && node --check src/models/schema/index.js && node --check src/services/monitoring/report/index.js && node --check src/models/monitoring/index.js && node --check src/services/monitoring/worker/index.js && node --check src/models/inbox/index.js && node --check src/models/conversationState/index.js && node --check scripts/checkSqlServerConnection/index.js",
+    "knowledge:validate:mr-brand": "node scripts/ingestKnowledge/index.js --source knowledge/mr-brand --brand-key mr-brand --allow-missing-manuals --validate-only",
+    "knowledge:validate:comfort-zone": "node scripts/ingestKnowledge/index.js --source knowledge/comfort-zone --brand-key comfort-zone --validate-only",
+    "knowledge:ingest:mr-brand": "node scripts/ingestKnowledge/index.js --source knowledge/mr-brand --brand-key mr-brand --allow-missing-manuals",
+    "knowledge:ingest:comfort-zone": "node scripts/ingestKnowledge/index.js --source knowledge/comfort-zone --brand-key comfort-zone"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",

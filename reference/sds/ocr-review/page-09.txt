@@ -1,0 +1,67 @@
+ist
+
+PGNY * 2.2.2
+
+Report No.: MSI4SBQG6665357U3 Date: 2024-12-26 Page 7 of 10
+
+Incompatible materials: Oxidizing agents, acid base.
+Hazardous decomposition products: Carbon monoxide, carbon dioxide, lithium oxide fumes.
+
+Section 11 - Toxicological Information
+
+Acute Toxicity:
+
+CAS No. LCS50/LD50
+12597-68-1 No data available.
+
+1313-13-9 No data available.
+
+646-06-0 LDS50 Rat (oral): 3000mg/kg, LD50 Rabbit (Dermal): 9074mg/kg
+7782-42-5 No data available.
+
+7439-93-2 No data available.
+
+7791-03-9 No data available.
+
+108-32-7 | LD50 Rat (oral): >29000mg/kg; LDSO Rabbit (Dermal): >20000mg/kg
+9003-07-0 | No data available.
+
+1333-86-4 No data available.
+
+Skin corrosion/irritation: No data available.
+
+Serious eye damagelirritation: No data available.
+
+Respiratory or Skin sensitization: No data available.
+
+Germ Cell mutagenicity: No data available.
+
+Carcinogenicity: No data available.
+
+Reproductive toxicity: No data available.
+
+Specific target organ toxicity-Single exposure: No data available.
+Specific target organ toxicity-Repeated exposure: No data available.
+Aspiration hazard: No data available.
+
+Information on the likely routes of exposure: No data available.
+Eye: No data available.
+
+Skin: No data available.
+
+Ingestion: No data available.
+
+Inhalation: No data available.
+
+| Section 12 - Ecological Information
+
+Ecological Toxicity: CAS# 646-06-0
+EC50: 6950000mg/L - Crustacea (Daphnia magna) - 48h
+
+© Hotline 400-819-5688 Pony Testing Group Shenzhen Co,, Lid
+www.ponytest.com Address: 3/F of Building 2, Building 1, Xinhaosheng Industrial Park, Yonghe Tels 0755-26030909
+Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China Fax: 0755-26068336
+
+PONY-BGLS186-03E-027-20238 Testing Address: 3/F of Building 2, Building 1, Xinhaosheng Industral Park,
+Yonghe Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China
+

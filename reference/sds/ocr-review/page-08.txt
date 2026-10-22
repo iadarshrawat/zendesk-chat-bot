@@ -1,0 +1,53 @@
+PONY *..2..2.=
+
+Report No.: MSI4SBQG6665357U3 Date: 2024-12-26 Page 6 of 10
+
+Eye Protection: Wear safety goggles or eye protection combined with respiratory protection.
+Skin and Body Protection: Working environment required, wear suitable protective clothing to
+minimize contact with skin. The type of protective equipment must be according to the concentration
+and the content of certain hazardous substances in the workplace.
+
+| Section 9 - Physical and Chemical Properties
+
+Information on basic physical and chemical properties
+
+Colour: Silver.
+Physical State: Button.
+Odour: Not available.
+pH: Not available.
+Melting point/freezing point: Not available.
+Boiling point or initial boiling point and boiling range: _ Not available.
+Flash Point: Not available.
+Flammability: Not available.
+Solubility: Not available.
+Lower and upper explosion limit/flammability limit: Not available.
+Auto-ignition temperature: Not available.
+Decomposition temperature: Not available.
+Kinematic viscosity: Not available.
+Partition coefficient: n-octanoliwater (log value): Not available.
+Vapour pressure: Not available.
+Density and/or relative density: Not available.
+Relative vapour density: Not available.
+Particle characteristics: Not available.
+Other information:
+
+Voltage 3.0V
+Electric capacity 150mAh
+Aggregate lithium content 0.045g
+
+: Section 10 - Stability and Reactivity
+
+Reactivity: No data available.
+
+Chemical stability: Stable.
+
+Possibility of hazardous reactions: No data available.
+
+Conditions to Avoid: Flames, sparks, and other sources of ignition, incompatible materials.
+
+© Hotline 400-819-5688 Pony Testing Group Shenzhen Co, Le
+www.ponytest.com ‘Address: 3/F of Building 2, Building 1, Xinhaosheng Industrial Park, Yonghe
+Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China
+PONY.BGLS186.036.027-20238 Testing Address: 3/F of Building 2, Building 1, Xinhaosheng Industrial Park
+‘Yonghe Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China
+

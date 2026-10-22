@@ -24,7 +24,9 @@ const PRODUCT_FIELDS = [
   'attributes',
   'warrantyMonths',
   'availability',
-  'manualPaths'
+  'manualPaths',
+  'safetyDataSheetPaths',
+  'upc'
 ];
 
 const IDENTITY_FIELDS = new Set(['productId', 'productName', 'modelIds', 'alternateProductIds', 'manufacturerBrand']);

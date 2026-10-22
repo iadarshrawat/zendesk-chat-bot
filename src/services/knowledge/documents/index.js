@@ -39,6 +39,8 @@ const ROOT_PRODUCT_FIELDS = [
   'availability',
   'manualPaths',
   'manualFiles',
+  'safetyDataSheetPaths',
+  'upc',
   'documents'
 ];
 
@@ -127,6 +129,17 @@ function documentPathsFromProduct(product) {
   ]).map(normalizeSourcePath);
 }
 
+function safetyDataSheetPathsFromProduct(product) {
+  const documentPaths = Array.isArray(product.documents)
+    ? product.documents.filter(document => document?.type === 'safety_data_sheet').map(document => document.path || document.sourcePath)
+    : [];
+
+  return displayStringArray([
+    ...(Array.isArray(product.safetyDataSheetPaths) ? product.safetyDataSheetPaths : []),
+    ...documentPaths
+  ]).map(normalizeSourcePath);
+}
+
 /**
  * Normalize catalog identifiers, aliases, attributes, and other existing product fields.
  * @param {Object} product - Normalized catalog product.
@@ -166,6 +179,7 @@ function normalizeProductMetadata(product = {}, fallbackName = '') {
     ingredients: normalizeIngredients(product.ingredients),
     features: displayStringArray(product.features),
     manualPaths,
+    safetyDataSheetPaths: safetyDataSheetPathsFromProduct(product),
     price: product.price == null ? null : Number(product.price)
   };
 }
@@ -259,16 +273,23 @@ export function matchProductCatalogEntryDetailed(filePath, products = [], option
   const relativePath = normalizeSourcePath(options.relativePath || path.basename(filePath));
   const normalizedRelativePath = normalizedPathForMatch(relativePath);
   const normalizedBaseName = normalizedPathForMatch(path.basename(relativePath));
+  const safetyDataSheet = options.documentType === 'safety_data_sheet';
 
   const configuredMatches = products.filter(product =>
-    (product.manualPaths || []).some(candidate => {
+    (safetyDataSheet ? product.safetyDataSheetPaths || [] : product.manualPaths || []).some(candidate => {
       const normalizedCandidate = normalizedPathForMatch(candidate);
 
-      return normalizedCandidate === normalizedRelativePath || normalizedPathForMatch(path.basename(candidate)) === normalizedBaseName;
+      return normalizedCandidate === normalizedRelativePath || (!safetyDataSheet && normalizedPathForMatch(path.basename(candidate)) === normalizedBaseName);
     })
   );
   if (configuredMatches.length) {
-    return catalogMatch(configuredMatches, 'manual_path');
+    return catalogMatch(configuredMatches, safetyDataSheet ? 'safety_data_sheet_path' : 'manual_path');
+  }
+
+  // SDS ownership must be explicit. A similar name or model number is not
+  // sufficient evidence that a chemical/component sheet covers a product.
+  if (safetyDataSheet) {
+    return catalogMatch([], null);
   }
 
   const legacySourceMatches = products.filter(product =>
@@ -302,6 +323,9 @@ function inferDocumentType(relativePath, definition) {
     return definition.documentType;
   }
   const normalizedPath = normalizeSourcePath(relativePath).toLowerCase();
+  if (/(^|\/)safety-data-sheets(\/|$)/.test(normalizedPath)) {
+    return 'safety_data_sheet';
+  }
   if (/(^|\/)manuals?(\/|$)/.test(normalizedPath)) {
     return 'product_manual';
   }
@@ -372,7 +396,9 @@ async function readDocumentFile(filePath) {
   const sectionText = sections?.map(section => `${section.title || section.sectionTitle}\n\n${section.content}`).join('\n\n');
   const text = definition.content || definition.text || sectionText || '';
 
-  return { extension, text, pages: null, totalPages: null, definition };
+  const totalPages = Number.isInteger(definition.totalPages) && definition.totalPages > 0 ? definition.totalPages : null;
+
+  return { extension, text, pages: null, totalPages, definition };
 }
 
 function productFieldsFromDefinition(definition) {

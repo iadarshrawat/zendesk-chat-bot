@@ -93,7 +93,7 @@ export function buildStructuredProductQuery(
   }
 
   return {
-    query: `SELECT TOP ${limit} c.id, c.productId, c.alternateProductIds, c.modelIds, c.productName, c.manufacturerBrand, c.distributor, c.category, c.productUse, c.useCases, c.materials, c.colors, c.price, c.physicalForm, c.flammability, c.ingredients, c.features, c.description, c.ragSummary, c.specifications, c.attributes, c.warrantyMonths, c.availability, c.manualPaths, c.documentId, c.sourceName, c.sourcePath FROM c WHERE ${conditions.join(' AND ')} ORDER BY c.id`,
+    query: `SELECT TOP ${limit} c.id, c.productId, c.alternateProductIds, c.modelIds, c.productName, c.manufacturerBrand, c.distributor, c.category, c.productUse, c.useCases, c.materials, c.colors, c.price, c.physicalForm, c.flammability, c.ingredients, c.features, c.description, c.ragSummary, c.specifications, c.attributes, c.warrantyMonths, c.availability, c.manualPaths, c.safetyDataSheetPaths, c.upc, c.documentId, c.sourceName, c.sourcePath FROM c WHERE ${conditions.join(' AND ')} ORDER BY c.id`,
     parameters
   };
 }

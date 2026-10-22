@@ -1,0 +1,57 @@
+PGNY = 2.2.2
+
+Report No.: MSI4SBQG6665357U3 Date: 2024-12-26 Page 5 of 10
+
+See Section 13 for disposal information.
+
+Section 7 - Handling and Storage
+
+Precautions for safe handling:
+
+Avoid short circuiting the battery. Avoid mechanical damage of the battery. Do not open or
+disassemble. Batteries may explode or cause burns, if disassembled, crushed or exposed to fire or
+high temperatures. Do not short or install with incorrect polarity. Avoid all personal contact, including
+inhalation. Wear protective clothing when risk of exposure occurs. Use in a well-ventilated area.
+Prevent concentration in hollows and sumps.
+
+Conditions for safe storage, including any incompatibilities:
+
+Store in a cool, dry, well-ventilated place. Keep away from heat, avoiding the long time of sunlight.
+
+} Section 8 - Exposure Controls/Personal Protection
+
+Control parameters
+
+CAS No. ACGIH NIOSH OSHA
+12597-68-1 NIA NIA NIA
+1313-13-9 NIA NIA NIA
+646-06-0 NIA NIA NIA
+7782-42-5 TLV-TWA 2mgim? REL-TWA 2.5mgi/m? eds aie
+7439-93-2 NIA NA NIA
+7791-03-9 NA NIA NIA
+108-32-7 NA NIA NIA
+9003-07-0 NA NIA NIA
+1333-86-4 TLV-TWA 3mg/m* REL-TWA 3.5mg/m* PEL-TWA 3.5mg/m*
+
+Appropriate engineering controls:
+
+The usual precautionary measures for handling chemicals should be followed.
+
+Keep away from foodstuffs, beverages and feed.
+
+Remove all soiled and contaminated clothing immediately.
+
+Wash hands before breaks and at the end of work.
+
+Personal Protective Equipment:
+
+Respiratory protection: Wear suitable protective mask. For a large large number of battery
+leakages, wear chemical protective clothing, including self-contained breathing apparatus.
+
+Hand Protection: Wear appropriate protective gloves to reduce skin contact.
+
+© Hotline 400-819-5688. Pony Testing Group Shenzhen Co, Lud
+wow.ponytest.com Adres: 3 of Building 2, Building 1, XinhaoshengIndustial Park, Yonghe Tels 0755-26050909
+Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China Fax: 0755-26068336
+PONY-BGLSI86-036-027-20238 Testing Address: 3/F of Building 2, Building 1, Xinhaosheng Industrial Par,
+Yonghe Road, Qiaotou Community, Baoan Distt, Shenzhen, Guangdong, China

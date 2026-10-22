@@ -1,0 +1,79 @@
+PONY * 2.2.2
+
+Report No.: MSI4SBQG6665357U3 Date: 2024-12-26 Page 2 of 10
+
+H332 Harmful if inhaled
+
+H314 Causes severe skin burns and eye damage
+
+H318 Causes serious eye damage
+
+H317 May cause an allergic skin reaction
+
+H351 Suspected of causing cancer
+
+H335 May cause respiratory irritation
+
+H373 May cause damage to organs through prolonged or repeated exposure
+
+Precautionary statement(s):
+
+Prevention:
+
+P201 Obtain special instructions before use.
+
+P202 Do not handle until all safety precautions have been read and understood.
+
+P260 Do not breathe dust, fume, gas, mist, vapours, spray.
+
+P264 Wash skin and clothing thoroughly after handling.
+
+P270 Do not eat, drink or smoke when using this product.
+
+P271 Use only outdoors or in a well-ventilated area.
+
+P272 Contaminated work clothing should not be allowed out of the workplace.
+
+P280 Wear protective gloves, protective clothing, eye protection, face protection.
+
+Response:
+
+P330 Rinse mouth.
+
+P304 + P340 IF INHALED: Remove person to fresh air and keep comfortable for breathing.
+
+P303 + P361 + P353 IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse
+skin with water.
+
+P363 Wash contaminated clothing before reuse.
+
+P310 Immediately call a POISON CENTER.
+
+P321 Specific treatment (See additional emergency instructions).
+
+P305 + P351 + P338 IF IN EYES: Rinse cautiously with water for several minutes. Remove contact
+lenses, if present and easy to do. Continue rinsing.
+
+P302 + P352 IF ON SKIN: Wash with plenty of water.
+
+Storage
+
+P403 + P233 Store in a well-ventilated place. Keep container tightly closed.
+
+P4085 Store locked up.
+
+Disposal:
+
+P501 Send contents to approved waste treatment plants.
+
+Other hazards
+
+Physical and chemical hazards: See Section 10
+Human health hazards: See Section 11
+Environmental hazards: See Section 12
+
+© Hotline 400-819-5688 Pony Testing Group Shenzhen Co, Lid
+www.ponytest.com Adres: 3/F. of Building 2, Building |, Xinhaosheng Industrial Park, Yonghe Tels 0755.26050909
+Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong. China Faxs 075526068336
+PONY-BGLS186.036-027-20238 Testing Addres: 3. of Building 2, Building 1, Xinhaosheng Industrial ark,
+Yonghe Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China

@@ -1,0 +1,67 @@
+PONY * .2..2.=
+
+Report No.: MSI4SBQG6665357U3 Date: 2024-12-26 Page 8 of 10
+
+CAS# 108-32-7
+
+LC50: >1000 mg/L - Fish (Carp) - 96h;
+
+ECS50: >1000 mg/L - Crustaceans (Daphnia magna) - 48h;
+ECS50: >900 mg/L - Algae (Scenedesmus subspicatus) - 72h
+
+Persistence and degradability: No data available.
+Bioaccumulative Potential: No data available.
+Mobility in Soil: No data available.
+
+Other adverse effects: No data available.
+
+} Section 13 - Disposal Considerations
+
+Disposal methods
+
+Recommendation: Consult state, local or national regulations to ensure proper disposal.
+Uncleaned packaging
+
+Recommendation: Disposal must be made according to official regulations.
+
+I Section 14 - Transport Information |
+
+UN or ID Number
+
+IATA UN3090
+
+IMDG UN3090
+
+Proper Shipping Name/Description
+
+IATA Lithium metal batteries
+IMDG LITHIUM METAL BATTERIES
+Class or Div. (Sub Hazard)
+
+IATA 9
+
+Packing Group
+
+IATA NIA
+
+IMDG NIA
+
+Hazard Label
+
+IATA 4b
+
+IMDG NIA
+
+Environmental hazards
+
+Marine pollutant: No
+
+IMDG Ems: F-A. S-I
+
+Special precautions for user No information available.
+
+© Hotline 400-819-5688 Pony Testing Group Shenzhen Co, Ltd
+www.ponytest.com ‘Address: 3/F. of Building 2, Building 1, Xinhaosheng Industrial Park, Yonghe Tels 0755-26050909
+Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China Fax: 0755-26068336
+PONY-BGLS186.03E-027-20238 Testing Address: 3/F of Building 2, Building 1, Xinhaosheng Industrial Park,
+Yonghe Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China

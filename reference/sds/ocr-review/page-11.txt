@@ -1,0 +1,51 @@
+PGNY *..2..2.%
+
+Report No.: MSI4SBQG6665357U3 Date: 2024-12-26 Page 9 of 10
+
+Transport information: The Li-MnO, Button Cell CR2025 has passed the test UN38.3, according to
+the report ID: MSI4SBQG6665307U5.
+
+Weight exceeds the standard. The goods are packaged according to the packaging Instruction 968
+section IA of IATA DGR 66" Edition for transportation, Cargo aircraft only.
+
+According to the special provision 188 of IMDG (41-22), the goods are not subject to other provision
+of this code.
+
+Separate batteries to prevent short-circuiting. and they should be packed in strong package during
+transport. Lithium cell or battery should incorporate a safety venting device or be designed
+to prevent a violent rupture under normal transport conditions. Keep away from high temperature and
+open flames.
+
+Transport Fashion: By air, by sea.
+
+Section 15 - Regulatory Information
+
+Safety, health and environmental regulations/legislation specific for the substance or mixture
+
+CAS No. TSCA IECSC DSL/NDSL EINECS/ ELINCS/ NLP
+12597-68-1 Listed Listed | Listed DSL Listed
+1313-13-9 Listed Listed Listed DSL Listed
+646-06-0 Listed Listed Listed DSL Listed
+7782-42-5 Listed Listed Listed DSL Listed
+7439-93-2 | — Listed Listed Listed DSL Listed
+7791-03-9 | Listed Listed Listed DSL Listed
+
+108-32-7 Listed Listed Listed DSL Listed
+9003-07-0 Listed Listed Listed DSL Listed
+1333-86-4 Listed Listed Listed DSL Listed
+
+| Section 16 - Other Information
+
+Issue Date: 2024-12-26
+
+Issue Department: Technical department
+Modification record:
+
+Notice to reader
+
+© Hotline 400-819-5688 _ Pony Testing Group Shenzhen Co, Led.
+www.ponytest.com Address: 3/F of Building 2, Building 1, Xinhaosheng Industrial Park, Yonghe Tels 0755-26080909
+Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China Fax: 0755-26068336
+PONY-BGLS186-03E-027-20238 Testing Address: 3/F. of Building 2, Building 1, Xinhaosheng Industrial Park,
+Yonghe Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China
+

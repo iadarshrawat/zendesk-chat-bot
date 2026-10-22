@@ -57,6 +57,7 @@ Supported brand keys:
 Required package structure:
   products.json       One structured product catalog
   manuals/            Product manuals; every file must resolve to one or more catalog products
+  safety-data-sheets/  Product SDS files; link each exact path in safetyDataSheetPaths
   policies/           Optional brand-wide support, return, and warranty documents
 
 Options:

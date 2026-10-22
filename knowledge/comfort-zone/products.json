@@ -1,0 +1,2753 @@
+{
+  "schemaVersion": "1.0",
+  "catalogOwner": "Mr. Brands LLC",
+  "generatedDate": "2026-09-21",
+  "sourceDocumentCount": 41,
+  "uniqueProductCount": 41,
+  "verificationPolicy": "Product fields are limited to the supplied manuals and the prior verified catalog. Explicit manualPaths control product-to-document linkage. OCR-derived text remains subject to OCR_REVIEW.csv.",
+  "products": [
+    {
+      "productId": "CZ111WT",
+      "alternateProductIds": [
+        "CZ111RD"
+      ],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 10-inch Turbo Table Fan",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 10-inch Turbo Table Fan. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ111WT"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ111WT, CZ111RD.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 10-inch Turbo Table Fan, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/028_CZ111WT_CZ111WT_CZ111RD_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12360",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 20-inch Air Circulatory Fan",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 20-inch Air Circulatory Fan. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12360-EC"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12360.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 20-inch Air Circulatory Fan, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/001_CZ12360_CZ12360_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12386",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 32-inch Tower Fan with Oscillation",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 32-inch Tower Fan with Oscillation. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12386-EC"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12386.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 32-inch Tower Fan with Oscillation, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/002_CZ12386_CZ12386_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12398",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 42-inch WiFi Tower Fan with Remote",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 42-inch WiFi Tower Fan with Remote. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12398-EC"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12398.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 42-inch WiFi Tower Fan with Remote, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/003_CZ12398_CZ12398_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12534",
+      "alternateProductIds": [
+        "CZ12535"
+      ],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 12-inch Desktop Tower Fan",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 12-inch Desktop Tower Fan. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12534-EC"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12534, CZ12535.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 12-inch Desktop Tower Fan, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/004_CZ12534_CZ12534_CZ12535_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12548",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 28-inch Bladeless Digital Tower Fan",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 28-inch Bladeless Digital Tower Fan. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12548-EC"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12548.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 28-inch Bladeless Digital Tower Fan, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/005_CZ12548_CZ12548_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12754",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Window Air Conditioner",
+      "category": "air conditioner",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "room cooling",
+        "window installation"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone Window Air Conditioner. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12754"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12754.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": [
+          "Source page 1 contains production/prepress annotations. Customer operating instructions begin on source page 2; non-English raster annotations may require human review."
+        ]
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone Window Air Conditioner, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/006_CZ12754_CZ12754_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12758",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 8,000 BTU Window Air Conditioner",
+      "category": "air conditioner",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "room cooling",
+        "window installation"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 8,000 BTU Window Air Conditioner. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12758"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12758.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 8,000 BTU Window Air Conditioner, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/007_CZ12758_CZ12758_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12759",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 10,000 BTU Window Air Conditioner",
+      "category": "air conditioner",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "room cooling",
+        "window installation"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 10,000 BTU Window Air Conditioner. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12759"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12759.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 10,000 BTU Window Air Conditioner, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/008_CZ12759_CZ12759_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ12761",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 12,000 BTU Window Air Conditioner",
+      "category": "air conditioner",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "room cooling",
+        "window installation"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 12,000 BTU Window Air Conditioner. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ12761"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ12761.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 12,000 BTU Window Air Conditioner, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/009_CZ12761_CZ12761_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ16W",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 16-inch Wall Mount Oscillating Fan",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 16-inch Wall Mount Oscillating Fan. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ16W"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ16W.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 16-inch Wall Mount Oscillating Fan, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/029_CZ16W_CZ16W_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ16WR",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 16-inch Wall Mount Oscillating Fan with Remote",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 16-inch Wall Mount Oscillating Fan with Remote. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ16WR"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ16WR.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 16-inch Wall Mount Oscillating Fan with Remote, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/030_CZ16WR_CZ16WR_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ200A",
+      "alternateProductIds": [
+        "CZ200ABK"
+      ],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 20-inch Box Fan",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 20-inch Box Fan. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ200A"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ200A, CZ200ABK.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 20-inch Box Fan, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/031_CZ200A_CZ200A_CZ200ABK_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ2062",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Infrared Cabinet Heater with Remote",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "An infrared cabinet heater with remote control, two heat settings, ECO mode, a digital thermostat, a 12-hour on/off timer and dual USB charging ports.",
+      "specifications": {
+        "model": "CZ2062",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 1000,
+          "high": 1500
+        },
+        "remoteBattery": "1 CR2025 battery",
+        "ecoTemperatureFahrenheit": 68,
+        "ecoTemperatureCelsius": 20,
+        "usbPortCount": 2,
+        "usbChargingCurrentAmpsAsStated": 2.1,
+        "thermostatRangeFahrenheit": {
+          "minimum": 59,
+          "maximum": 86
+        },
+        "thermostatRangeCelsius": {
+          "minimum": 15,
+          "maximum": 30
+        },
+        "autoOffTimerHours": {
+          "minimum": 1,
+          "maximum": 12
+        },
+        "autoOnTimerHours": {
+          "minimum": 1,
+          "maximum": 12
+        },
+        "modes": [
+          "low",
+          "high",
+          "ECO"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "infrared",
+          "cabinet",
+          "fan-forced"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "125258.Instruction Manual.01.pdf",
+          "125260.Instruction Manual.01.pdf",
+          "20_Comfort_Zone_CZ2062_Infrared_Cabinet_Heater_with_Remote_RAG.pdf",
+          "CZ2062C, CZ2062W.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "digitalThermostat": true,
+        "remoteControl": true,
+        "controlPanelLock": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "sourceNotes": [
+          "The manual states that the USB ports can provide up to 2.1A; it does not explicitly distinguish a per-port limit from a combined limit."
+        ]
+      },
+      "features": [
+        "Two heat settings and energy-saving ECO mode",
+        "12-hour on/off timer and electronic controls",
+        "Built-in USB charging ports",
+        "Fan-forced wide heat dispersion",
+        "Grounded cordset",
+        "Tip-over switch and overheat protection system",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ2062 is the Infrared Cabinet Heater with Remote. An infrared cabinet heater with remote control, two heat settings, ECO mode, a digital thermostat, a 12-hour on/off timer and dual USB charging ports. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (1,000W), high (1,500W). Features include remote control, a 1-12-hour automatic shutoff timer, tip-over protection, overheat protection. The thermostat range is 59-86 degrees F (15-30 degrees C). The remote uses 1 CR2025 battery. The manual does not state an overall construction material. The limited warranty period is one year from original purchase. The manual states that the USB ports can provide up to 2.1A; it does not explicitly distinguish a per-port limit from a combined limit.",
+      "manualPaths": [
+        "manuals/011_CZ2062_CZ2062C_CZ2062W_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ220",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 5,000W Ceiling Mounted Heater",
+      "category": "heater",
+      "productUse": "indoor utility heating",
+      "useCases": [
+        "indoor",
+        "utility heating"
+      ],
+      "materials": [
+        "steel"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A hardwired ceiling-mounted utility heater with three heat settings up to 5,000W, a rotary thermostat, adjustable airflow and a heavy-gauge steel body.",
+      "specifications": {
+        "model": "CZ220",
+        "voltageVoltsAC": 240,
+        "frequencyHz": 60,
+        "powerWatts": 5000,
+        "currentAmps": 20.8,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 3000,
+          "medium": 4000,
+          "high": 5000
+        },
+        "heatOutputBtuPerHour": 17060,
+        "currentAmpsByHeatLevel": {
+          "low": 12.5,
+          "medium": 16.7,
+          "high": 20.8
+        },
+        "heatOutputBtuPerHourByHeatLevel": {
+          "low": 10240,
+          "medium": 13650,
+          "high": 17060
+        },
+        "phaseCount": 1,
+        "horizontalAirThrowFeetApproximate": 18,
+        "recommendedMinimumCircuitBreakerAmps": 30,
+        "recommendedCopperWireGaugeAWG": 10,
+        "wireTemperatureRatingCelsius": 75,
+        "recommendedMinimumLugTorqueInchPounds": 35,
+        "voltageRangeVoltsAC": {
+          "minimum": 208,
+          "maximum": 240
+        },
+        "approximateWeightPounds": {
+          "minimum": 25,
+          "maximum": 30
+        },
+        "modes": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "ceiling-mounted",
+          "utility",
+          "fan-forced"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor use only; electric utility heaters are designed to meet a variety of heating requirements.",
+        "sourceFiles": [
+          "125132.Instruction Manual.01.pdf",
+          "19_Comfort_Zone_CZ220_Ceiling_Mounted_Heater_RAG.pdf",
+          "502060.Instruction Manual.01.pdf",
+          "CZ220, CZ220BK.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "hardwiredInstallationRequired": true,
+        "tiltAdjustable": true,
+        "overheatProtection": true,
+        "installationNote": "Hardwired installation must follow the original manual and applicable electrical codes. Refer to the original manual for installation diagrams and clearances.",
+        "sourceNotes": [
+          "A TIMER/LED sentence appears within the knob-thermostat instructions, but the supplied text does not establish a timer specification. Timer capability is left unknown."
+        ]
+      },
+      "features": [
+        "Hardwired installation required",
+        "Adjustable heat settings",
+        "Fan-forced wide heat circulation",
+        "Horizontal and vertical airflow with tilt feature",
+        "High-limit thermal cutoff switch",
+        "Heavy-gauge steel body"
+      ],
+      "ragSummary": "Comfort Zone CZ220 is the 5,000W Ceiling Mounted Heater. A hardwired ceiling-mounted utility heater with three heat settings up to 5,000W, a rotary thermostat, adjustable airflow and a heavy-gauge steel body. Indoor use only; electric utility heaters are designed to meet a variety of heating requirements. The manual lists a 208-240V AC range; its connection/rated-voltage text specifies 240V AC. Frequency is 60Hz, maximum listed heating power is 5,000W and the listed current is 20.8A. Listed heating levels: low (3,000W), medium (4,000W), high (5,000W). Features include overheat protection. Hardwired installation is required. The manual recommends a 30A or larger circuit breaker; consult its full installation instructions and local electrical codes. The stated overall body/housing construction material is steel. The limited warranty period is one year from original purchase. A TIMER/LED sentence appears within the knob-thermostat instructions, but the supplied text does not establish a timer specification. Timer capability is left unknown.",
+      "manualPaths": [
+        "manuals/025_CZ220_125132_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ225ER",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 6,000W Digital Ceiling Mounted Heater",
+      "category": "heater",
+      "productUse": "indoor utility heating",
+      "useCases": [
+        "indoor",
+        "utility heating"
+      ],
+      "materials": [
+        "steel"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A hardwired ceiling-mounted utility heater with three heating levels up to 6,000W, a fan-only mode, digital thermostat, remote control and timer.",
+      "specifications": {
+        "model": "CZ225ER",
+        "voltageVoltsAC": 240,
+        "frequencyHz": 60,
+        "powerWatts": 6000,
+        "currentAmps": 25,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 3000,
+          "medium": 4500,
+          "high": 6000
+        },
+        "heatOutputBtuPerHour": 20470,
+        "currentAmpsByHeatLevel": {
+          "low": 12.5,
+          "medium": 18.75,
+          "high": 25
+        },
+        "heatOutputBtuPerHourByHeatLevel": {
+          "low": 10240,
+          "medium": 15350,
+          "high": 20470
+        },
+        "phaseCount": 1,
+        "horizontalAirThrowFeetApproximate": 18,
+        "recommendedMinimumCircuitBreakerAmps": 30,
+        "recommendedCopperWireGaugeAWG": 8,
+        "wireTemperatureRatingCelsius": 75,
+        "recommendedMinimumLugTorqueInchPounds": 40,
+        "voltageRangeVoltsAC": {
+          "minimum": 208,
+          "maximum": 240
+        },
+        "thermostatRangeFahrenheit": {
+          "minimum": 45,
+          "maximum": 95
+        },
+        "thermostatRangeCelsius": {
+          "minimum": 7,
+          "maximum": 35
+        },
+        "approximateWeightPounds": {
+          "minimum": 25,
+          "maximum": 30
+        },
+        "autoOffTimerHours": {
+          "minimum": 1,
+          "maximum": 12
+        },
+        "modes": [
+          "low",
+          "medium",
+          "high",
+          "fan only"
+        ],
+        "modeCount": 4
+      },
+      "attributes": {
+        "heaterTypes": [
+          "ceiling-mounted",
+          "utility",
+          "fan-forced"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor use only; electric utility heaters are designed to meet a variety of heating requirements.",
+        "sourceFiles": [
+          "120025.Instruction Manual.01.pdf",
+          "120163.Instruction Manual.01.pdf",
+          "17_Comfort_Zone_CZ225ER_CZ230ER_Digital_Ceiling_Mounted_Heater_RAG.pdf",
+          "520014.Instruction Manual.02.pdf",
+          "CZ225ER.Instruction Manual.01.pdf",
+          "CZ230ER, CZ230ERBK.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "digitalThermostat": true,
+        "remoteControl": true,
+        "fanOnlyMode": true,
+        "hardwiredInstallationRequired": true,
+        "tiltAdjustable": true,
+        "overheatProtection": true,
+        "installationNote": "Hardwired installation must follow the original manual and applicable electrical codes. Refer to the original manual for installation diagrams and clearances.",
+        "sourceNotes": [
+          "CZ225ER and CZ230ER share one printed manual. Numeric item-only filenames do not establish individual model aliases."
+        ]
+      },
+      "features": [
+        "Model CZ225ER: low at 3,000W, medium at 4,500W, high at 6,000W",
+        "Hardwired installation required",
+        "Adjustable heat settings with digital thermostat",
+        "Fan-forced wide heat circulation and fan-only setting",
+        "12-hour timer with automatic shutoff",
+        "Horizontal and vertical airflow with tilt feature",
+        "Remote control and high-limit thermal cutoff switch",
+        "Heavy-gauge steel body"
+      ],
+      "ragSummary": "Comfort Zone CZ225ER is the 6,000W Digital Ceiling Mounted Heater. A hardwired ceiling-mounted utility heater with three heating levels up to 6,000W, a fan-only mode, digital thermostat, remote control and timer. Indoor use only; electric utility heaters are designed to meet a variety of heating requirements. The manual lists a 208-240V AC range; its connection/rated-voltage text specifies 240V AC. Frequency is 60Hz, maximum listed heating power is 6,000W and the listed current is 25A. Listed heating levels: low (3,000W), medium (4,500W), high (6,000W). Features include fan-only operation, remote control, a 1-12-hour automatic shutoff timer, overheat protection. The thermostat range is 45-95 degrees F (7-35 degrees C). Hardwired installation is required. The manual recommends a 30A or larger circuit breaker; consult its full installation instructions and local electrical codes. The stated overall body/housing construction material is steel. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/027_CZ225ER_CZ230ER_520014_Instruction_Manual_02_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ230ER",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 7,500W Digital Ceiling Mounted Heater",
+      "category": "heater",
+      "productUse": "indoor utility heating",
+      "useCases": [
+        "indoor",
+        "utility heating"
+      ],
+      "materials": [
+        "steel"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A hardwired ceiling-mounted utility heater with 6,250W and 7,500W heat settings, a fan-only mode, digital thermostat, remote control and timer.",
+      "specifications": {
+        "model": "CZ230ER",
+        "voltageVoltsAC": 240,
+        "frequencyHz": 60,
+        "powerWatts": 7500,
+        "currentAmps": 31.3,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 6250,
+          "high": 7500
+        },
+        "heatOutputBtuPerHour": 25590,
+        "currentAmpsByHeatLevel": {
+          "low": 26,
+          "high": 31.3
+        },
+        "heatOutputBtuPerHourByHeatLevel": {
+          "low": 21330,
+          "high": 25590
+        },
+        "phaseCount": 1,
+        "horizontalAirThrowFeetApproximate": 18,
+        "recommendedMinimumCircuitBreakerAmps": 40,
+        "recommendedCopperWireGaugeAWG": 8,
+        "wireTemperatureRatingCelsius": 75,
+        "recommendedMinimumLugTorqueInchPounds": 40,
+        "voltageRangeVoltsAC": {
+          "minimum": 208,
+          "maximum": 240
+        },
+        "thermostatRangeFahrenheit": {
+          "minimum": 45,
+          "maximum": 95
+        },
+        "thermostatRangeCelsius": {
+          "minimum": 7,
+          "maximum": 35
+        },
+        "approximateWeightPounds": {
+          "minimum": 25,
+          "maximum": 30
+        },
+        "autoOffTimerHours": {
+          "minimum": 1,
+          "maximum": 12
+        },
+        "modes": [
+          "low",
+          "high",
+          "fan only"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "ceiling-mounted",
+          "utility",
+          "fan-forced"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor use only; electric utility heaters are designed to meet a variety of heating requirements.",
+        "sourceFiles": [
+          "120025.Instruction Manual.01.pdf",
+          "120163.Instruction Manual.01.pdf",
+          "17_Comfort_Zone_CZ225ER_CZ230ER_Digital_Ceiling_Mounted_Heater_RAG.pdf",
+          "520014.Instruction Manual.02.pdf",
+          "CZ225ER.Instruction Manual.01.pdf",
+          "CZ230ER, CZ230ERBK.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "digitalThermostat": true,
+        "remoteControl": true,
+        "fanOnlyMode": true,
+        "hardwiredInstallationRequired": true,
+        "tiltAdjustable": true,
+        "overheatProtection": true,
+        "installationNote": "Hardwired installation must follow the original manual and applicable electrical codes. Refer to the original manual for installation diagrams and clearances.",
+        "sourceNotes": [
+          "CZ225ER and CZ230ER share one printed manual. Numeric item-only filenames do not establish individual model aliases."
+        ]
+      },
+      "features": [
+        "Model CZ230ER: low at 6,250W, high at 7,500W",
+        "Hardwired installation required",
+        "Adjustable heat settings with digital thermostat",
+        "Fan-forced wide heat circulation and fan-only setting",
+        "12-hour timer with automatic shutoff",
+        "Horizontal and vertical airflow with tilt feature",
+        "Remote control and high-limit thermal cutoff switch",
+        "Heavy-gauge steel body"
+      ],
+      "ragSummary": "Comfort Zone CZ230ER is the 7,500W Digital Ceiling Mounted Heater. A hardwired ceiling-mounted utility heater with 6,250W and 7,500W heat settings, a fan-only mode, digital thermostat, remote control and timer. Indoor use only; electric utility heaters are designed to meet a variety of heating requirements. The manual lists a 208-240V AC range; its connection/rated-voltage text specifies 240V AC. Frequency is 60Hz, maximum listed heating power is 7,500W and the listed current is 31.3A. Listed heating levels: low (6,250W), high (7,500W). Features include fan-only operation, remote control, a 1-12-hour automatic shutoff timer, overheat protection. The thermostat range is 45-95 degrees F (7-35 degrees C). Hardwired installation is required. The manual recommends a 40A or larger circuit breaker; consult its full installation instructions and local electrical codes. The stated overall body/housing construction material is steel. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/027_CZ225ER_CZ230ER_520014_Instruction_Manual_02_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ260ER",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 10,000W Digital Ceiling Mounted Heater",
+      "category": "heater",
+      "productUse": "indoor utility heating",
+      "useCases": [
+        "indoor",
+        "utility heating"
+      ],
+      "materials": [
+        "steel"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A hardwired 10,000W ceiling-mounted utility heater with a heavy-gauge steel body, digital thermostat, remote control, timer and a fully enclosed motor.",
+      "specifications": {
+        "model": "CZ260ER",
+        "voltageVoltsAC": 240,
+        "frequencyHz": 60,
+        "powerWatts": 10000,
+        "currentAmps": 41.7,
+        "heatLevelCount": null,
+        "heatLevels": [
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "high": 10000
+        },
+        "heatOutputBtuPerHour": 34120,
+        "phaseCount": 1,
+        "horizontalAirThrowFeetApproximate": 18,
+        "recommendedMinimumCircuitBreakerAmps": 60,
+        "recommendedCopperWireGaugeAWG": 6,
+        "wireTemperatureRatingCelsius": 75,
+        "recommendedMinimumLugTorqueInchPounds": 45,
+        "voltageRangeVoltsAC": {
+          "minimum": 208,
+          "maximum": 240
+        },
+        "thermostatRangeFahrenheit": {
+          "minimum": 45,
+          "maximum": 95
+        },
+        "thermostatRangeCelsius": {
+          "minimum": 7,
+          "maximum": 35
+        },
+        "approximateWeightPounds": {
+          "minimum": 45,
+          "maximum": 55
+        },
+        "autoOffTimerHours": {
+          "minimum": 1,
+          "maximum": 12
+        },
+        "modes": [
+          "high",
+          "fan only"
+        ],
+        "modeCount": null
+      },
+      "attributes": {
+        "heaterTypes": [
+          "ceiling-mounted",
+          "utility",
+          "fan-forced"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor use only; electric utility heaters are designed to meet a variety of heating requirements.",
+        "sourceFiles": [
+          "120026.Instruction Manual.01.pdf",
+          "16_Comfort_Zone_CZ260ER_Digital_Ceiling_Mounted_Heater_RAG.pdf",
+          "520012.Instruction Manual.01.pdf",
+          "CZ260ER, CZ260ERBK.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "digitalThermostat": true,
+        "remoteControl": true,
+        "fanOnlyMode": true,
+        "hardwiredInstallationRequired": true,
+        "tiltAdjustable": true,
+        "overheatProtection": true,
+        "installationNote": "Hardwired installation must follow the original manual and applicable electrical codes. Refer to the original manual for installation diagrams and clearances.",
+        "sourceNotes": [
+          "The feature list mentions adjustable heat settings, but the supplied specification table lists only one numerical heating level: 10,000W. A total count of selectable heating levels is not established."
+        ]
+      },
+      "features": [
+        "Hardwired installation required",
+        "Adjustable heat settings with digital thermostat",
+        "Fan-only setting for year-round air circulation",
+        "Fully enclosed motor for extended use in dusty environments",
+        "Horizontal and vertical airflow with tilt feature",
+        "Remote control and high-limit thermal cutoff switch",
+        "Heavy-gauge steel body"
+      ],
+      "ragSummary": "Comfort Zone CZ260ER is the 10,000W Digital Ceiling Mounted Heater. A hardwired 10,000W ceiling-mounted utility heater with a heavy-gauge steel body, digital thermostat, remote control, timer and a fully enclosed motor. Indoor use only; electric utility heaters are designed to meet a variety of heating requirements. The manual lists a 208-240V AC range; its connection/rated-voltage text specifies 240V AC. Frequency is 60Hz, maximum listed heating power is 10,000W and the listed current is 41.7A. Listed heating levels: high (10,000W). Features include fan-only operation, remote control, a 1-12-hour automatic shutoff timer, overheat protection. The thermostat range is 45-95 degrees F (7-35 degrees C). Hardwired installation is required. The manual recommends a 60A or larger circuit breaker; consult its full installation instructions and local electrical codes. The stated overall body/housing construction material is steel. The limited warranty period is one year from original purchase. The feature list mentions adjustable heat settings, but the supplied specification table lists only one numerical heating level: 10,000W. A total count of selectable heating levels is not established.",
+      "manualPaths": [
+        "manuals/026_CZ260ER_520012_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ275",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Portable Industrial Heater",
+      "category": "heater",
+      "productUse": "indoor utility heating",
+      "useCases": [
+        "indoor",
+        "utility heating",
+        "portable heating"
+      ],
+      "materials": [
+        "steel"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A portable fan-forced industrial heater with two heat settings, a heavy-gauge steel body, adjustable tilt and an IP24 water- and dust-resistance rating.",
+      "specifications": {
+        "model": "CZ275",
+        "voltageVoltsAC": 240,
+        "frequencyHz": 60,
+        "powerWatts": 5000,
+        "currentAmps": 21,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 3300,
+          "high": 5000
+        },
+        "heatOutputBtu": 17050,
+        "ingressProtectionRating": "IP24",
+        "requiredReceptacle": "NEMA 6-30R",
+        "minimumCircuitAmps": 25,
+        "voltageRangeVoltsAC": {
+          "minimum": 208,
+          "maximum": 240
+        },
+        "modes": [
+          "low",
+          "high",
+          "fan only"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "portable",
+          "industrial",
+          "utility",
+          "fan-forced"
+        ],
+        "componentMaterials": {
+          "frame": "steel",
+          "feet": "plastic"
+        },
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor use only; electric utility heaters are designed to meet a variety of heating requirements.",
+        "sourceFiles": [
+          "07_Comfort_Zone_CZ275_Portable_Industrial_Heater_RAG.pdf",
+          "120185.Instruction Manual.01.pdf",
+          "CZ275.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "fanOnlyMode": true,
+        "tiltAdjustable": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Water- and dust-resistant to IP24",
+        "Adjustable thermostat and high heat at 5,000W",
+        "Uses a NEMA 6-30R receptacle",
+        "Fan-forced wide heat circulation",
+        "Overheat protection",
+        "Carry handle with integral cord wrap and heavy-gauge steel body",
+        "240V AC, 60Hz, 21A, 17,050 BTU"
+      ],
+      "ragSummary": "Comfort Zone CZ275 is the Portable Industrial Heater. A portable fan-forced industrial heater with two heat settings, a heavy-gauge steel body, adjustable tilt and an IP24 water- and dust-resistance rating. Indoor use only; electric utility heaters are designed to meet a variety of heating requirements. The manual lists a 208-240V AC range; its connection/rated-voltage text specifies 240V AC. Frequency is 60Hz, maximum listed heating power is 5,000W and the listed current is 21A. Listed heating levels: low (3,300W), high (5,000W). Features include fan-only operation, overheat protection. The stated overall body/housing construction material is steel. Component-only materials: frame: steel, feet: plastic. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/032_CZ275_CZ275_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ290",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Portable Industrial Heater",
+      "category": "heater",
+      "productUse": "indoor utility heating",
+      "useCases": [
+        "indoor",
+        "utility heating",
+        "portable heating"
+      ],
+      "materials": [
+        "steel"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A portable fan-forced industrial heater with a single 4,800W heating level, adjustable thermostat, heavy-gauge steel body and integral cord wrap.",
+      "specifications": {
+        "model": "CZ290",
+        "voltageVoltsAC": 240,
+        "frequencyHz": 60,
+        "powerWatts": 4800,
+        "currentAmps": 20,
+        "heatLevelCount": 1,
+        "heatLevels": [
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "high": 4800
+        },
+        "heatOutputBtuPerHour": 16380,
+        "requiredReceptacle": "NEMA 6-30R",
+        "plugType": "NEMA 6-30P",
+        "minimumCircuitAmps": 25,
+        "voltageRangeVoltsAC": {
+          "minimum": 208,
+          "maximum": 240
+        },
+        "modes": [
+          "high"
+        ],
+        "modeCount": 1
+      },
+      "attributes": {
+        "heaterTypes": [
+          "portable",
+          "industrial",
+          "utility",
+          "fan-forced"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor use only; electric utility heaters are designed to meet a variety of heating requirements.",
+        "sourceFiles": [
+          "120037.Instruction Manual.01.pdf",
+          "15_Comfort_Zone_CZ290_Portable_Industrial_Heater_RAG.pdf",
+          "CZ290.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "High heat at 4,800W (16,380 BTU)",
+        "Fan-forced wide heat circulation and adjustable thermostat",
+        "Uses a NEMA 6-30R receptacle",
+        "Overheat protection",
+        "Carry handle with integral cord wrap and heavy-gauge steel body",
+        "208-240V AC, 60Hz, 20A"
+      ],
+      "ragSummary": "Comfort Zone CZ290 is the Portable Industrial Heater. A portable fan-forced industrial heater with a single 4,800W heating level, adjustable thermostat, heavy-gauge steel body and integral cord wrap. Indoor use only; electric utility heaters are designed to meet a variety of heating requirements. The manual lists a 208-240V AC range; its connection/rated-voltage text specifies 240V AC. Frequency is 60Hz, maximum listed heating power is 4,800W and the listed current is 20A. Listed heating levels: high (4,800W). Features include overheat protection. The stated overall body/housing construction material is steel. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/033_CZ290_CZ290_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ310R",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Dual Window Fan with Remote Control",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone Dual Window Fan with Remote Control. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ310R"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ310R.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone Dual Window Fan with Remote Control, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/034_CZ310R_CZ310R_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ329WT",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Dual Window Fan with 180-degree Rotating Fans",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone Dual Window Fan with 180-degree Rotating Fans. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZ329WT"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZ329WT.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone Dual Window Fan with 180-degree Rotating Fans, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/035_CZ329WT_CZ329WT_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ35E",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Compact Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A compact heater with front-mounted controls, a carry handle, an adjustable thermostat, three heating modes and a fan-only setting.",
+      "specifications": {
+        "model": "CZ35E",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "high",
+          "energy save"
+        ],
+        "heatSettingsWatts": {
+          "low": 600,
+          "high": 1500,
+          "energy save": null
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high",
+          "energy save",
+          "fan only"
+        ],
+        "modeCount": 4
+      },
+      "attributes": {
+        "heaterTypes": [
+          "compact",
+          "fan heater"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "10_Comfort_Zone_CZ35E_Compact_Heater_RAG.pdf",
+          "120986.Instruction Manual.01.pdf",
+          "120987.Instruction Manual.01.pdf",
+          "CZ35E.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "fanOnlyMode": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "energySavePowerSpecified": false
+      },
+      "features": [
+        "Adjustable thermostat",
+        "Energy Save mode, high heat at 1,500W (5,120 BTU), and low heat at 600W",
+        "Fan-only setting",
+        "Front-mounted controls and on/off indicator light",
+        "Overheat protection and tip-over switch",
+        "Stay-cool body and carry handle",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ35E is the Compact Heater. A compact heater with front-mounted controls, a carry handle, an adjustable thermostat, three heating modes and a fan-only setting. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (600W), high (1,500W), energy save (wattage not stated). Features include fan-only operation, tip-over protection, overheat protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/036_CZ35E_CZ35E_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ40E",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Compact Heater Fan",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A compact heater fan with front-mounted controls, an adjustable thermostat, low and high heat, Energy Save mode and a fan-only setting.",
+      "specifications": {
+        "model": "CZ40E",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "high",
+          "energy save"
+        ],
+        "heatSettingsWatts": {
+          "low": 600,
+          "high": 1500,
+          "energy save": null
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high",
+          "energy save",
+          "fan only"
+        ],
+        "modeCount": 4
+      },
+      "attributes": {
+        "heaterTypes": [
+          "compact",
+          "fan heater"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "120233.Instruction Manual.01.pdf",
+          "120234.Instruction Manual.01.pdf",
+          "21_Comfort_Zone_CZ40E_Compact_Heater_Fan_RAG.pdf",
+          "CZ40E.Instruction Manual.01 (1).pdf",
+          "CZ40E.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "fanOnlyMode": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "energySavePowerSpecified": false
+      },
+      "features": [
+        "Adjustable thermostat",
+        "Energy Save mode, high heat at 1,500W (5,120 BTU), and low heat at 600W",
+        "Fan-only setting",
+        "Power indicator light",
+        "Overheat protection and tip-over switch",
+        "Front-mounted control panel and carry handle",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ40E is the Compact Heater Fan. A compact heater fan with front-mounted controls, an adjustable thermostat, low and high heat, Energy Save mode and a fan-only setting. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (600W), high (1,500W), energy save (wattage not stated). Features include fan-only operation, tip-over protection, overheat protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/037_CZ40E_CZ40E_Instruction_Manual_01_1_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ442E",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Compact Ceramic Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A compact ceramic heater with top-mounted controls, an adjustable thermostat, Energy Save mode, low and high heat and a fan-only setting.",
+      "specifications": {
+        "model": "CZ442E",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "high",
+          "energy save"
+        ],
+        "heatSettingsWatts": {
+          "low": 750,
+          "high": 1500,
+          "energy save": null
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high",
+          "energy save",
+          "fan only"
+        ],
+        "modeCount": 4
+      },
+      "attributes": {
+        "heaterTypes": [
+          "ceramic",
+          "compact"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "09_Comfort_Zone_CZ442E_Compact_Ceramic_Heater_RAG.pdf",
+          "120117.Instruction Manual.01_compressed.pdf"
+        ],
+        "adjustableThermostat": true,
+        "fanOnlyMode": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "energySavePowerSpecified": false
+      },
+      "features": [
+        "Adjustable thermostat",
+        "Energy Save mode, high heat at 1,500W, and low heat at 750W",
+        "Fan-only setting",
+        "Top-mounted controls and power indicator light",
+        "Overheat protection and tip-over switch",
+        "Carry handle",
+        "120V AC, 60Hz, 12.5A, 5,120 BTU"
+      ],
+      "ragSummary": "Comfort Zone CZ442E is the Compact Ceramic Heater. A compact ceramic heater with top-mounted controls, an adjustable thermostat, Energy Save mode, low and high heat and a fan-only setting. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (750W), high (1,500W), energy save (wattage not stated). Features include fan-only operation, tip-over protection, overheat protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/040_CZ442E_120117_Instruction_Manual_01_compressed_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ449E",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Oscillating Compact Ceramic Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A compact oscillating ceramic heater with an adjustable thermostat, low and high heat, Energy Save mode and a fan-only setting.",
+      "specifications": {
+        "model": "CZ449E",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "high",
+          "energy save"
+        ],
+        "heatSettingsWatts": {
+          "low": 750,
+          "high": 1500,
+          "energy save": null
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high",
+          "energy save",
+          "fan only"
+        ],
+        "modeCount": 4
+      },
+      "attributes": {
+        "heaterTypes": [
+          "ceramic",
+          "compact",
+          "oscillating"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "06_Comfort_Zone_CZ449E_Oscillating_Compact_Ceramic_Heater_RAG.pdf",
+          "120096.Instruction Manual.01.pdf",
+          "CZ449E.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "fanOnlyMode": true,
+        "oscillation": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "energySavePowerSpecified": false
+      },
+      "features": [
+        "Adjustable thermostat",
+        "Energy Save mode, high heat at 1,500W (5,120 BTU), and low heat at 750W",
+        "Fan-only setting",
+        "Top-mounted controls and power indicator light",
+        "Overheat protection and tip-over switch",
+        "Oscillation control and carry handle",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ449E is the Oscillating Compact Ceramic Heater. A compact oscillating ceramic heater with an adjustable thermostat, low and high heat, Energy Save mode and a fan-only setting. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (750W), high (1,500W), energy save (wattage not stated). Features include fan-only operation, oscillation, tip-over protection, overheat protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/012_CZ449E_CZ449E_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ45E",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Compact Heater Fan",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A compact heater fan with an adjustable thermostat, low and high heat, Energy Save mode and a fan-only setting.",
+      "specifications": {
+        "model": "CZ45E",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "high",
+          "energy save"
+        ],
+        "heatSettingsWatts": {
+          "low": 600,
+          "high": 1500,
+          "energy save": null
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high",
+          "energy save",
+          "fan only"
+        ],
+        "modeCount": 4
+      },
+      "attributes": {
+        "heaterTypes": [
+          "compact",
+          "fan heater"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "03_Comfort_Zone_CZ45E_Compact_Heater_Fan_RAG.pdf",
+          "120107.Instruction Manual.01.pdf",
+          "CZ45E.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "fanOnlyMode": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "energySavePowerSpecified": false
+      },
+      "features": [
+        "Adjustable thermostat",
+        "Energy Save mode, high heat at 1,500W (5,120 BTU), and low heat at 600W",
+        "Fan-only setting",
+        "Tip-over switch, power indicator, and overheat protection",
+        "Carry handle and stay-cool body",
+        "120V AC, 60Hz, 12.5A",
+        "Energy Save mode uses about 30% less energy than a standard 1,500W heater on high heat (manufacturer comparison)"
+      ],
+      "ragSummary": "Comfort Zone CZ45E is the Compact Heater Fan. A compact heater fan with an adjustable thermostat, low and high heat, Energy Save mode and a fan-only setting. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (600W), high (1,500W), energy save (wattage not stated). Features include fan-only operation, tip-over protection, overheat protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/038_CZ45E_CZ45E_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ499R",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Oscillating Ceramic Heater with Digital Thermostat Control",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "An oscillating ceramic heater with a digital thermostat, backlit LCD, remote control, 90-degree oscillation and an adjustable automatic shutoff timer.",
+      "specifications": {
+        "model": "CZ499R",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 750,
+          "high": 1500
+        },
+        "heatOutputBtu": 5120,
+        "remoteBattery": "2 AAA batteries (not included)",
+        "autoOffTimerHours": {
+          "minimum": 1,
+          "maximum": 8
+        },
+        "oscillationDegrees": 90,
+        "modes": [
+          "low",
+          "high",
+          "fan only",
+          "adjustable heat (thermostat)"
+        ],
+        "modeCount": 4
+      },
+      "attributes": {
+        "heaterTypes": [
+          "ceramic",
+          "oscillating"
+        ],
+        "componentMaterials": {
+          "heatingElements": "ceramic"
+        },
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "123722.Instruction Manual.01.pdf",
+          "13_Comfort_Zone_CZ499R_Oscillating_Ceramic_Heater_with_Digital_Thermostat_Control_RAG.pdf",
+          "CZ499R.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "digitalThermostat": true,
+        "remoteControl": true,
+        "fanOnlyMode": true,
+        "oscillation": true,
+        "tipOverProtection": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Fan-only, low heat at 750W, high heat at 1,500W (5,120 BTU), and adjustable digital thermostat modes",
+        "Timer with automatic shutoff",
+        "Backlit LCD screen and power indicator light",
+        "90-degree oscillation and remote control",
+        "Stable base with tip-over switch and overheat cutoff protection",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ499R is the Oscillating Ceramic Heater with Digital Thermostat Control. An oscillating ceramic heater with a digital thermostat, backlit LCD, remote control, 90-degree oscillation and an adjustable automatic shutoff timer. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (750W), high (1,500W). Features include fan-only operation, remote control, a 1-8-hour automatic shutoff timer, 90-degree oscillation, tip-over protection, overheat protection. The remote uses 2 AAA batteries (not included). The manual does not state an overall construction material. Component-only materials: heatingElements: ceramic. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/013_CZ499R_CZ499R_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ50",
+      "alternateProductIds": [
+        "CZ50BK"
+      ],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Oscillating Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "An oscillating heater with low and high heat, a fan-only setting, an adjustable thermostat and a stay-cool body.",
+      "specifications": {
+        "model": "CZ50",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 750,
+          "high": 1500
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high",
+          "fan only"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "oscillating",
+          "fan heater"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "11_Comfort_Zone_CZ50_CZ50BK_Oscillating_Heater_RAG.pdf",
+          "125101.Instruction Manual.01.pdf",
+          "125111.Instruction Manual.01.pdf",
+          "CZ50, CZ50BK.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "fanOnlyMode": true,
+        "oscillation": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "modelIdentifiersInSharedManual": [
+          "CZ50",
+          "CZ50BK"
+        ]
+      },
+      "features": [
+        "Wide oscillation and adjustable thermostat",
+        "Three settings: high at 1,500W (5,120 BTU), low at 750W, and fan only",
+        "Top-mounted control panel and power indicator light",
+        "Overheat protection and tip-over switch",
+        "Stay-cool body and carry handle",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ50 / CZ50BK is the Oscillating Heater. An oscillating heater with low and high heat, a fan-only setting, an adjustable thermostat and a stay-cool body. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (750W), high (1,500W). Features include fan-only operation, oscillation, tip-over protection, overheat protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/039_CZ50_CZ50_CZ50BK_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ600",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Electric Baseboard Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [
+        "metal"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "An electric baseboard heater with a sturdy metal body, adjustable thermostat, two heat settings and silent operation.",
+      "specifications": {
+        "model": "CZ600",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 750,
+          "high": 1500
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high"
+        ],
+        "modeCount": 2
+      },
+      "attributes": {
+        "heaterTypes": [
+          "baseboard"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "05_Comfort_Zone_CZ600_Electric_Baseboard_Heater_RAG.pdf",
+          "125100.Instruction Manual.01.pdf",
+          "CZ600.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "tipOverProtection": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Adjustable thermostat",
+        "Two heat settings: high at 1,500W (5,120 BTU) and low at 750W",
+        "Top-mounted control panel and power indicator light",
+        "Overheat protection and tip-over protection",
+        "Silent operation and sturdy metal body",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ600 is the Electric Baseboard Heater. An electric baseboard heater with a sturdy metal body, adjustable thermostat, two heat settings and silent operation. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (750W), high (1,500W). Features include tip-over protection, overheat protection. The stated overall body/housing construction material is metal. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/014_CZ600_CZ600_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ650B",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Digital Baseboard Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A digital baseboard heater with low and high heat, a digital thermostat, a programmable timer and silent operation.",
+      "specifications": {
+        "model": "CZ650B",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 750,
+          "high": 1500
+        },
+        "heatOutputBtu": 5120,
+        "autoOffTimerHours": {
+          "minimum": 1,
+          "maximum": 12
+        },
+        "modes": [
+          "low",
+          "high"
+        ],
+        "modeCount": 2
+      },
+      "attributes": {
+        "heaterTypes": [
+          "baseboard"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "125500.Instruction Manual.01.pdf",
+          "14_Comfort_Zone_CZ650B_Digital_Baseboard_Heater_RAG.pdf",
+          "CZ650B.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "digitalThermostat": true,
+        "tipOverProtection": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Digital thermostat and timer",
+        "Two heat settings: low at 750W and high at 1,500W (5,120 BTU)",
+        "Top-mounted control panel",
+        "Power and caution indicator lights",
+        "Overheat protection and tip-over protection",
+        "Silent operation",
+        "Stay-cool body with dent-resistant end panels",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ650B is the Digital Baseboard Heater. A digital baseboard heater with low and high heat, a digital thermostat, a programmable timer and silent operation. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (750W), high (1,500W). Features include a 1-12-hour automatic shutoff timer, tip-over protection, overheat protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/015_CZ650B_CZ650B_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ798",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Electric Utility Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating",
+        "freeze prevention"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "An electric utility heater with a metal frame, carry handle, two heat settings and an adjustable thermostat with an anti-freeze setting.",
+      "specifications": {
+        "model": "CZ798",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 1300,
+          "high": 1500
+        },
+        "heatOutputBtu": 5120,
+        "antiFreezeActivationBelowFahrenheit": 40,
+        "modes": [
+          "low",
+          "high"
+        ],
+        "modeCount": 2
+      },
+      "attributes": {
+        "heaterTypes": [
+          "utility"
+        ],
+        "componentMaterials": {
+          "frame": "metal"
+        },
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "125037.Instruction Manual.01.pdf",
+          "125038.Instruction Manual.01.pdf",
+          "125048.Instruction Manual.02.pdf",
+          "22_Comfort_Zone_CZ798_Electric_Utility_Heater_RAG.pdf",
+          "CZ798, CZ798BK.Instruction Manual.01.pdf",
+          "CZ798GR3.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "tipOverProtection": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Adjustable thermostat with anti-freeze setting",
+        "Two heat settings: 1,500W (5,120 BTU) and 1,300W",
+        "Front-mounted control panel and power indicator light",
+        "Overheat protection and tip-over protection",
+        "Carry handle and sturdy metal frame",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ798 is the Electric Utility Heater. An electric utility heater with a metal frame, carry handle, two heat settings and an adjustable thermostat with an anti-freeze setting. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (1,300W), high (1,500W). Features include tip-over protection, overheat protection. The anti-freeze setting switches on below 40 degrees F. The manual does not state an overall construction material. Component-only materials: frame: metal. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/016_CZ798_CZ798_CZ798BK_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ799BK",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Electric Utility Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating",
+        "freeze prevention"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "An electric utility heater with a metal frame, carry handle, two heat settings and an adjustable thermostat with an anti-freeze setting.",
+      "specifications": {
+        "model": "CZ799BK",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 1300,
+          "high": 1500
+        },
+        "heatOutputBtu": 5120,
+        "antiFreezeActivationBelowFahrenheit": 40,
+        "modes": [
+          "low",
+          "high"
+        ],
+        "modeCount": 2
+      },
+      "attributes": {
+        "heaterTypes": [
+          "utility"
+        ],
+        "componentMaterials": {
+          "frame": "metal"
+        },
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "02_Comfort_Zone_CZ799BK_Electric_Utility_Heater_RAG.pdf",
+          "120237.Instruction Manual.01.pdf",
+          "CZ799BK.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "tipOverProtection": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Adjustable thermostat with anti-freeze setting",
+        "Two heat settings: 1,500W (5,120 BTU) and 1,300W",
+        "Front-mounted control panel and power indicator light",
+        "Overheat protection and tip-over protection",
+        "Carry handle and sturdy metal frame",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZ799BK is the Electric Utility Heater. An electric utility heater with a metal frame, carry handle, two heat settings and an adjustable thermostat with an anti-freeze setting. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (1,300W), high (1,500W). Features include tip-over protection, overheat protection. The anti-freeze setting switches on below 40 degrees F. The manual does not state an overall construction material. Component-only materials: frame: metal. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/017_CZ799BK_CZ799BK_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ8008N",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Electric Oil-Filled Radiator",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [
+        "metal"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "An oil-filled electric radiator with a durable metal housing, three heat settings, adjustable thermostat, silent operation and cord storage.",
+      "specifications": {
+        "model": "CZ8008N",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 600,
+          "medium": 900,
+          "high": 1500
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "oil-filled",
+          "radiator"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "120278.Instruction Manual.01.pdf",
+          "23_Comfort_Zone_CZ8008N_Electric_Oil_Filled_Radiator_RAG.pdf",
+          "CZ8008N.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "permanentlyOilFilled": true,
+        "tipOverProtection": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Adjustable thermostat",
+        "Four-position rotary control: off, low at 600W, medium at 900W, and high at 1,500W",
+        "Front-mounted control panel and power indicator light",
+        "Oil is permanently filled; silent operation",
+        "Cord storage and durable metal housing",
+        "Tip-over cutoff switch and overheat protection sensor",
+        "120V AC, 60Hz, 12.5A, 5,120 BTU"
+      ],
+      "ragSummary": "Comfort Zone CZ8008N is the Electric Oil-Filled Radiator. An oil-filled electric radiator with a durable metal housing, three heat settings, adjustable thermostat, silent operation and cord storage. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (600W), medium (900W), high (1,500W). Features include tip-over protection, overheat protection. The stated overall body/housing construction material is metal. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/018_CZ8008N_CZ8008N_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZ998",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Electric Radiant Dish Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "An electric radiant dish heater with two heat settings, 70-degree oscillation, adjustable tilt and a flocked metal safety grille.",
+      "specifications": {
+        "model": "CZ998",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1000,
+        "currentAmps": 8.33,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 700,
+          "high": 1000
+        },
+        "heatOutputBtu": 3412,
+        "oscillationDegrees": 70,
+        "modes": [
+          "low",
+          "high"
+        ],
+        "modeCount": 2
+      },
+      "attributes": {
+        "heaterTypes": [
+          "radiant",
+          "dish"
+        ],
+        "componentMaterials": {
+          "safetyGrille": "flocked metal"
+        },
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "125039.Instruction Manual.01.pdf",
+          "18_Comfort_Zone_CZ998_Electric_Radiant_Dish_Heater_RAG.pdf",
+          "CZ2032.Instruction Manual.01.pdf",
+          "CZ998.Instruction Manual.01.pdf"
+        ],
+        "tiltAdjustable": true,
+        "oscillation": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "sourceNotes": [
+          "The duplicate file named CZ2032 prints CZ998. CZ2032 is retained only as a source filename claim and is not registered as a separately verified model."
+        ]
+      },
+      "features": [
+        "Two heat settings: 1,000W (3,412 BTU) and 700W",
+        "70-degree oscillation and adjustable tilt",
+        "Flocked metal safety grille designed to stay cool to the touch",
+        "Temperature cutoff switch and tip-over cutoff switch",
+        "Carry handle",
+        "120V AC, 60Hz, 8.33A, 3,412 BTU"
+      ],
+      "ragSummary": "Comfort Zone CZ998 is the Electric Radiant Dish Heater. An electric radiant dish heater with two heat settings, 70-degree oscillation, adjustable tilt and a flocked metal safety grille. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,000W and listed current of 8.33A. Listed heating levels: low (700W), high (1,000W). Features include 70-degree oscillation, tip-over protection, overheat protection. The manual does not state an overall construction material. Component-only materials: safetyGrille: flocked metal. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/010_CZ998_CZ2032_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZFP1",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Ceramic Fireplace Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating",
+        "flame effect without heat"
+      ],
+      "materials": [
+        "composite"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A ceramic fireplace heater with a stay-cool composite body, low and high heat and a realistic LED 3-D flame-only mode; no venting is required.",
+      "specifications": {
+        "model": "CZFP1",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1200,
+        "currentAmps": 10,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 600,
+          "high": 1200
+        },
+        "heatOutputBtu": 4095,
+        "modes": [
+          "low",
+          "high",
+          "flame only"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "fireplace",
+          "ceramic",
+          "fan-forced"
+        ],
+        "componentMaterials": {
+          "heatingElements": "ceramic"
+        },
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "08_Comfort_Zone_CZFP1_Ceramic_Fireplace_Heater_RAG.pdf",
+          "125042.Instruction Manual.01.pdf",
+          "125062.Instruction Manual.01.pdf",
+          "CZFP1, CZFP1BK.Instruction Manual.01.pdf"
+        ],
+        "flameOnlyMode": true,
+        "tipOverProtection": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Realistic LED 3-D flame effect",
+        "High heat at 1,200W (4,095 BTU), low heat at 600W, and flame-only mode",
+        "Fan-forced air circulation; no venting required",
+        "Stay-cool composite body",
+        "Tip-over cutoff and overheat protection",
+        "120V AC, 60Hz, 10.0A"
+      ],
+      "ragSummary": "Comfort Zone CZFP1 is the Ceramic Fireplace Heater. A ceramic fireplace heater with a stay-cool composite body, low and high heat and a realistic LED 3-D flame-only mode; no venting is required. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,200W and listed current of 10A. Listed heating levels: low (600W), high (1,200W). Features include flame effect without heat, tip-over protection, overheat protection. The stated overall body/housing construction material is composite. Component-only materials: heatingElements: ceramic. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/019_CZFP1_CZFP1_CZFP1BK_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZFP4",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Stove Style Electric Fireplace Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating",
+        "flame effect without heat"
+      ],
+      "materials": [
+        "composite"
+      ],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A stove-style electric fireplace heater with a stay-cool composite body, two heat settings and a realistic 3-D flame effect that works with or without heat.",
+      "specifications": {
+        "model": "CZFP4",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 750,
+          "high": 1500
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high",
+          "flame only"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "fireplace",
+          "stove style",
+          "fan-forced"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": true,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "04_Comfort_Zone_CZFP4_Stove_Style_Electric_Fireplace_Heater_RAG.pdf",
+          "125097.Instruction Manual.01.pdf",
+          "CZFP4.Instruction Manual.01.pdf"
+        ],
+        "adjustableThermostat": true,
+        "flameOnlyMode": true,
+        "tipOverProtection": true,
+        "overheatProtection": true
+      },
+      "features": [
+        "Realistic 3-D flame effect with or without heat",
+        "Two heat settings: high at 1,500W (5,120 BTU) and low at 750W",
+        "Adjustable thermostat",
+        "Fan-forced heat dispersion",
+        "Stay-cool composite body",
+        "Overheat protection and tip-over cutoff protection",
+        "120V AC, 60Hz, 12.5A"
+      ],
+      "ragSummary": "Comfort Zone CZFP4 is the Stove Style Electric Fireplace Heater. A stove-style electric fireplace heater with a stay-cool composite body, two heat settings and a realistic 3-D flame effect that works with or without heat. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (750W), high (1,500W). Features include flame effect without heat, tip-over protection, overheat protection. The stated overall body/housing construction material is composite. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/020_CZFP4_CZFP4_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZHTV9",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Flat Panel Halogen Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A slim twin-tube halogen heater with two heat settings and 70-degree oscillation.",
+      "specifications": {
+        "model": "CZHTV9",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 800,
+        "currentAmps": 6.66,
+        "heatLevelCount": 2,
+        "heatLevels": [
+          "low",
+          "high"
+        ],
+        "heatSettingsWatts": {
+          "low": 400,
+          "high": 800
+        },
+        "heatOutputBtu": 2730,
+        "oscillationDegrees": 70,
+        "modes": [
+          "low",
+          "high"
+        ],
+        "modeCount": 2
+      },
+      "attributes": {
+        "heaterTypes": [
+          "halogen",
+          "flat panel"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "01_Comfort_Zone_CZHTV9_Flat_Panel_Halogen_Heater_RAG.pdf",
+          "125119.Instruction Manual.01.pdf",
+          "CZHTV9.Instruction Manual.01.pdf"
+        ],
+        "oscillation": true,
+        "tipOverProtection": true
+      },
+      "features": [
+        "70-degree oscillation",
+        "Two heat settings: 800W and 400W",
+        "Top-mounted control panel",
+        "Safety tip-over switch",
+        "Quiet operation",
+        "Slim twin-tube design",
+        "Stay-cool body",
+        "120V AC, 60Hz, 6.66A, 2,730 BTU"
+      ],
+      "ragSummary": "Comfort Zone CZHTV9 is the Flat Panel Halogen Heater. A slim twin-tube halogen heater with two heat settings and 70-degree oscillation. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 800W and listed current of 6.66A. Listed heating levels: low (400W), high (800W). Features include 70-degree oscillation, tip-over protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/021_CZHTV9_CZHTV9_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZQTV007BK",
+      "alternateProductIds": [
+        "CZQTV007EBK"
+      ],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Quartz Tower Heater",
+      "category": "heater",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "supplemental heating",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone Quartz Tower Heater. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZQTV007BK"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "125147.Instruction Manual.01.pdf",
+          "CZQTV007BK.Instruction Manual.01.pdf",
+          "CZQTV007EBK.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone Quartz Tower Heater, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/022_CZQTV007BK_CZQTV007BK_Instruction_Manual_01_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZQTV008E",
+      "alternateProductIds": [],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone Quartz Tower Heater",
+      "category": "heater",
+      "productUse": "office",
+      "useCases": [
+        "indoor",
+        "residential",
+        "home",
+        "house",
+        "office",
+        "room heating"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "A quartz tower heater with an adjustable thermostat, low and high heat, Energy Save mode and a stay-cool carry handle.",
+      "specifications": {
+        "model": "CZQTV008E",
+        "voltageVoltsAC": 120,
+        "frequencyHz": 60,
+        "powerWatts": 1500,
+        "currentAmps": 12.5,
+        "heatLevelCount": 3,
+        "heatLevels": [
+          "low",
+          "high",
+          "energy save"
+        ],
+        "heatSettingsWatts": {
+          "low": 500,
+          "high": 1500,
+          "energy save": null
+        },
+        "heatOutputBtu": 5120,
+        "modes": [
+          "low",
+          "high",
+          "energy save"
+        ],
+        "modeCount": 3
+      },
+      "attributes": {
+        "heaterTypes": [
+          "quartz",
+          "tower"
+        ],
+        "componentMaterials": {},
+        "overallConstructionMaterialSpecified": false,
+        "intendedUseStatement": "Indoor residential and office use only; not for industrial or other commercial applications.",
+        "sourceFiles": [
+          "120241.Instruction Manual.01.pdf",
+          "12_Comfort_Zone_CZQTV008E_Quartz_Tower_Heater_RAG.pdf",
+          "CZQTV008EBK.Instruction Manual.02.pdf"
+        ],
+        "adjustableThermostat": true,
+        "tipOverProtection": true,
+        "overheatProtection": true,
+        "energySavePowerSpecified": false
+      },
+      "features": [
+        "Adjustable thermostat",
+        "Energy Save mode, high heat at 1,500W (5,120 BTU), and low heat at 500W",
+        "Top-mounted control panel and power indicator light",
+        "Overheat protection and tip-over protection",
+        "Stay-cool carry handle",
+        "120V AC, 60Hz, 12.5A",
+        "Energy Save mode uses about 30% less energy than a standard 1,500W heater on high heat (manufacturer comparison)"
+      ],
+      "ragSummary": "Comfort Zone CZQTV008E is the Quartz Tower Heater. A quartz tower heater with an adjustable thermostat, low and high heat, Energy Save mode and a stay-cool carry handle. Indoor residential and office use only; not for industrial or other commercial applications. It operates at 120V AC and 60Hz, with maximum listed heating power of 1,500W and listed current of 12.5A. Listed heating levels: low (500W), high (1,500W), energy save (wattage not stated). Features include tip-over protection, overheat protection. The manual does not state an overall construction material. The limited warranty period is one year from original purchase.",
+      "manualPaths": [
+        "manuals/023_CZQTV008E_CZQTV008EBK_Instruction_Manual_02_RAG.pdf"
+      ]
+    },
+    {
+      "productId": "CZST181RWT",
+      "alternateProductIds": [
+        "CZST181RBK"
+      ],
+      "brand": "Comfort Zone",
+      "distributor": "Mr. Brands LLC",
+      "productName": "Comfort Zone 18-inch Pedestal Fan with Remote",
+      "category": "fan",
+      "productUse": "home",
+      "useCases": [
+        "indoor",
+        "residential",
+        "air circulation",
+        "home",
+        "office"
+      ],
+      "materials": [],
+      "colors": [],
+      "price": null,
+      "availability": null,
+      "warrantyMonths": 12,
+      "description": "Comfort Zone 18-inch Pedestal Fan with Remote. Refer to the linked updated source manual for verified operation and specifications.",
+      "specifications": {
+        "model": "CZST181RWT"
+      },
+      "attributes": {
+        "sourceFiles": [
+          "CZST181RWT, CZST181RBK.Instruction Manual.01.pdf"
+        ],
+        "overallConstructionMaterialSpecified": false,
+        "sourceNotes": []
+      },
+      "features": [],
+      "ragSummary": "Comfort Zone 18-inch Pedestal Fan with Remote, distributed by Mr. Brands LLC. The linked image-free manual transcription contains the source instructions, specifications, warnings, care information, troubleshooting, and warranty text recoverable from the supplied PDF.",
+      "manualPaths": [
+        "manuals/024_CZST181RWT_CZST181RWT_CZST181RBK_Instruction_Manual_01_RAG.pdf"
+      ]
+    }
+  ]
+}

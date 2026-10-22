@@ -27,6 +27,10 @@ function isPolicyPath(relativePath) {
   return /(^|\/)polic(?:y|ies)(\/|$)/i.test(relativePath.replace(/\\/g, '/'));
 }
 
+function isSafetyDataSheetPath(relativePath) {
+  return /(^|\/)safety-data-sheets(\/|$)/i.test(relativePath.replace(/\\/g, '/'));
+}
+
 function productsFromCatalogMatch(match) {
   if (match.products?.length) {
     return match.products;
@@ -243,6 +247,26 @@ function buildPackagePlan(files, sourceRoot, catalog, { requireManuals = true } 
     if (path.basename(relativePath).toLowerCase() === 'brand.json') {
       continue;
     }
+    if (isSafetyDataSheetPath(relativePath)) {
+      const match = matchProductCatalogEntryDetailed(filePath, catalog.products, {
+        relativePath,
+        documentType: 'safety_data_sheet'
+      });
+      const matchedProducts = productsFromCatalogMatch(match);
+      if (!matchedProducts.length) {
+        throw new Error(`Safety data sheet ${relativePath} is not linked to a product. Add its exact safetyDataSheetPaths entry to products.json.`);
+      }
+      plans.push({
+        filePath,
+        relativePath,
+        productMetadata: matchedProducts[0],
+        productMetadataList: matchedProducts,
+        catalogMatchMethod: match.method,
+        documentType: 'safety_data_sheet',
+        documentScope: 'product'
+      });
+      continue;
+    }
     if (isManualPath(relativePath)) {
       const match = matchProductCatalogEntryDetailed(filePath, catalog.products, { relativePath });
       const matchedProducts = productsFromCatalogMatch(match);
@@ -277,7 +301,7 @@ function buildPackagePlan(files, sourceRoot, catalog, { requireManuals = true } 
       continue;
     }
     throw new Error(
-      `Unsupported package document location: ${relativePath}. Put product documents in manuals/ and brand-wide documents in policies/.`
+      `Unsupported package document location: ${relativePath}. Use manuals/, safety-data-sheets/, or policies/.`
     );
   }
 
@@ -285,7 +309,16 @@ function buildPackagePlan(files, sourceRoot, catalog, { requireManuals = true } 
     plans.filter(plan => plan.documentType === 'product_manual').map(plan => plan.relativePath.toLowerCase())
   );
   const availableManualBasenames = new Set([...availableManuals].map(manualPath => path.basename(manualPath)));
+  const availableSafetyDataSheets = new Set(
+    plans.filter(plan => plan.documentType === 'safety_data_sheet').map(plan => plan.relativePath.toLowerCase())
+  );
   for (const product of catalog.products) {
+    for (const configuredPath of product.safetyDataSheetPaths || []) {
+      const normalizedConfiguredPath = configuredPath.replace(/\\/g, '/').replace(/^\.\//, '').toLowerCase();
+      if (!availableSafetyDataSheets.has(normalizedConfiguredPath)) {
+        throw new Error(`Configured safetyDataSheetPath does not exist for ${product.productId}: ${configuredPath}`);
+      }
+    }
     for (const configuredPath of product.manualPaths || []) {
       const normalizedConfiguredPath = configuredPath.replace(/\\/g, '/').replace(/^\.\//, '').toLowerCase();
       if (!availableManuals.has(normalizedConfiguredPath) && !availableManualBasenames.has(path.basename(normalizedConfiguredPath))) {
@@ -301,7 +334,7 @@ function buildPackagePlan(files, sourceRoot, catalog, { requireManuals = true } 
     }
   }
   if (!plans.length) {
-    throw new Error('The brand package contains no manual or policy documents');
+    throw new Error('The brand package contains no manual, safety data sheet, or policy documents');
   }
 
   return { plans, manualsByProduct };
@@ -382,7 +415,7 @@ function packageResults(documents) {
       productIds: products.map(product => product.productId),
       productName: products[0]?.productName || null,
       productNames: products.map(product => product.productName),
-      sharedProductManual: products.length > 1,
+      sharedProductManual: document.documentType === 'product_manual' && products.length > 1,
       catalogMatched: document.catalogMatched,
       catalogMatchMethod: document.catalogMatchMethod,
       pages: document.totalPages,
@@ -421,6 +454,7 @@ export async function ingestKnowledgePath(sourcePath, options = {}) {
     ingestionId,
     products: catalog.products.length,
     manuals: plans.filter(plan => plan.documentType === 'product_manual').length,
+    safetyDataSheets: plans.filter(plan => plan.documentType === 'safety_data_sheet').length,
     sharedManuals: results.filter(result => result.sharedProductManual).length,
     policies: plans.filter(plan => plan.documentType === 'brand_policy').length,
     documents: documents.length,

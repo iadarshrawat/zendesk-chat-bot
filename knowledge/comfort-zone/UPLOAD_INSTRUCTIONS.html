@@ -1,0 +1,7 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Comfort Zone upload instructions</title>
+<style>body{font-family:Arial,sans-serif;max-width:920px;margin:36px auto;line-height:1.55;color:#17353d}code,pre{background:#eef6f7;padding:3px 6px;border-radius:4px}h1,h2{color:#0b7285}</style></head><body>
+<h1>Comfort Zone RAG package</h1><p>This package is a complete brand snapshot for the backend knowledge ingestion command. It contains image-free searchable manuals, the verified product catalog, and preserved policy documents.</p>
+<h2>Validate first</h2><pre>npm run ingest -- --source "./Comfort_Zone_RAG_Updated.zip" --brand-key comfort-zone --validate-only</pre>
+<h2>Publish only after validation passes</h2><pre>npm run ingest -- --source "./Comfort_Zone_RAG_Updated.zip" --brand-key comfort-zone</pre>
+<h2>Important</h2><ul><li>Validation does not upload vectors or publish a snapshot.</li><li>Generated manuals contain text only; original graphics were removed.</li><li>Retain the original PDFs for wiring, assembly, and spatial diagrams.</li><li>OCR_REVIEW.csv lists OCR-derived reading units and review limitations.</li><li>Non-PDF audit files are not knowledge documents.</li></ul>
+</body></html>

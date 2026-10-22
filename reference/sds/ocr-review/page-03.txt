@@ -1,0 +1,69 @@
+PONY * 2.2.5
+
+Report No.: MSI4SBQG6665357U3 Date: 2024-12-26 Page 1 of 10
+
+Material Safety Data Sheet
+
+Reference to ST/SG/AC.10/30/Rev.10 (GHS)
+
+Section 1 - Chemical Product and Company Identification
+
+Chemical Product Identification
+
+Sample Name: Li-MnO, Button Cell
+
+Sample Model: CR2025
+
+Recommended Uses: N/A
+
+Restrictions on Use: N/A
+
+Supplier Name: Hubei Liju New Energy Co., Ltd.
+
+Address: Building A, Chaoshan industrial park, Jingiu Avenue, Anlu Economic Development Zone,
+Hubei Province
+
+Phone Number: 0712-5518588
+
+FAX: 0712-5518688
+
+E-mail: jacky.cao@lijubattery.com
+
+Emergency Phone Number: 0712-5518588
+
+Section 2 - Hazards Identification |
+
+Emergency overview: This product is a battery. Intended use of the product should not result in
+exposure to the chemical substance. In case of rupture the below hazards exist.
+
+Classification according to GHS
+
+Acute toxicity, oral (4)
+
+Acute toxicity, inhalation (4)
+
+Skin corrosion/irritation (1A-1C)
+
+Serious eye damage/eye irritation (1)
+
+Sensitisation, skin (1, 1A, 1B)
+
+Carcinogenicity (2)
+
+Specific target organ toxicity, single exposure; Respiratory tract irritation (3)
+Specific target organ toxicity, repeated exposure (2)
+
+Label elements
+
+Hazard pictogram(s):
+
+Signal word: Danger
+Hazard statement(s):
+H302 Harmful if swallowed
+
+© Hotline 400-819-5688 Pony Testing Group Shenzhen Co, Lid
+www.ponytest.com Addeess: 3/F. of Building , Building 1, Xinhaosheng Industral Park, Yonghe Tels 0755-26050809
+Road, Qiaotou Community, Baoan District, Shenzhen, Guangdong, China Faxs_0755-26068335
+PONY-BGLS186-03E-027-20238 Testing Address: 3/F. of Building 2, Building 1, Xinhaosheng Industrial Park,
+‘Yonghe Road, Qigotou Community, Baoan District, Shenzhen, Guangdong, China
+
