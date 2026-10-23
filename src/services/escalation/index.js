@@ -352,10 +352,13 @@ export async function handleHandoffEvent(event) {
     return false;
   }
   if (!requested) return false;
-  if (state?.status === 'failed' && state.data.formData) await transferToAgent(event);
+  if (state?.status === 'failed' && state.data.formData) await sendHandoffMessage(event, customerMessages.handoffFailed);
   else if (['form_pending', 'form_sending'].includes(state?.status))
     await sendHandoffMessage(event, state.status === 'form_pending' ? customerMessages.formReminder : customerMessages.formDeliveryUnknown);
-  else await startIntake(event);
+  else {
+    // Classification is not consent: confirm a free-text request before opening intake.
+    await sendBackendOffer(event);
+  }
   return true;
 }
 
@@ -396,9 +399,10 @@ async function sendBackendOffer(event) {
 export async function prepareHandoffReply(event, result) {
   const state = event._handoff;
   const hasClaim = hasUnsupportedHandoffClaim(result.reply);
-  const offer = hasClaim || requestsAgentOffer(result);
+  // Resolve the customer's missing detail before appending a competing handoff question.
+  const offer = hasClaim || (result.status !== 'clarify' && requestsAgentOffer(result));
   if (state && ['form_pending', 'form_sending', 'failed'].includes(state.status)) {
-    if (hasClaim || requestsAgentOffer(result)) {
+    if (offer) {
       result.reply =
         state.status === 'failed' && state.data.formData
           ? customerMessages.handoffFailed

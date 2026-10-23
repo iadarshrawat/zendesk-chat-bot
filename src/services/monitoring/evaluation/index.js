@@ -24,22 +24,31 @@ medium, low. key_issue may be a short string or null.
 ${CUSTOMER_INTENT_INSTRUCTIONS}
 key_issue briefly describes the customer's actual question; reason explains the satisfaction score.
 Score how well the customer's request was answered, across ALL topics:
-- satisfied: the bot gives a clear, relevant, sufficiently complete answer or the requested
-  guidance, with no material request left unanswered and no unresolved negative feedback.
-  A complete answer is enough; do not require thanks, an acknowledgement, or another customer
-  reply. Never choose neutral solely because the customer stopped replying after that answer.
-- neutral: the response is partial, vague, only asks for clarification, or leaves the actual
-  request pending. A reply's presence or length alone does not make it satisfied.
+- satisfied: the bot meaningfully answers the customer's main question or gives useful,
+  relevant guidance addressing the core need, with no essential request left unanswered and
+  no unresolved negative feedback. Apply a slight positive lean in borderline satisfied-versus-neutral
+  cases: prefer satisfied when there is a substantive useful answer and the remaining gap is
+  only a minor omission, imperfect wording, or mild uncertainty about completeness. Do not
+  require a perfect or exhaustive answer, thanks, acknowledgement, or another customer reply.
+  Never choose neutral solely because the customer stopped replying after a useful answer.
+- neutral: there is no substantive useful answer yet, the response is mostly vague or irrelevant,
+  only asks for clarification, or leaves an essential part of the actual request pending.
+  A reply's presence, length, politeness, generic reassurance, or an agent offer alone does not
+  make it satisfied. Do not stretch the slight positive lean to cover a materially incomplete answer.
 - unsatisfied: the customer rejects the answer, reports that the problem still persists after
   advice, or expresses dissatisfaction the bot fails to address; also use it for an ignored
   request, a visible contradiction, or an unusable answer. An initial problem description
   alone is not negative feedback on the bot's answer.
-Examples: a complete warranty explanation or product-use instructions are satisfied without
-acknowledgement; answering only one of two questions is neutral; "that did not work" with no
-subsequent resolution is unsatisfied. Apply the same rules to any other topic.
-Silence alone proves nothing; a sufficiently complete answer is the positive evidence.
+Examples: a useful warranty explanation or actionable product-use instructions are satisfied
+without acknowledgement, even with a small nonessential omission. Answering the main question
+but omitting an optional extra detail can be satisfied; answering only one of two equally important
+questions is neutral. A clarification-only reply or "please wait" is neutral. "That did not work"
+with no subsequent resolution is unsatisfied. Apply the same rules to any other topic.
+Silence alone proves nothing; a substantive answer addressing the core need is the positive evidence.
 Confidence reflects evidence strength: explicit confirmation is stronger than an answered
-request without feedback, but weaker confirmation must not by itself lower the score.
+request without feedback, but weaker confirmation or mild uncertainty must not by itself lower
+an otherwise supported satisfied score. Use confidence to express that uncertainty; do not use
+the positive lean when there is no useful answer or unresolved negative feedback remains.
 Set follow_up_required and human_required from actual outstanding needs, not missing feedback.
 Reason must describe the answered request or remaining problem; do not invent positive customer
 sentiment or a confirmed physical repair from instructions alone. Do not claim independently

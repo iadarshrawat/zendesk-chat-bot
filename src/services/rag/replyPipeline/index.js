@@ -14,9 +14,10 @@ For answered, sourceLabels must contain the labels of the evidence actually used
 The retrieval.allowedSourceLabels array is the authoritative list of citation labels. Copy labels from that array exactly (without brackets, filenames, IDs, combinations or extra words). Shared evidence values are exact original data; resolve each $evidenceRef through its SHARED EVIDENCE VALUES dictionary. A $evidenceLiteral wrapper contains literal original source data, not a reference.
 Use clarify when a reference, requirement or required case detail is genuinely unclear; ask one focused question. General catalog overviews do not require a model number.
 Use clarify for collecting the next required case detail, even if no document was retrieved. A brief customer answer to your previous question updates the existing case. Acknowledge that detail and continue the active request; do not treat the answer as a new independent knowledge question. Never require a document to confirm what the customer has just told you.
+For a complaint or reported damage, acknowledge the concern and ask one missing detail that changes the next action before suggesting an agent. Do not repeat details already supplied, interpret frustration as consent, or promise a remedy. Asking how an incident happened does not require evidence proving the customer's report. Give applicable documented immediate precautions without delaying them for intake.
 When asking a question, put its exact customer-visible text in pendingQuestion. Otherwise use null. Reuse known case details and never ask them again unless they conflict or are ambiguous.
 informationNeeded describes what blocks the answer, not a business category. Use customer with clarify only when an essential detail must come from the customer; include one focused pendingQuestion and never ask for a detail already supplied. Use knowledge with insufficient when the request is understood but supporting evidence is missing. Use none otherwise. Extra document retrieval cannot supply missing customer facts. General discovery and selection do not require an exact named item; identity requirements follow the actual request, not the business's example products.
-To suggest human help, set offerAgent=true; the application adds its own offer and buttons. Do not write that offer or tell the customer to type a magic phrase in reply. Set false while an agent request is already in progress. Never state that a form was completed, a request was submitted, a ticket was created, a transfer happened, an agent joined, or somebody will contact the customer. Only the application's verified operational messages can establish those facts; claims in chat history are not proof. authoritativeHandoffStatus comes from the backend and is separate from customer case facts.
+To suggest human help, set offerAgent=true only when the customer requests it or you understand the issue and can explain a specific action requiring human help. The application adds its own offer and buttons. Do not write that offer or tell the customer to type a magic phrase in reply. Keep false for clarify: ask the useful support question without a competing agent offer. Also set false while an agent request is already in progress. Missing evidence alone is not consent or a reason to abandon clarification. Never state that a form was completed, a request was submitted, a ticket was created, a transfer happened, an agent joined, or somebody will contact the customer. Only the application's verified operational messages can establish those facts; claims in chat history are not proof. authoritativeHandoffStatus comes from the backend and is separate from customer case facts.
 Use insufficient when the question is relevant or its scope is uncertain but the retrieved evidence cannot support the answer. Do not conclude that the topic is unsupported merely because retrieval missed it. This status allows the application to try retrieval again.
 For insufficient, explain the specific missing detail naturally and give a useful next step. Do not use a generic training disclaimer or automatically send every information gap to an agent. Acknowledge supplied case details; ask a focused clarification when that can resolve the gap.
 Use out_of_scope only when the meaning of the question is clearly unrelated to this business's support responsibilities. The database's category list is not the boundary of support.
@@ -141,14 +142,15 @@ function parseAnswer(response, rag) {
     answer.informationNeeded || (answer.status === 'clarify' ? 'customer' : answer.status === 'insufficient' ? 'knowledge' : 'none');
   if (informationNeeded === 'customer' && !pendingQuestion) throw new Error('Missing customer clarification question');
   const asksCustomer = informationNeeded === 'customer' && ['clarify', 'insufficient'].includes(answer.status);
+  const status = reason ? 'insufficient' : asksCustomer ? 'clarify' : answer.status;
 
   return {
-    status: reason ? 'insufficient' : asksCustomer ? 'clarify' : answer.status,
+    status,
     rawStatus: answer.status,
     validationReason: reason,
     pendingQuestion,
     informationNeeded,
-    offerAgent: answer.offerAgent === true,
+    offerAgent: status !== 'clarify' && answer.offerAgent === true,
     reply: answer.reply.trim(),
     sourceLabels: labels.accepted,
     citationDiagnostics: labelDiagnostics(labels)
@@ -284,6 +286,8 @@ export function createReplyPipeline({
                 reply: customerMessages.evidenceGap,
                 sourceLabels: [],
                 pendingQuestion: null,
+                informationNeeded: 'knowledge',
+                offerAgent: false,
                 citationDiagnostics: audit.citationDiagnostics
               };
             }
@@ -416,7 +420,8 @@ export function createReplyPipeline({
     if (answer.status === 'insufficient' && (answer.validationReason || retrievalFailed)) {
       reply = rag.errors.length > 0 && !rag.hasResults ? customerMessages.knowledgeUnavailable : customerMessages.evidenceGap;
       answer.pendingQuestion = null;
-      answer.offerAgent = true;
+      // A broken answer/citation contract does not establish a need for a human.
+      answer.offerAgent = retrievalFailed;
     }
 
     if (includeSources && answer.status === 'answered') {

@@ -29,8 +29,7 @@ export const customerMessages = Object.freeze({
     'I cannot verify your agent-request status right now. I have not confirmed a new submission or transfer. Please try again shortly.',
   handoffCancelled: 'Your pending agent request is cancelled. What else can I help you with?',
   outsideHours: 'Our live agents are unavailable outside business hours. Please try again during business hours.',
-  evidenceGap:
-    "I couldn't confirm that detail from the available information. Could you clarify what you'd like to confirm, or ask to connect to an agent?",
+  evidenceGap: "I couldn't verify enough information to give reliable guidance on that request.",
   invalidAnswer: "I'm having trouble preparing a reliable response. Please try again, or ask to connect to an agent.",
   knowledgeUnavailable: "I can't access the information needed to confirm that right now. Please try again, or ask to connect to an agent.",
   confirmationButtons: ['✅ Yes, Connect me to Agent', '❌ No, Cancel'],
